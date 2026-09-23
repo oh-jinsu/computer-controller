@@ -1,0 +1,38 @@
+name: Mac Bridge tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          python -m pip install -e .
+      - name: Unit tests (includes real FFmpeg; native macOS mocked)
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Syntax
+        run: |
+          python -m compileall -q mac_bridge scene_bridge tests run_server.py
+          bash -n Mac-Start.command Mac-Stop.command Mac-Screen-Permission.command
+          node --check mac_bridge/dc_entry.mjs
+      - name: Install isolated pinned local engine
+        run: python -c 'from pathlib import Path; from mac_bridge.setup import ensure_engine; ensure_engine(Path.cwd())'
+      - name: Real MCP SDK and engine (disposable files; no native UI or tunnel)
+        run: python tests/smoke_mac_mcp.py
+      - name: Real MCP and video frames (no YouTube or tunnel)
+        run: python tests/smoke_mcp.py

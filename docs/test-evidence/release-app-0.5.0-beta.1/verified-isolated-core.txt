@@ -1,0 +1,30 @@
+<TEMP_TEST_ROOT>/Mac Bridge.app/Contents/Resources/python/lib/python3.12/site-packages/pydantic_settings/sources/utils.py:47: IncompleteFieldDefinitionWarning: Field 'lifespan' has an incomplete definition: its annotation contains an unresolved forward reference, so settings sources may fail to correctly resolve its value. Call `model_rebuild()` on the model where the field is defined, once all the referenced types are defined.
+  warnings.warn(
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+{
+  "passed": true,
+  "checks": [
+    "all bundled binaries and Python imports passed without installers",
+    "actual bundled MCP handshake and Desktop Commander connection (34 tools)",
+    "development source file read/write allowed; application resources stayed separate",
+    "actual local terminal command from bundled engine",
+    "actual bundled FFmpeg video extraction and MCP contact-sheet image",
+    "update drain refuses new commands/video work; status and cleanup remain available",
+    "actual server writes external app lifecycle heartbeat"
+  ],
+  "not_tested": [
+    "actual OpenAI tunnel switch",
+    "actual public update installation/relaunch",
+    "Developer ID/notarization",
+    "personal browser login"
+  ]
+}

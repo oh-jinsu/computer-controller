@@ -7,6 +7,8 @@ from contextlib import asynccontextmanager
 import functools
 import hashlib
 import json
+import os
+import time
 from pathlib import Path
 import sys
 from typing import Annotated
@@ -22,6 +24,7 @@ from .browser import BrowserClient
 from .extra_tools import INSTRUCTIONS as BROWSER_INSTRUCTIONS, register_extra_tools
 from .native import NativeApproval, capture_window, screen_permission, windows
 from .policy import MacError, Policy
+from .activity import Activity, process_exists
 
 EXTRA = '''\nMac Bridge: use mac_status before Mac operations. File tools are limited to the user-selected
 project directory, but approved terminal commands have the current macOS user's access, NOT a sandbox.
@@ -37,15 +40,20 @@ Never invent local work results. mac_pause blocks Mac tools until locally restar
 '''
 
 
-def create_server(root: Path):
+def create_server(root: Path, *, assets: Path | None = None):
     root = root.resolve()
     config = json.loads((root / '.state' / 'mac-settings.json').read_text())
     approval_mode(root)  # Fail startup rather than ignore malformed consent settings.
     policy = Policy(root, Path(config['workspace']))
-    dc = DesktopClient(root, policy)
+    if assets is not None:
+        immutable = assets.resolve()
+        app_root = next((parent for parent in immutable.parents if parent.suffix == '.app'), immutable)
+        policy.protected_roots += (app_root,)
+    dc = DesktopClient(root, policy, assets=assets) if assets else DesktopClient(root, policy)
     approval = NativeApproval(policy)
     operation_lock = asyncio.Lock()
-    browser = BrowserClient(root, policy)
+    browser = BrowserClient(root, policy, assets=assets) if assets else BrowserClient(root, policy)
+    activity = Activity(root, enabled=assets is not None)
 
     async def pause_watch():
         while True:
@@ -53,6 +61,9 @@ def create_server(root: Path):
                 if dc.pids:
                     await dc.stop_owned()
                 await browser.close()
+            activity.write(external_busy=(any(process_exists(pid) for pid in dc.pids)
+                or (browser.task is not None and not browser.task.done())
+                or jobs.is_busy()))
             await asyncio.sleep(0.5)
 
     @asynccontextmanager
@@ -68,6 +79,7 @@ def create_server(root: Path):
                 except asyncio.CancelledError:
                     pass
                 await browser.close()
+                activity.finish()
 
     mcp, jobs = create_scene_server(root, name='Mac Bridge', extra_instructions=EXTRA + BROWSER_INSTRUCTIONS, lifespan=lifespan)
     read = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
@@ -78,7 +90,11 @@ def create_server(root: Path):
         @functools.wraps(func)
         async def wrapped(*args, **kwargs):
             try:
-                return await func(*args, **kwargs)
+                activity.enter(func.__name__)
+                try:
+                    return await func(*args, **kwargs)
+                finally:
+                    activity.leave()
             except (MacError, OSError, ValueError, asyncio.TimeoutError) as exc:
                 return response({'error': str(exc)}, error=True)
         return wrapped
@@ -123,7 +139,8 @@ def create_server(root: Path):
                          'local_approval': ('every terminal command, process input and file write' if mode == 'ask'
                                             else 'always allowed by owner setting; no local approval dialog'),
                          'terminal_is_sandboxed': False, 'click_keyboard_tools': False,
-                         'browser_tools': True, 'project_context_tools': True})
+                         'browser_tools': True, 'project_context_tools': True,
+                         'independent_runtime': assets is not None, 'source_checkout_is_runtime': assets is None})
 
     @mcp.tool(annotations=read)
     @guarded
@@ -255,8 +272,9 @@ def create_server(root: Path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--assets', type=Path)
     args = parser.parse_args()
-    mcp, jobs = create_server(args.root)
+    mcp, jobs = create_server(args.root, assets=args.assets)
     try:
         mcp.run(transport='stdio')
     finally:

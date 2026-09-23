@@ -1,0 +1,18 @@
+{
+  "uploaded": true,
+  "draft": true,
+  "private_repository": true,
+  "archive_bytes_unchanged": true,
+  "archive_digest": "sha256:489bbda7ef8b8e8d25ea622476a925de3e14054591dbefd7f3babc8c7e600aeb",
+  "downloaded_feed_signature_verified": true,
+  "release_url": "https://github.com/oh-jinsu/mac-bridge/releases/tag/untagged-df5ccca7cf82cbde24b0",
+  "release_id": 394374285,
+  "developer_id_signed": false,
+  "notarized": false,
+  "archive_signature_verified": true,
+  "feed_signature_verified": true,
+  "framework_install_relaunch_test_passed": true,
+  "production_app_update_relaunch_tested": false,
+  "current_tunnel_replaced": false,
+  "regression_test_count": 185
+}

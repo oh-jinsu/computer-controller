@@ -10,7 +10,19 @@
 - Show actual image results only. Generated images, synthetic test frames and a file save are not proof that real Mac capture or rendering was tested.
 - Run `python -m unittest discover -s tests -p 'test_*.py' -v`. Real MCP smoke tests are separate processes (`tests/smoke_mac_mcp.py`, `tests/smoke_mcp.py`, `tests/smoke_approval_mcp.py`, `tests/smoke_browser_mcp.py`) and need installed dependencies.
 - Record exactly which tests ran. Separate mocked unit tests, real FFmpeg, actual MCP integration, native macOS approval/capture, YouTube access, and ChatGPT tunnel tests.
-- Keep launch/update instructions short: first clone and start, then stop / `git pull --ff-only` / start. Do not add a new service or plugin per feature.
+- Source is for development; end-user releases are independent .app bundles with runtimes included. Never make the running app import the source checkout or its venv. Keep state outside the bundle. See docs/APP-DISTRIBUTION.md. Do not add a new service or plugin per feature.
 
-- Browser operations use a dedicated profile, never normal Chrome sessions. Keep the child MCP in its single actor task, and close it on pause/shutdown. Never expose arbitrary evaluate/run-code, upload paths or per-call consent flags.
+- Browser mode is an explicit owner selection: dedicated test profile or permissioned personal Chrome. Never bypass Chrome consent or copy cookies/profiles. Keep the child MCP in one actor task, detach personal Chrome without closing user tabs, and call browser_close after a completed task. Upload/background-window features are not implemented here.
 - mac_context summaries are explicit untrusted handoffs, not the entire chat history; preserve expected revisions and old versions, and keep all summaries/profiles out of Git.
+
+- App update acceptance requires Sparkle signed feeds and signed archives; never disable signature checks to ship a preview. The release signing key stays in Keychain. A rejected/cancelled keychain request is not permission to export the key or change its ACL.
+- Build outputs are ad-hoc previews until individually Developer ID signed and notarized. The specific exported beta.2 release artifact passed notarization and Gatekeeper; do not apply that claim to other artifacts. Keep unreviewed releases in a draft until publication gates and distribution checks pass. Do not promise automatic post-relaunch rollback: only the prior bundle is preserved for manual recovery.
+- An app import preserves approval mode/tunnel/workspace, but old video/context/log/backup files remain in the source data directory; never delete that directory as part of installation.
+
+- Public distribution uses the fixed HTTPS latest stable GitHub Releases feed, with no user GitHub authentication or bundled gh. Keep signed-feed/archive verification and idle drain. Beta drafts are not an automatic beta channel. Never change repository visibility as an implicit release step.
+- Build produces a local ad-hoc preview. Production signing uses sign_and_notarize.py on a new COPY after explicit selection of an installed Developer ID Application identity and notarytool Keychain profile. Never substitute an Apple Development/Distribution identity, export keys, or alter Keychain ACLs.
+
+- Use `Mac-Release.command` / `packaging/scripts/release_pipeline.py` for repeat releases. It uses the installed Developer ID identity and Xcode-managed signed-in account; notarytool profile setup is NOT required for this route. Resume the same checkpoint instead of resubmitting a processing/ambiguous Apple upload. Never mix commits, silently change repo visibility, overwrite a different tagged artifact, or publish a preview as latest stable. Read docs/RELEASE-PIPELINE.md.
+- Notarization is artifact-specific: beta.2 was exported and passed stapler/Gatekeeper on this Mac; never infer that every later build is notarized. The release pipeline revalidates the actual bundle before packaging.
+
+- README is the end-user installation guide, not a build log. Keep app installation separate from docs/DEVELOPMENT.md, document actual UI labels and supported macOS/architecture, distinguish Draft from public download, and never describe planned upload/background-window or pause-resume UI as implemented. Read docs/RELEASE-STATUS.md before claiming rollout completion.

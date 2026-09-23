@@ -1,0 +1,117 @@
+{
+  "passed": true,
+  "framework": "2.10.0",
+  "checks": [
+    "tampered signed feed rejected before archive download",
+    "tampered archive rejected without installing",
+    "valid signed feed and archive downloaded, installed, and app relaunched at version 2",
+    "installed fixture code signature remains valid"
+  ],
+  "events": {
+    "invalid_feed": [
+      {
+        "event": "launched",
+        "pid": 20738,
+        "version": "1"
+      },
+      {
+        "event": "check_started",
+        "pid": 20738,
+        "version": "1"
+      },
+      {
+        "description": "Error Domain=SUSparkleErrorDomain Code=1000 \"The update feed is improperly signed and could not be validated. Please try again later or contact the app developer.\" UserInfo={NSLocalizedDescription=The update feed is improperly signed and could not be validated. Please try again later or contact the app developer., NSUnderlyingError=0x744c1d950 {Error Domain=SUSparkleErrorDomain Code=3002 \"EdDSA signature does not match. Data of the appcast being checked is different than data that has been signed, or the public key and the private key are not from the same set. The downloaded appcast is likely not signed correctly because the file has the expected content length (879 bytes) which matches the appcast item.\" UserInfo={NSLocalizedDescription=EdDSA signature does not match. Data of the appcast being checked is different than data that has been signed, or the public key and the private key are not from the same set. The downloaded appcast is likely not signed correctly because the file has the expected content length (879 bytes) which matches the appcast item.}}}",
+        "event": "update_error",
+        "pid": 20738,
+        "version": "1"
+      }
+    ],
+    "invalid_archive": [
+      {
+        "event": "launched",
+        "pid": 20742,
+        "version": "1"
+      },
+      {
+        "event": "check_started",
+        "pid": 20742,
+        "version": "1"
+      },
+      {
+        "target_version": "2",
+        "event": "update_found",
+        "pid": 20742,
+        "version": "1"
+      },
+      {
+        "event": "download_started",
+        "pid": 20742,
+        "version": "1"
+      },
+      {
+        "event": "download_finished",
+        "pid": 20742,
+        "version": "1"
+      },
+      {
+        "description": "Error Domain=SUSparkleErrorDomain Code=4005 \"The update is improperly signed and could not be validated. Please try again later or contact the app developer.\" UserInfo={NSLocalizedDescription=The update is improperly signed and could not be validated. Please try again later or contact the app developer., NSUnderlyingError=0xa10456880 {Error Domain=SUSparkleErrorDomain Code=4005 \"(Ed)DSA signature validation before unarchiving failed for update <home>/Library/Caches/com.ohjinsu.mac-bridge.update-fixture.0c283e24b8c04c17917036aa7482866d/org.sparkle-project.Sparkle/Installation/6mUBnpRGf/A862B368-B53D-4119-91B5-9685A36A6B6B.zip\" UserInfo={NSMultipleUnderlyingErrorsKey=(\n    \"Error Domain=SUSparkleErrorDomain Code=3002 \\\"EdDSA signature does not match. Data of the update being checked is different than data that has been signed, or the public key and the private key are not from the same set. The downloaded update (A862B368-B53D-4119-91B5-9685A36A6B6B.zip) is likely not signed correctly because the file has the expected content length (1095790 bytes) which matches the appcast item.\\\" UserInfo={NSLocalizedDescription=EdDSA signature does not match. Data of the update being checked is different than data that has been signed, or the public key and the private key are not from the same set. The downloaded update (A862B368-B53D-4119-91B5-9685A36A6B6B.zip) is likely not signed correctly because the file has the expected content length (1095790 bytes) which matches the appcast item.}\",\n    \"Error Domain=SUSparkleErrorDomain Code=2 \\\"The download archive cannot be validated with Apple Developer ID code signing as fallback (after (Ed)DSA verification has failed). The team identifier could not be retrieved from the original app: /var/folders/nl/k5d_wl_16yjbkzlkz315vtfh0000gn/T/mac-bridge-sparkle-smoke-p052b79c/installed/Mac Bridge Update Fixture.app\\\" UserInfo={NSLocalizedDescription=The download archive cannot be validated with Apple Developer ID code signing as fallback (after (Ed)DSA verification has failed). The team identifier could not be retrieved from the original app: /var/folders/nl/k5d_wl_16yjbkzlkz315vtfh0000gn/T/mac-bridge-sparkle-smoke-p052b79c/installed/Mac Bridge Update Fixture.app}\"\n), NSLocalizedDescription=(Ed)DSA signature validation before unarchiving failed for update <home>/Library/Caches/com.ohjinsu.mac-bridge.update-fixture.0c283e24b8c04c17917036aa7482866d/org.sparkle-project.Sparkle/Installation/6mUBnpRGf/A862B368-B53D-4119-91B5-9685A36A6B6B.zip, NSUnderlyingError=0xa10455bc0 {Error Domain=SUSparkleErrorDomain Code=3002 \"EdDSA signature does not match. Data of the update being checked is different than data that has been signed, or the public key and the private key are not from the same set. The downloaded update (A862B368-B53D-4119-91B5-9685A36A6B6B.zip) is likely not signed correctly because the file has the expected content length (1095790 bytes) which matches the appcast item.\" UserInfo={NSLocalizedDescription=EdDSA signature does not match. Data of the update being checked is different than data that has been signed, or the public key and the private key are not from the same set. The downloaded update (A862B368-B53D-4119-91B5-9685A36A6B6B.zip) is likely not signed correctly because the file has the expected content length (1095790 bytes) which matches the appcast item.}}}}}",
+        "event": "update_error",
+        "pid": 20742,
+        "version": "1"
+      }
+    ],
+    "valid_update": [
+      {
+        "event": "launched",
+        "pid": 20747,
+        "version": "1"
+      },
+      {
+        "event": "check_started",
+        "pid": 20747,
+        "version": "1"
+      },
+      {
+        "target_version": "2",
+        "event": "update_found",
+        "pid": 20747,
+        "version": "1"
+      },
+      {
+        "event": "download_started",
+        "pid": 20747,
+        "version": "1"
+      },
+      {
+        "event": "download_finished",
+        "pid": 20747,
+        "version": "1"
+      },
+      {
+        "event": "install_ready",
+        "pid": 20747,
+        "version": "1"
+      },
+      {
+        "event": "installing",
+        "pid": 20747,
+        "version": "1"
+      },
+      {
+        "event": "launched",
+        "pid": 20752,
+        "version": "2"
+      },
+      {
+        "event": "updated_app_relaunched",
+        "pid": 20752,
+        "version": "2"
+      }
+    ]
+  },
+  "not_tested": [
+    "production Mac Bridge app delegate and private GitHub download",
+    "active tunnel switching",
+    "Developer ID and Gatekeeper notarization"
+  ]
+}

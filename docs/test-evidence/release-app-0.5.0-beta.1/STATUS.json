@@ -1,0 +1,15 @@
+{
+  "unit_tests_passed": 168,
+  "isolated_core_passed": true,
+  "relocated_full_browser_passed": true,
+  "extra_sandbox_browser_passed": false,
+  "native_ui_opened_and_captured": true,
+  "ad_hoc_signature_verified": true,
+  "update_archive_signature_verified": false,
+  "keychain_signing_result": "cancelled",
+  "developer_id_signed": false,
+  "notarized": false,
+  "real_update_install_and_relaunch_tested": false,
+  "old_tunnel_replaced": false,
+  "installed_in_user_applications": true
+}

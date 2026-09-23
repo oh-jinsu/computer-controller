@@ -1,5 +1,14 @@
 # Validation — Mac Bridge 0.4.0
 
+## Signed update follow-up — 2026-09-23
+
+- 185 unit/regression tests passed on the Mac (17 new archive/publishing-guard tests).
+- Real Sparkle 2.10.0 fixture: a tampered signed feed was rejected before archive download; a tampered archive was rejected without installation; a valid signed update was installed and the fixture relaunched at version 2. Both cryptographic checks stayed enabled.
+- The production preview ZIP and appcast were signed via the existing Keychain key without exporting it. The unchanged ZIP and signed metadata are in the existing private draft. The uploaded appcast was downloaded back and verified.
+- Not claimed: Developer ID/notarization; a production Mac Bridge private-GitHub update/relaunch cycle; replacing the current live tunnel.
+- Evidence: `docs/test-evidence/release-app-0.5.0-beta.1/signed-release-status.json`, `sparkle-update-test.json`, and `signing-followup-unit-tests.txt`.
+
+
 Executed on the user's macOS development worktree, Python 3.12.14, Node 22.23.2, MCP SDK 1.28.0, Desktop Commander 0.2.51 and Playwright MCP 0.0.82. Development used `feat/browser-context`, based on 66d84ae; the existing running bridge and its persisted approval setting were not replaced during development.
 
 ## Executed
@@ -91,3 +100,21 @@ Those tests exercise the real SDK and installed engine against disposable projec
 The unit tests and real Linux MCP smoke checks are included in `.github/workflows/tests.yml`. No native macOS UI coverage is claimed from that workflow.
 
 A changed source failing startup verification remains stopped. Git changes are not silently reset/rolled back. Existing legacy installation files and local settings are not removed during migration.
+
+## 0.5.0-beta.2 public-update preparation
+
+- Mac regression suite: **206 tests passed**. Certificate/signing subprocesses are mocked in unit tests; no real Developer ID identity was available.
+- Swift URL policy: **20 compiled native checks passed**, including allowed release paths and rejection of other hosts/repos, non-HTTPS, embedded credentials, ports, queries and encoded paths.
+- A new beta.2 app was built, copied to an unrelated temporary directory, and run with its own Python/native runtimes and bundled-only PATH. Actual MCP (34 tools), file/terminal, FFmpeg image extraction, local test-browser input/click/JPEG, and update drain passed. The copied bundle signature remained valid. No GitHub CLI was bundled.
+- Heuristic scan of **113 reachable Git blobs**, plus current source, found no candidates for the configured private-key/API-token patterns. No oversized blobs were skipped. This is not a complete privacy/history or license audit.
+- Read-only Developer ID preflight: **no usable Developer ID Application certificate**. No Apple login, certificate generation, key export, Keychain permission change, OS security change, repository visibility change, or running tunnel replacement was attempted.
+- Still unverified: real production signing/notarization, clean-Mac Gatekeeper acceptance and production public GitHub update/relaunch. The prior beta.1 isolated Sparkle fixture results do not prove this full route.
+
+
+## 2026-09-23: end-user onboarding documentation
+
+README was rewritten as a six-step app installation guide. Source bootstrap instructions moved to docs/DEVELOPMENT.md; browser, signing, pause and distribution status descriptions were reconciled with the actual beta.2 source and release metadata.
+
+Ran the full unit/regression suite: **256 tests passed** (247 existing plus 9 documentation checks). Documentation checks validate relative links/anchors, sequential setup steps, actual Swift UI labels, versioned download filename, key distinctions, unsupported-feature disclosures, absence of security-bypass commands and app data paths. Tests are offline; no Apple submission, Keychain access, browser action, live tunnel replacement or release publication occurred in this test run. Existing mock release tests print simulated stage names; those messages are not fresh production work.
+
+The previously signed/notarized beta.2 ZIP and its signed/checksummed attachments were not rebuilt or replaced for these documentation changes. Public availability and production rollout remain separate from a GitHub source merge. See [RELEASE-STATUS.md](RELEASE-STATUS.md).

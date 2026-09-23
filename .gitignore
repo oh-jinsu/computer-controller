@@ -1,0 +1,28 @@
+# Local settings, runtime keys never belong in the repository.
+.state/
+.runtime/
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.DS_Store
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+node_modules/
+dist/
+build/
+# Generated on first local install; no precomputed dependency lock is claimed.
+uv.lock
+# User media/captures must never be committed by ordinary git add.
+input/*
+!input/README.txt
+render-output/
+*.log
+
+# Extracted video frames and metadata contain user media.
+output/

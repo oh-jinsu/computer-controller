@@ -16,6 +16,7 @@ import sys
 import uuid
 
 from . import __version__
+from .approvals import MODES, approval_mode, set_approval_mode, validate_mode
 from .migration import migrate_settings, read_settings, valid_tunnel_id, valid_workspace
 from .native import screen_permission
 from .policy import MacError, private_dir, private_write
@@ -117,14 +118,20 @@ def bind_profile(root: Path, config: dict, tunnel: str, env: dict) -> tuple[dict
     return saved, True
 
 
-def start(root: Path, legacy: Path | None = None, *, recheck: bool = False) -> int:
+def start(root: Path, legacy: Path | None = None, *, recheck: bool = False,
+          selected_approval_mode: str | None = None) -> int:
     from .setup import verify_installation
+    if selected_approval_mode is not None:
+        validate_mode(selected_approval_mode)
     tunnel = shutil.which('tunnel-client')
     if not tunnel:
         raise MacError('tunnel-client가 없습니다. bash Mac-Start.command로 실행하세요.')
     with launch_lock(root):
         config = configure(root, legacy)
+        approval_mode(root)  # Reject invalid saved settings before running setup.
         verify_installation(root, force=recheck)
+        if selected_approval_mode is not None:
+            set_approval_mode(root, selected_approval_mode)
         command = shlex.join([sys.executable, str(root / 'run_server.py')])
         if not config.get('initialized') or config.get('mcp_command') != command:
             print('같은 터널의 이전 실행을 종료해야 합니다. 두 폴더에서 동시에 실행하지 마세요.', flush=True)
@@ -139,6 +146,11 @@ def start(root: Path, legacy: Path | None = None, *, recheck: bool = False) -> i
         print(f'\nMac Bridge {__version__} — 이 저장소 하나로 영상 추출과 Mac 작업을 실행합니다.', flush=True)
         if changed:
             print('같은 터널 ID를 사용합니다. ChatGPT의 기존 My Mac 연결을 Refresh하세요.', flush=True)
+        mode = approval_mode(root)
+        print('로컬 승인 모드: ' + ('항상 허용 (기간 제한 없음, 재시작 후 유지)' if mode == 'always'
+                                       else '매번 확인'), flush=True)
+        if mode == 'always':
+            print('요청된 파일 변경·명령·프로세스 입력은 Mac 승인창 없이 실행됩니다. 터미널은 샌드박스가 아닙니다.', flush=True)
         print('전체 종료: Ctrl+C / Mac 작업만 중지: Mac-Stop.command', flush=True)
         print('업데이트: 종료 → git pull --ff-only → bash Mac-Start.command\n', flush=True)
         try:
@@ -149,16 +161,30 @@ def start(root: Path, legacy: Path | None = None, *, recheck: bool = False) -> i
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Mac Bridge local controls')
-    parser.add_argument('action', choices=['start', 'pause', 'permission', 'check'])
+    parser.add_argument('action', choices=['start', 'pause', 'permission', 'check', 'approval'])
     parser.add_argument('--migrate', type=Path, help='Import non-secret settings from an old installation once')
     parser.add_argument('--recheck', action='store_true', help='Force the real local MCP smoke tests')
+    parser.add_argument('--approval-mode', choices=MODES, help='Persist owner choice when starting: ask or always')
+    parser.add_argument('--mode', choices=MODES, help='Set mode with the approval action; omit to show it')
     args = parser.parse_args()
+    if args.approval_mode is not None and args.action != 'start':
+        parser.error('--approval-mode requires start')
+    if args.mode is not None and args.action != 'approval':
+        parser.error('--mode requires approval')
+    if args.recheck and args.action != 'start':
+        parser.error('--recheck requires start')
+    if args.migrate is not None and args.action != 'start':
+        parser.error('--migrate requires start')
     if sys.platform != 'darwin':
         raise MacError('Mac 실행/권한 관리는 macOS에서 실행하세요. 유닛 테스트는 Linux에서도 실행됩니다.')
     if args.action == 'start':
-        return start(ROOT, args.migrate, recheck=args.recheck)
-    if args.migrate is not None:
-        raise MacError('--migrate는 start와 함께 사용하세요.')
+        return start(ROOT, args.migrate, recheck=args.recheck, selected_approval_mode=args.approval_mode)
+    if args.action == 'approval':
+        mode = approval_mode(ROOT) if args.mode is None else set_approval_mode(ROOT, args.mode)
+        print('로컬 승인 모드: ' + mode + ' (재시작 후에도 유지)')
+        if args.mode is not None:
+            print('다음 요청부터 적용됩니다. 일시 중지 상태와 기존 작업 폴더는 변경하지 않습니다.')
+        return 0
     if args.action == 'check':
         from .setup import verify_installation
         with launch_lock(ROOT):

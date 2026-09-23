@@ -21,7 +21,7 @@ jobs:
       - name: Dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg zsh
           python -m pip install -e .
       - name: Unit tests (includes real FFmpeg; native macOS mocked)
         run: python -m unittest discover -s tests -p 'test_*.py' -v
@@ -36,3 +36,5 @@ jobs:
         run: python tests/smoke_mac_mcp.py
       - name: Real MCP and video frames (no YouTube or tunnel)
         run: python tests/smoke_mcp.py
+      - name: Persistent always-allow mode through real MCP (disposable files only)
+        run: python tests/smoke_approval_mcp.py

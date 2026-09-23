@@ -68,6 +68,6 @@ def verify_installation(root: Path, *, force: bool = False) -> None:
     env = dict(os.environ)
     for key in ('CONTROL_PLANE_API_KEY', 'OPENAI_API_KEY', 'OPENAI_ADMIN_KEY'):
         env.pop(key, None)
-    for script, timeout in [('tests/smoke_mac_mcp.py', 180), ('tests/smoke_mcp.py', 120)]:
+    for script, timeout in [('tests/smoke_mac_mcp.py', 180), ('tests/smoke_mcp.py', 120), ('tests/smoke_approval_mcp.py', 180)]:
         subprocess.run([sys.executable, str(root / script)], cwd=root, env=env, check=True, timeout=timeout)
     private_write(stamp, json.dumps({'fingerprint': fingerprint, 'engine': DC_VERSION}).encode())

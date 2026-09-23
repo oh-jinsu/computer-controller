@@ -139,4 +139,124 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(r.isError); self.assertEqual(self.dc.calls, [])
 
 
+    def always(self):
+        from mac_bridge.approvals import set_approval_mode
+        set_approval_mode(self.root, 'always')
+
+    async def test_always_command_skips_native_dialog_and_records(self):
+        self.always()
+        r = await self.mcp.tools['mac_start_process']('pwd')
+        self.assertFalse(r.isError)
+        self.approver.approve.assert_not_called()
+        self.assertEqual(len(self.dc.calls), 1)
+        states = [row['state'] for row in self.dc.policy.history()]
+        self.assertIn('auto_approved', states)
+        self.assertEqual(states[-1], 'completed')
+
+    async def test_always_write_keeps_backup(self):
+        self.always()
+        p = self.project / 'a.txt'; p.write_text('before')
+        r = await self.mcp.tools['mac_write_file']('a.txt', 'after')
+        self.assertFalse(r.isError)
+        self.approver.approve.assert_not_called()
+        self.assertEqual(p.read_text(), 'after')
+        backups = list((self.root / '.state/file-backups').rglob('a.txt'))
+        self.assertEqual(backups[0].read_text(), 'before')
+
+    async def test_always_edit_keeps_exact_match_and_backup(self):
+        self.always()
+        p = self.project / 'a.txt'; p.write_text('before')
+        r = await self.mcp.tools['mac_edit_file']('a.txt', 'before', 'after')
+        self.assertFalse(r.isError)
+        self.assertEqual(p.read_text(), 'after')
+        self.approver.approve.assert_not_called()
+        self.assertEqual(list((self.root / '.state/file-backups').rglob('a.txt'))[0].read_text(), 'before')
+        p.write_text('x x')
+        r = await self.mcp.tools['mac_edit_file']('a.txt', 'x', 'y')
+        self.assertTrue(r.isError)
+        self.assertEqual(p.read_text(), 'x x')
+
+    async def test_always_input_still_requires_owned_pid(self):
+        self.always()
+        r = await self.mcp.tools['mac_send_input'](123, 'hello')
+        self.assertTrue(r.isError)
+        self.dc.pids.add(123)
+        r = await self.mcp.tools['mac_send_input'](123, 'hello')
+        self.assertFalse(r.isError)
+        self.approver.approve.assert_not_called()
+        self.assertEqual(self.dc.calls[-1][0], 'interact_with_process')
+
+    async def test_always_never_bypasses_pause(self):
+        self.always()
+        self.dc.policy.pause()
+        r = await self.mcp.tools['mac_start_process']('pwd')
+        self.assertTrue(r.isError)
+        self.assertEqual(self.dc.calls, [])
+        self.approver.approve.assert_not_called()
+
+    async def test_always_keeps_path_and_credentials_guardrails(self):
+        self.always()
+        for path in ['../outside.txt', '.env', str(self.root / 'run_server.py')]:
+            r = await self.mcp.tools['mac_write_file'](path, 'not written')
+            self.assertTrue(r.isError, path)
+        self.assertEqual(self.dc.calls, [])
+
+    async def test_revert_to_ask_applies_to_existing_server(self):
+        from mac_bridge.approvals import set_approval_mode
+        self.always()
+        set_approval_mode(self.root, 'ask')
+        r = await self.mcp.tools['mac_start_process']('pwd')
+        self.assertTrue(r.isError)
+        self.approver.approve.assert_called_once()
+        self.assertEqual(self.dc.calls, [])
+
+    async def test_mode_change_while_awaiting_approval_cancels_request(self):
+        def approve(*args):
+            self.always()
+            return True
+        self.approver.approve.side_effect = approve
+        r = await self.mcp.tools['mac_start_process']('pwd')
+        self.assertTrue(r.isError)
+        self.assertEqual(self.dc.calls, [])
+
+    async def test_revoke_always_just_before_execution_cancels_request(self):
+        from mac_bridge.approvals import set_approval_mode
+        self.always()
+        original = self.dc.policy.record
+        def record(action, args, state):
+            original(action, args, state)
+            if state == 'auto_approved':
+                set_approval_mode(self.root, 'ask')
+        with mock.patch.object(self.dc.policy, 'record', side_effect=record):
+            r = await self.mcp.tools['mac_start_process']('pwd')
+        self.assertTrue(r.isError)
+        self.assertEqual(self.dc.calls, [])
+
+    async def test_status_reports_persistent_mode(self):
+        self.always()
+        with mock.patch.object(self.server, 'screen_permission', return_value=False):
+            r = await self.mcp.tools['mac_status']()
+        self.assertEqual(r.structuredContent['approval_mode'], 'always')
+        self.assertTrue(r.structuredContent['approval_mode_persistent'])
+        self.assertFalse(r.structuredContent['terminal_is_sandboxed'])
+
+    async def test_invalid_setting_does_not_run_or_prompt(self):
+        (self.root / '.state/approval-settings.json').write_text('{"schema":1,"mode":"typo"}')
+        r = await self.mcp.tools['mac_start_process']('pwd')
+        self.assertTrue(r.isError)
+        self.assertEqual(self.dc.calls, [])
+        self.approver.approve.assert_not_called()
+
+    async def test_always_keeps_write_annotations_and_no_policy_tool(self):
+        self.always()
+        self.assertEqual(len(self.mcp.tools), 19)
+        self.assertFalse(self.mcp.annotations['mac_write_file'].readOnlyHint)
+        self.assertTrue(self.mcp.annotations['mac_start_process'].destructiveHint)
+        self.assertNotIn('mac_set_approval_mode', self.mcp.tools)
+        import inspect
+        for tool in ('mac_write_file', 'mac_start_process', 'mac_send_input'):
+            self.assertNotIn('approved', inspect.signature(self.mcp.tools[tool]).parameters)
+            self.assertNotIn('approval_mode', inspect.signature(self.mcp.tools[tool]).parameters)
+
+
 if __name__ == '__main__': unittest.main()

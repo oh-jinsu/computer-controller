@@ -16,7 +16,7 @@
 - mac_context summaries are explicit untrusted handoffs, not the entire chat history; preserve expected revisions and old versions, and keep all summaries/profiles out of Git.
 
 - App update acceptance requires Sparkle signed feeds and signed archives; never disable signature checks to ship a preview. The release signing key stays in Keychain. A rejected/cancelled keychain request is not permission to export the key or change its ACL.
-- Current beta is ad-hoc signed, NOT Developer ID signed or notarized. Store only in a private draft until release signing, notarization and real update/relaunch tests pass. Do not promise automatic post-relaunch rollback: only the prior bundle is preserved for manual recovery.
+- Build outputs are ad-hoc previews until individually Developer ID signed and notarized. The specific exported beta.2 release artifact passed notarization and Gatekeeper; do not apply that claim to other artifacts. Keep unreviewed releases in a draft until publication gates and distribution checks pass. Do not promise automatic post-relaunch rollback: only the prior bundle is preserved for manual recovery.
 - An app import preserves approval mode/tunnel/workspace, but old video/context/log/backup files remain in the source data directory; never delete that directory as part of installation.
 
 - Public distribution uses the fixed HTTPS latest stable GitHub Releases feed, with no user GitHub authentication or bundled gh. Keep signed-feed/archive verification and idle drain. Beta drafts are not an automatic beta channel. Never change repository visibility as an implicit release step.
@@ -24,3 +24,5 @@
 
 - Use `Mac-Release.command` / `packaging/scripts/release_pipeline.py` for repeat releases. It uses the installed Developer ID identity and Xcode-managed signed-in account; notarytool profile setup is NOT required for this route. Resume the same checkpoint instead of resubmitting a processing/ambiguous Apple upload. Never mix commits, silently change repo visibility, overwrite a different tagged artifact, or publish a preview as latest stable. Read docs/RELEASE-PIPELINE.md.
 - Notarization is artifact-specific: beta.2 was exported and passed stapler/Gatekeeper on this Mac; never infer that every later build is notarized. The release pipeline revalidates the actual bundle before packaging.
+
+- README is the end-user installation guide, not a build log. Keep app installation separate from docs/DEVELOPMENT.md, document actual UI labels and supported macOS/architecture, distinguish Draft from public download, and never describe planned upload/background-window or pause-resume UI as implemented. Read docs/RELEASE-STATUS.md before claiming rollout completion.

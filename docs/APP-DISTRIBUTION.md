@@ -2,7 +2,7 @@
 
 ## End-user installation
 
-The intended public distribution is one `Mac Bridge.app` ZIP from GitHub Releases. Python, Node, FFmpeg/ffprobe, Deno, the pinned Desktop Commander/Playwright runtimes, tunnel-client/cloudflared and Sparkle are included. End users do not need Homebrew, Python, Node, git, GitHub CLI, or GitHub login. Existing Google Chrome is used for browser tasks; Chrome itself is not redistributed.
+For first-time installation, follow the step-by-step [README](../README.md). This document covers implementation and verification. The distribution artifact is one `Mac Bridge.app` ZIP from GitHub Releases; current public availability is recorded in the README. Python, Node, FFmpeg/ffprobe, Deno, the pinned Desktop Commander/Playwright runtimes, tunnel-client/cloudflared and Sparkle are included. End users do not need Homebrew, Python, Node, git, GitHub CLI, or GitHub login. Existing Google Chrome is used for browser tasks; Chrome itself is not redistributed.
 
 First-time connection to the owner's ChatGPT tunnel and macOS/Chrome permissions remain separate from application installation. Runtime keys stay in macOS Keychain. Release-signing private keys are used by the developer only; recipients never receive them.
 
@@ -44,7 +44,7 @@ Sparkle's Ed25519 signature and Apple's Developer ID serve different purposes. A
 
 With an installed certificate and an explicitly configured notarytool Keychain profile, the production helper copies the built app into a NEW output directory, signs native files and nested bundles inside-out with Hardened Runtime and secure timestamps, submits it to Apple, staples the accepted ticket and checks Gatekeeper. It never signs by blanket `--deep`, passes passwords on the command line, changes the original app, or publishes the result.
 
-Node and Deno receive the narrow explicit JIT entitlements in that helper. Production certificate-backed signing and runtime entitlement compatibility still need live verification. Unit/mocked command tests do not establish that Apple will accept the app.
+Node and Deno receive explicit JIT entitlements. The beta.2 artifact was Developer ID signed and its bundled runtime smoke tests passed; Xcode subsequently exported the notarized app and stapler/Gatekeeper accepted that artifact. These results do not automatically apply to later builds. For normal releases use [Mac-Release.command](RELEASE-PIPELINE.md), which reuses the Xcode-managed signed-in account rather than requiring a new notarytool credential profile. The lower-level helper below remains an alternative for an explicitly configured notarytool profile.
 
 ```sh
 # Read-only readiness check
@@ -67,7 +67,9 @@ The public publisher refuses a preview, an unnotarized/non-Developer-ID app, an 
 
 The earlier beta.1 fixture tests verified real Sparkle rejection of tampered feeds/archives and installation/relaunch from fixture version 1 to 2. That is not a production GitHub round-trip test. Beta.2 adds compiled Swift URL-policy checks, Python regression/signing-plan tests and an independently relocated app smoke test without a bundled GitHub CLI.
 
-Still pending: an installed Developer ID Application identity, actual notarization, clean-Mac Gatekeeper testing, licensing/source obligations for redistributed dependencies, the public feed becoming available, production app update/relaunch through that public feed, and switching the owner's live tunnel to the app. No public end-user release should be described as complete before those checks pass.
+Completed for beta.2: Developer ID signing; Apple notarization; exported ticket validation; Gatekeeper acceptance on the build Mac; bundled-runtime integration tests; signed ZIP/feed upload to a private GitHub draft with matching asset hashes. The release automation was rerun without another Apple submission or changed GitHub assets. See [release status](RELEASE-STATUS.md).
+
+Still pending: clean-Mac installation testing, licensing/source obligations for redistributed dependencies, public repository/release availability, production app update/relaunch through the public feed, and switching the owner's live tunnel to the app. Do not present a passing local Gatekeeper assessment as a completed end-to-end public rollout.
 
 ## Primary references
 

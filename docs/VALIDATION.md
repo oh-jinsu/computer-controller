@@ -109,3 +109,12 @@ A changed source failing startup verification remains stopped. Git changes are n
 - Heuristic scan of **113 reachable Git blobs**, plus current source, found no candidates for the configured private-key/API-token patterns. No oversized blobs were skipped. This is not a complete privacy/history or license audit.
 - Read-only Developer ID preflight: **no usable Developer ID Application certificate**. No Apple login, certificate generation, key export, Keychain permission change, OS security change, repository visibility change, or running tunnel replacement was attempted.
 - Still unverified: real production signing/notarization, clean-Mac Gatekeeper acceptance and production public GitHub update/relaunch. The prior beta.1 isolated Sparkle fixture results do not prove this full route.
+
+
+## 2026-09-23: end-user onboarding documentation
+
+README was rewritten as a six-step app installation guide. Source bootstrap instructions moved to docs/DEVELOPMENT.md; browser, signing, pause and distribution status descriptions were reconciled with the actual beta.2 source and release metadata.
+
+Ran the full unit/regression suite: **256 tests passed** (247 existing plus 9 documentation checks). Documentation checks validate relative links/anchors, sequential setup steps, actual Swift UI labels, versioned download filename, key distinctions, unsupported-feature disclosures, absence of security-bypass commands and app data paths. Tests are offline; no Apple submission, Keychain access, browser action, live tunnel replacement or release publication occurred in this test run. Existing mock release tests print simulated stage names; those messages are not fresh production work.
+
+The previously signed/notarized beta.2 ZIP and its signed/checksummed attachments were not rebuilt or replaced for these documentation changes. Public availability and production rollout remain separate from a GitHub source merge. See [RELEASE-STATUS.md](RELEASE-STATUS.md).

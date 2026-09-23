@@ -1,5 +1,11 @@
 # Changes
 
+## Documentation — beta.2 onboarding
+
+- Replaced the accumulated developer-first README with six end-user installation steps, optional browser/screen permissions, daily use, updates, migration and troubleshooting.
+- Moved source launch/build commands to docs/DEVELOPMENT.md and corrected browser-mode and notarization status documentation.
+- Kept private/Draft availability, pending public rollout, unsupported features and independent-runtime boundaries explicit. Documentation changes do not replace or re-sign the already verified beta.2 archive.
+
 ## 0.5.0-beta.2 — 공개 업데이트 준비
 
 - 네이티브 앱의 GitHub 로그인·토큰 조회·API 호출을 제거하고 공개 최신 정식 릴리스의 signed appcast를 사용합니다. 수신용 앱에 GitHub CLI를 포함하지 않습니다.

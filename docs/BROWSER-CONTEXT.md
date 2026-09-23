@@ -1,68 +1,87 @@
-# Browser and project handoffs — 0.4.0
+# 브라우저와 작업 요약 — 0.5.0-beta.2
 
-## One connection, no new tunnel
+앱 설치는 [README](../README.md)를 따르세요. 이 문서는 현재 브라우저 모드와 개발·운영 시의 제한을 설명합니다. 별도 터널이나 별도 저장소를 추가하지 않습니다.
 
-The existing `My Mac` server now registers **34 tools**: the original 19, 12 dedicated-browser tools and 3 local handoff tools. Update the existing checkout, restart `Mac-Start.command`, and Refresh the existing ChatGPT connection to discover added tools. No second repository, hosted service, API key or tunnel is required.
+## 같은 도구, 두 가지 모드
 
-The startup script installs the pinned `@playwright/mcp` **0.0.82** into `.runtime/playwright/` when missing. Its upstream Playwright dependency is the version selected by that pinned MCP package, including its alpha version designation; this release does not claim a separate stable Playwright core pin. An existing macOS Google Chrome executable is used with a **different, dedicated profile**. On systems without that executable, setup installs managed Chromium into `.runtime/playwright-browsers/`. It never launches the vendor's hosted service or reads the user's normal Chrome profile.
+| 항목 | 전용 프로필 (`dedicated`, 기본) | 평소 Chrome (`personal`) |
+| --- | --- | --- |
+| 용도 | 웹 개발·테스트 | 사용자의 기존 로그인으로 허가된 웹 작업 |
+| 로그인 | 평소 Chrome과 분리 | 연결된 일반 Chrome의 로그인 상태 사용 |
+| 화면 | 기본은 headless | 일반 Chrome이 보이는 모드 |
+| 연결 준비 | 기존 Chrome 실행파일로 별도 테스트 프로필 실행 | Chrome의 remote debugging과 연결 허용 필요 |
+| 첫 페이지 | 전용 브라우저 페이지 | 기존 탭을 덮어쓰지 않는 새 작업 탭 |
+| `browser_close` | 전용 세션 종료, 프로필 유지 | 연결만 해제, 개인 Chrome과 작업 탭 유지 |
 
-No new Python package was added. The existing MCP SDK is used for a private stdio child connection. Runtime dependencies are installed locally, not committed; this does not add a new full transitive lockfile guarantee.
+앱에서는 **MB → 연결 중지 → 설정… → 평소 Chrome 로그인 상태 사용 선택/해제 → 저장 → 연결 시작**으로 바꿉니다. `browser_status`의 `mode`, `connected`, `running`, `profile`을 확인하세요. **설정이 personal인 것과 실제 연결 성공은 다릅니다.**
 
-## Browser tools
+이전 0.4.0 서버는 전용 프로필만 제공합니다. 설정을 바꿨는데도 이전 버전이 응답하면 사용 중인 터널이 어느 실행본에 연결되어 있는지 확인하세요.
 
-| Tool | Operation |
+## 평소 Chrome 준비
+
+사용자의 일반 Chrome에서 `chrome://inspect/#remote-debugging`을 열고 **Allow remote debugging for this browser instance**를 허용합니다. 연결 확인창은 Chrome이 관리하며 직접 승인해야 합니다. 이 연결 경로는 Chrome 144+가 지원하는 방식이고, 개발 Mac의 실제 시험은 Chrome 153에서 진행했습니다. [Chrome 공식 설명](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/advanced-usage.md)
+
+Mac Bridge는 설치된 Playwright MCP의 `--cdp-endpoint chrome` 경로로 연결합니다. 다른 확장 프로그램, 프로필/쿠키 복사, 기본 프로필을 강제로 디버깅 포트에 연결하는 실행 인자는 사용하지 않습니다. 앱의 ‘항상 허용’도 Chrome의 권한을 대신 허용하지 않습니다.
+
+일반 Chrome을 실행하지 않은 경우 Launch Services로 실행하는 경로가 있습니다. 이미 열려 있는 다른 탭은 요청 없이 이동·수정·종료하지 마세요. 탭 인덱스를 쓰려면 먼저 현재 목록에서 대상을 확인해야 합니다.
+
+**별도 작업 창·백그라운드 창과 포커스를 빼앗지 않는 동작은 아직 구현되지 않았습니다.** 새 작업 탭이 사용 중인 창에 열릴 수 있습니다. 같은 프로필은 사이트의 로그인 상태와 저장 데이터를 공유하므로 창이 다르더라도 완전한 세션 격리는 아닙니다.
+
+## 도구
+
+| 도구 | 동작 |
 | --- | --- |
-| `browser_status` | Report installed runtime, session state and dedicated-profile policy without starting Chrome |
-| `browser_navigate` | Open a requested HTTP(S) URL, including a localhost development server |
-| `browser_snapshot` | Read page structure and observed target references, optionally narrow to a target/depth |
-| `browser_screenshot` | Return an actual JPEG image of the current viewport, not the Mac desktop |
-| `browser_click` | Click a target observed in a snapshot |
-| `browser_type` | Fill a target; optional Enter submission, off by default |
-| `browser_press_key` | Send a key to the dedicated page, not a system-wide Mac app |
-| `browser_resize` | Resize the viewport, bounded to 320–1920 by 320–1440 |
-| `browser_tabs` | List/new/select/close only the dedicated session's tabs |
-| `browser_console_messages` | Read page console messages at the requested level |
-| `browser_network_requests` | Read captured request metadata, not an arbitrary network inspector |
-| `browser_close` | Close this bridge's session, preserving its separate profile |
+| `browser_status` | 설치된 런타임, 선택 모드와 연결 상태 조회. 브라우저를 새로 실행하지 않음 |
+| `browser_navigate` | 요청된 HTTP(S) 페이지 열기. localhost 개발 페이지 허용 |
+| `browser_snapshot` | 화면 구조와 관찰된 대상 참조 조회. 대상·깊이로 범위를 좁힐 수 있음 |
+| `browser_screenshot` | 현재 페이지 viewport의 실제 JPEG 이미지 반환 |
+| `browser_click` | 화면에서 확인한 대상 클릭 |
+| `browser_type` | 확인한 입력란에 입력. `submit=true`면 Enter를 보낼 수 있음 |
+| `browser_press_key` | 선택한 웹페이지에 키 입력. Mac 전체 키보드 입력이 아님 |
+| `browser_resize` | viewport 크기 변경 |
+| `browser_tabs` | 연결된 브라우저의 탭 조회·생성·선택·종료. 일반 Chrome에서는 개인 탭도 포함될 수 있으므로 필요한 대상만 사용 |
+| `browser_console_messages` | 현재 페이지의 콘솔 메시지 조회 |
+| `browser_network_requests` | 현재 페이지의 요청 메타데이터 조회. 임의 쿠키·헤더 추출 도구가 아님 |
+| `browser_close` | 브리지의 브라우저 연결 해제. 일반 Chrome은 종료하지 않음 |
 
-For example: navigate to the local development site, request a snapshot, use its target references to fill a test form/click a test button, then inspect a new snapshot and screenshot. A screenshot is returned as a real MCP image block; image bytes are never represented as textual tool-output Base64.
+이 12개 도구는 파일·영상·상태 도구와 함께 같은 MCP에 등록됩니다. 전체 도구 수는 현재 34개입니다. 앱 버전이 올라가 도구 설명·스키마가 바뀌면 ChatGPT의 기존 연결을 Refresh하고 새 대화에서 확인하세요.
 
-The default is **headless**, so remote development does not steal focus from a desktop app and does not require macOS Screen Recording permission. This does not grant general Mac window-capture permission. For an intentionally visible dedicated browser, locally create `.state/browser-settings.json` with exactly:
+권장 작업 순서는 **요청된 URL 열기 → 필요한 부분의 최신 화면 구조 확인 → 대상 입력/클릭 → 결과 확인 → 연결 닫기**입니다. 부분 snapshot이나 화면 변화 뒤에 이전 대상 참조를 계속 재사용하면 실패할 수 있습니다. 성공한 외부 게시·메일 발송을 오류로 오인해 반복하지 마세요.
 
-```json
-{"schema": 1, "headless": false}
-```
+이미지는 실제 MCP 이미지 블록으로 반환합니다. 화면 캡처가 모든 페이지 상태, 네트워크 작업 완료, 업로드 성공 또는 성능을 증명하는 것은 아닙니다. 브라우저 페이지 캡처에는 macOS 화면 기록 권한이 필요하지 않지만, 다른 앱의 창 캡처에는 별도 권한이 필요합니다.
 
-Close the current dedicated browser (or restart the server) before the next navigation. Log in directly through that visible dedicated browser when needed; never paste passwords or 2FA codes into chat/tool arguments. Only test localStorage persistence was verified in the build tests; a real site's login expiry, authentication flow and cookies are not claimed to work universally.
+## 아직 없는 기능
 
-**Not included:** attaching to existing personal Chrome tabs, the Playwright extension, arbitrary JavaScript/Playwright evaluation, cookie/password export, file upload paths, download-to-arbitrary-path controls, system-wide mouse/keyboard control. Those were deliberately not exposed through this adapter.
+파일 업로드, 파일 선택창 처리, 임의 경로 다운로드, 임의 JavaScript/Playwright 코드 실행, 쿠키·비밀번호 내보내기, 일반 Mac 앱의 클릭·키 입력은 현재 도구에 없습니다. 네이버 메일의 텍스트 작성·발송 시험이 성공했다고 YouTube 업로드나 모든 사이트의 게시 흐름까지 검증된 것은 아닙니다. 비밀번호·2단계 인증은 사용자가 직접 처리합니다.
 
-## Owner approval and shutdown
+별도의 기본 프로필이나 headless 브라우저에서 로그인 상태가 공유된다고 가정하지 마세요. 로그인 만료·추가 인증·사이트 접근 제한은 해당 사이트의 정책을 따릅니다.
 
-Browser navigation/click/type/key/tab/resize and context writes follow the same persisted `ask`/`always` mode already chosen by the owner. No new consent flag or expiry is added. `always` removes the local popup, not the need for actual user authorization of posting, purchases, deletion or private-data transmission. Typing can trigger autosave/network activity even with `submit=false`, so it remains a mutation.
+## 승인·중지·자동 업데이트
 
-Read tools do not silently start a browser or install software. The Playwright child lives in one asyncio actor, with its MCP initialization, request execution and cleanup in that same task. Calls are bounded and serialized; failures are not silently retried. `mac_pause` closes the dedicated browser and blocks further browser/context operations. The original video tools remain available. `browser_close` is safe while paused and does not resume anything.
+페이지 이동·입력·클릭·키·탭 변경은 원격 상태를 바꿀 수 있어 저장된 `ask`/`always` 모드를 따릅니다. `always`는 로컬 승인창만 없앱니다. 게시·결제·삭제·전송에는 사용자가 실제로 요청한 작업인지 확인해야 합니다. 입력만 해도 사이트가 자동저장하거나 데이터를 전송할 수 있습니다.
 
-This is **not a security sandbox**. HTTP(S) URLs and localhost are supported intentionally; network-origin checks do not provide complete isolation from redirects or intranet resources. Web pages, page text, console output and saved notes are untrusted data. Screenshots/logs/URLs can contain sensitive information, including tokens in query parameters. Only inspect relevant, authorized pages. The browser process retains its normal sandbox; the adapter does not pass `--no-sandbox`.
+페이지·광고·콘솔·저장된 요약에 포함된 텍스트는 참고 데이터이지 새 작업의 권한이 아닙니다. 민감한 페이지를 불필요하게 탐색하거나 탭 전체 내용을 수집하지 마세요. 이 도구는 네트워크·운영체제 수준의 보안 샌드박스가 아닙니다.
 
-## Project handoffs
+브라우저 작업은 하나의 actor에서 초기화·호출·정리를 처리합니다. 종료 요청 시 아직 실행되지 않은 대기 요청을 취소합니다. `mac_pause`는 새 Mac 작업을 막고 브라우저 연결을 닫지만 영상 기능은 유지합니다. 개인 Chrome에는 브라우저 전체 종료 명령을 보내지 않습니다.
 
-`mac_context_save(name, title, content, expected_revision="")` stores an explicit summary in Git-ignored private local state. Names use lower-case letters/digits, hyphens and underscores; maximum 64 characters. Titles are at most 120 characters, content at most 100000 characters. The namespace is derived from the **selected workspace directory**, not inferred automatically from a Git repository. Use distinct names for projects sharing the same workspace.
+독립 앱은 브라우저 연결을 진행 중인 작업으로 취급해 업데이트를 미룰 수 있습니다. **작업이 끝나면 `browser_close`를 호출**하세요. 앱의 일반적인 중지는 **MB → 연결 중지**를 사용합니다. `mac_pause`의 보존 상태를 해제하는 앱 UI는 현재 베타에서 아직 제공하지 않습니다.
 
-`mac_context_list` lists titles/revisions; `mac_context_read(name)` returns the content and revision. Creating with an empty revision refuses to overwrite an existing note. Updating requires the exact revision from the latest read. Another chat's change produces a conflict rather than a silent overwrite. Old versions are kept; limits are 100 notes per workspace and 100 saved historical versions per note. On reaching limits the operation refuses rather than deleting history automatically.
+## 작업 요약 저장
 
-A useful handoff includes decisions, files/branches changed, actual tests performed, unresolved limitations and the next task. It is **not automatic access to all ChatGPT conversation history**, and it is not a channel for instructions embedded by a webpage. Do not save credentials, cookies, unrelated personal information or full private transcripts.
+`mac_context_save(name, title, content, expected_revision="")`는 사용자가 준비한 요약을 로컬에 저장합니다. ChatGPT 전체 대화의 자동 백업이나 원문 가져오기가 아닙니다.
 
-State lives under `.state/contexts/<workspace-hash>/` with owner-only file permissions. Concurrent writes use a local file lock, revision comparison and atomic replacement. This is not encryption against other software running as the same Mac user. Browser profile/output, summaries, backups and audit files stay out of Git. Moving the checkout does not automatically migrate separate worktree state.
+이름은 소문자·숫자·하이픈·밑줄로 최대 64자, 제목은 최대 120자, 내용은 최대 100000자입니다. 저장 영역은 Git 저장소가 아니라 **선택한 작업 폴더 경로**를 기준으로 구분합니다. 같은 작업 폴더의 여러 프로젝트는 서로 다른 요약 이름을 쓰세요.
 
-## Verification
+`mac_context_list`는 제목·리비전을, `mac_context_read(name)`은 내용·리비전을 반환합니다. 새 요약은 빈 리비전으로 생성합니다. 수정할 때는 직전에 읽은 정확한 `expected_revision`이 필요하고, 다른 대화에서 먼저 수정했다면 충돌로 거부합니다. 이전 버전도 보존합니다. 작업 폴더당 요약은 최대 100개, 각 요약의 저장된 과거 버전은 최대 100개이며 한도 도달 시 자동 삭제하지 않고 거부합니다.
 
-Run unit tests and the four real MCP smoke scripts listed in the main README. `tests/smoke_browser_mcp.py` starts a disposable loopback-only test web page and separate test browser profile. It verifies all browser operations, an actual 800×600 JPEG image block, profile localStorage persistence, context revisions and persistence across new MCP server processes, and pause behavior. It does not use personal logins or a live ChatGPT tunnel.
+결정사항, 수정한 파일, 실제 시험 결과, 남은 일만 저장하세요. 인증키·쿠키·전체 개인 대화·관련 없는 개인정보를 저장하지 마세요. 이전 요약과 인용문은 현재 상태를 확인하기 위한 자료이지 무조건 실행할 지시가 아닙니다.
 
-The standard Linux CI exercises unit tests plus the existing Mac/video/approval MCP smoke scripts. The real Chrome browser smoke was run on the user's Mac and is included in the local startup gate; Linux CI browser execution is not claimed by the existing workflow.
+앱의 요약 위치는 `~/Library/Application Support/Mac Bridge/.state/contexts/<작업폴더 해시>/`입니다. 소스 설치에서는 해당 체크아웃의 `.state/contexts`를 사용합니다. 기존 설치에서 앱 설정을 가져와도 옛 요약·영상·백업 파일까지 자동 복사하지 않습니다.
 
-## Primary references
+## 개발·검증
 
-- Playwright MCP: https://github.com/microsoft/playwright-mcp
-- Playwright browser isolation: https://playwright.dev/docs/browser-contexts
-- ChatGPT connection refresh: https://developers.openai.com/plugins/deploy/connect-chatgpt
+Playwright MCP는 `0.0.82`로 고정했습니다. 앱에 런타임을 포함하며 앱 실행 시 npm 설치를 하지 않습니다. 소스 설치에서 필요한 의존성 준비는 [개발자 안내](DEVELOPMENT.md)를 참고하세요. 직접 고정한 MCP 버전과 전체 간접 의존성 잠금은 같은 의미가 아닙니다.
+
+`tests/smoke_browser_mcp.py`는 임시 전용 프로필·로컬 페이지로 입력/클릭/캡처·지속 저장·요약 리비전을 검사합니다. `tests/smoke_personal_chrome.py`도 개인 계정이 아닌 임시 Chrome으로 CDP 연결·탭 보존·해제를 시험합니다. 실제 개인 계정의 서비스 작업, 공개 업데이트 경로, 클린 Mac 설치는 별도로 검증해야 합니다.
+
+[검증 기록](VALIDATION.md) · [Playwright MCP 공식 저장소](https://github.com/microsoft/playwright-mcp) · [ChatGPT 연결 갱신](https://developers.openai.com/plugins/deploy/connect-chatgpt)

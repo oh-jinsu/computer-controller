@@ -28,7 +28,7 @@ jobs:
       - name: Syntax
         run: |
           python -m compileall -q mac_bridge scene_bridge tests run_server.py
-          bash -n Mac-Start.command Mac-Stop.command Mac-Screen-Permission.command
+          bash -n Mac-Start.command Mac-Stop.command Mac-Screen-Permission.command Mac-Release.command
           node --check mac_bridge/dc_entry.mjs
       - name: Install isolated pinned local engine
         run: python -c 'from pathlib import Path; from mac_bridge.setup import ensure_engine; ensure_engine(Path.cwd())'

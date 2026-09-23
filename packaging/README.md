@@ -22,3 +22,7 @@ Use `prepare_release.py --archive EXISTING.zip` to preserve a draft's exact ZIP 
 End-user applications no longer include gh or a GitHub sign-in UI. Publishing developers still use gh. The signed feed is the public latest stable release asset; while the repository is private or only has drafts/prereleases, no automatic update is offered.
 
 Developer ID readiness: `python packaging/scripts/sign_and_notarize.py --preflight`. Production signing/notarization works on a new app COPY with an explicit identity/profile; see docs/APP-DISTRIBUTION.md. No usable identity is installed on the build Mac yet. Never label a local preview as notarized.
+
+## One-command release
+
+`bash Mac-Release.command` creates a verified GitHub draft; `--publish` publishes a stable version only to an already-public repository. The pipeline reuses the Xcode-managed account and checkpoints notarization before submission, so resuming never blindly uploads again. See [RELEASE-PIPELINE.md](../docs/RELEASE-PIPELINE.md). Existing manual signing helpers remain available.

@@ -1,5 +1,7 @@
 # Mac Bridge
 
+개발자 배포는 **`bash Mac-Release.command --publish`** 한 번으로 빌드·서명·공증·업데이트 서명·게시까지 이어집니다. 베타/비공개 저장소는 기본 명령으로 Draft를 만듭니다. [재개 가능한 릴리스 자동화](docs/RELEASE-PIPELINE.md)를 확인하세요.
+
 ## 공개 배포 준비: 0.5.0-beta.2
 
 독립 `.app`의 자동 업데이트를 공개 GitHub Releases 방식으로 변경했습니다. **사용자 GitHub 로그인·토큰·GitHub CLI가 필요 없습니다.** 앱이 서명된 최신 정식 릴리스 목록과 파일을 직접 확인합니다.

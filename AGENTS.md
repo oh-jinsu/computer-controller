@@ -21,3 +21,6 @@
 
 - Public distribution uses the fixed HTTPS latest stable GitHub Releases feed, with no user GitHub authentication or bundled gh. Keep signed-feed/archive verification and idle drain. Beta drafts are not an automatic beta channel. Never change repository visibility as an implicit release step.
 - Build produces a local ad-hoc preview. Production signing uses sign_and_notarize.py on a new COPY after explicit selection of an installed Developer ID Application identity and notarytool Keychain profile. Never substitute an Apple Development/Distribution identity, export keys, or alter Keychain ACLs.
+
+- Use `Mac-Release.command` / `packaging/scripts/release_pipeline.py` for repeat releases. It uses the installed Developer ID identity and Xcode-managed signed-in account; notarytool profile setup is NOT required for this route. Resume the same checkpoint instead of resubmitting a processing/ambiguous Apple upload. Never mix commits, silently change repo visibility, overwrite a different tagged artifact, or publish a preview as latest stable. Read docs/RELEASE-PIPELINE.md.
+- Notarization is artifact-specific: beta.2 was exported and passed stapler/Gatekeeper on this Mac; never infer that every later build is notarized. The release pipeline revalidates the actual bundle before packaging.

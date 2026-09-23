@@ -2,8 +2,16 @@
 
 하나의 저장소, 하나의 시작 파일, 하나의 기존 터널로 사용하는 개인용 MCP 서버입니다.
 
-**영상 프레임 추출 + 프로젝트 파일 조회/편집 + 터미널 실행/로그 + 지정 앱 창 캡처**를 제공합니다.
+**영상 프레임 추출 + 프로젝트 파일·터미널 + 지정 앱 창 캡처 + 전용 브라우저 + 작업 맥락 저장**를 제공합니다.
 `scene_bridge/`는 이 저장소 안의 영상 처리 모듈 이름일 뿐입니다. 별도의 `scene-bridge` 설치 폴더나 업데이트 ZIP은 필요하지 않습니다.
+
+## 0.4.0: 브라우저와 작업 맥락
+
+기존 연결에 브라우저 도구 12개와 작업 맥락 도구 3개를 더해 총 **34개 도구**를 제공합니다. 웹페이지 탐색·입력·클릭·실제 페이지 캡처·탭·콘솔·네트워크 확인과, 다음 대화에서 불러올 작업 요약 저장이 가능합니다.
+
+**기존 터널·항상 허용 설정은 그대로 유지합니다.** 업데이트 후 재시작하고 기존 `My Mac` 연결을 Refresh하면 됩니다. 전용 브라우저는 기본적으로 화면을 띄우지 않으며, 평소 사용하던 Chrome 프로필을 읽지 않습니다. 브라우저 페이지 캡처에는 macOS 화면 기록 권한이 필요하지 않습니다.
+
+[브라우저·작업 맥락 사용법과 제한](docs/BROWSER-CONTEXT.md)
 
 ## 처음 한 번
 
@@ -53,7 +61,7 @@ git pull --ff-only
 bash Mac-Start.command --approval-mode always
 ```
 
-다음부터는 `bash Mac-Start.command`만 사용합니다. 선택은 Git에서 제외된 `.state/approval-settings.json`에 저장됩니다. 기존 터널·키체인·작업 폴더 설정은 그대로 두며, 누락된 승인 설정은 `ask`, 잘못된 설정은 실행 거부로 처리합니다. 새 Python/npm 의존성을 추가하지 않았습니다.
+다음부터는 `bash Mac-Start.command`만 사용합니다. 선택은 Git에서 제외된 `.state/approval-settings.json`에 저장됩니다. 기존 터널·키체인·작업 폴더 설정은 그대로 두며, 누락된 승인 설정은 `ask`, 잘못된 설정은 실행 거부로 처리합니다. 승인 모드 기능 자체는 새 의존성을 요구하지 않습니다. 0.4.0 브라우저 기능은 별도 전용 로컬 Playwright 런타임을 사용합니다.
 
 실행 중에 모드를 확인하거나 되돌리려면 별도 터미널에서:
 
@@ -79,7 +87,7 @@ bash Mac-Screen-Permission.command
 bash Mac-Start.command --recheck
 ```
 
-화면 기록 권한은 macOS 시스템 설정에서 직접 승인합니다. 클릭·키보드 입력 전용 도구는 이 버전에 없습니다. 전체 종료는 실행 중인 터미널에서 Ctrl+C입니다.
+화면 기록 권한은 macOS 시스템 설정에서 직접 승인합니다. 일반 Mac 앱의 클릭·키보드 도구는 없으며, 브라우저 도구는 전용 웹페이지 안에서만 입력합니다. 전체 종료는 실행 중인 터미널에서 Ctrl+C입니다.
 
 ## 제공 도구
 
@@ -90,6 +98,8 @@ bash Mac-Start.command --recheck
 | 프로세스 | `mac_start_process`, `mac_process_output`, `mac_send_input`, `mac_stop_process`, `mac_list_sessions` |
 | 창 | `mac_list_windows`, `mac_capture_window` |
 | 상태/중지/기록 | `mac_status`, `mac_pause`, `mac_recent_actions` |
+| 브라우저 | `browser_status`, `browser_navigate`, `browser_snapshot`, `browser_screenshot`, `browser_click`, `browser_type`, `browser_press_key`, `browser_resize`, `browser_tabs`, `browser_console_messages`, `browser_network_requests`, `browser_close` |
+| 작업 맥락 | `mac_context_list`, `mac_context_read`, `mac_context_save` |
 
 YouTube는 단일 영상 HTTPS 주소만 받습니다. 로컬 영상은 이 저장소의 `input/`에 넣고 `local:파일명.mp4`로 요청합니다. 전체/구간을 일정 간격으로 훑거나 지정 시각을 추출합니다. 의미 있는 장면을 자동 판별하는 기능은 아닙니다. YouTube 접근 제한이나 봇 차단을 우회하지 않습니다.
 
@@ -111,8 +121,8 @@ run_server.py            # 터널 키 환경변수를 제거하고 통합 MCP �
 mac_bridge/              # 파일·프로세스·지정 창·승인·설정 이전
 scene_bridge/            # 같은 저장소 안의 영상 처리 모듈
 input/                   # 사용자 로컬 영상: Git 제외
-.state/                  # 비밀 아닌 설정·승인 기록·백업: Git 제외
-.runtime/                # Desktop Commander 로컬 설치: Git 제외
+.state/                  # 로컬 설정·승인 기록·백업·브라우저 프로필·작업 요약: Git 제외
+.runtime/                # Desktop Commander·Playwright 로컬 설치: Git 제외
 output/                  # 영상 추출 결과: Git 제외
 ```
 
@@ -127,9 +137,10 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 python tests/smoke_mac_mcp.py
 python tests/smoke_mcp.py
 python tests/smoke_approval_mcp.py
+python tests/smoke_browser_mcp.py
 ```
 
-유닛 테스트에는 모의 SDK/엔진/OS 응답이 포함됩니다. `smoke_*.py`는 실제 SDK와 설치된 프로그램으로 작동하는 별도 검사이며, 개인 파일 수정·실제 화면 촬영·터널 연결은 하지 않습니다. 검증 범위는 [docs/VALIDATION.md](docs/VALIDATION.md)에 구분했습니다.
+유닛 테스트에는 모의 SDK/엔진/OS 응답이 포함됩니다. `smoke_*.py`는 실제 SDK와 설치된 프로그램으로 작동하는 별도 검사이며, 개인 파일 수정·개인 화면 촬영·터널 연결은 하지 않습니다. 브라우저 검사는 임시 로컬 테스트 페이지를 실제 Chrome에서 캡처하고 디코딩합니다. 검증 범위는 [docs/VALIDATION.md](docs/VALIDATION.md)에 구분했습니다.
 
 ## 공식 참고 자료
 

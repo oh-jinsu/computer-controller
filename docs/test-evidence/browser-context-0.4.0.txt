@@ -1,0 +1,39 @@
+Mac Bridge 0.4.0 — actual local test output excerpts
+
+--- unit-tests.txt ---
+Executing <Task finished name='mac-bridge-browser' coro=<BrowserClient._serve() done, defined at /Users/jinsu/dev/mac-bridge-browser-context/mac_bridge/browser.py:162> result=None created at /Users/jinsu/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/asyncio/tasks.py:420> took 0.118 seconds
+----------------------------------------------------------------------
+Ran 148 tests in 1.863s
+
+OK
+
+--- mac-mcp.txt ---
+Mac MCP 검사 통과: 실제 SDK handshake, 34개 도구, DC 읽기/쓰기/편집/명령, 경로 거부, PID 제한, 일시 중지, 영상 도구 보존.
+창 캡처·네이티브 승인 UI·ChatGPT 터널은 이 검사로 검증하지 않습니다.
+
+--- video-mcp.txt ---
+MCP 시작 전 검사 통과: initialize, 5개 도구, 실제 FFmpeg 추출, 이미지 반환, 잘못된 URL 차단.
+
+--- approval-mcp.txt ---
+Approval MCP smoke passed: always-mode write/edit/command, backups/audit, process restart persistence, revocation status, path guard and pause.
+No native approval UI, personal Mac files, screenshots or ChatGPT tunnel were tested.
+
+--- browser-mcp.txt ---
+{
+  "passed": true,
+  "checks": [
+    "real local page navigation, observed targets, input and click",
+    "actual JPEG image block decoded at 800x600",
+    "tabs, resize, key input, console and network metadata",
+    "dedicated profile localStorage persisted across browser restart",
+    "pause closes browser and blocks context/browser operations; video remains available",
+    "summary survived a new MCP server process; revision conflict rejected"
+  ],
+  "not_tested": [
+    "personal browser login",
+    "OpenAI tunnel refresh",
+    "arbitrary Mac GUI control"
+  ]
+}
+
+The combined startup gate also returned exit 0 after running all four smoke scripts.

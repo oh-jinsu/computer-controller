@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 
+from .browser import ensure_browser, PLAYWRIGHT_MCP_VERSION
 from .desktop import DC_VERSION
 from .migration import read_settings
 from .policy import MacError, private_dir, private_write
@@ -23,7 +24,7 @@ def setup_fingerprint(root: Path) -> str:
         h.update(p.relative_to(root).as_posix().encode() + b'\0' + p.read_bytes())
     h.update(sys.version.encode() + sys.executable.encode() + DC_VERSION.encode())
     # Re-run the gate when an ignored local lock or installed SDK changes.
-    for p in [root / 'uv.lock', root / '.runtime/desktop-commander/package-lock.json']:
+    for p in [root / 'uv.lock', root / '.runtime/desktop-commander/package-lock.json', root / '.runtime/playwright/package-lock.json']:
         if p.is_file():
             h.update(p.read_bytes())
     return h.hexdigest()
@@ -58,6 +59,7 @@ def ensure_engine(root: Path) -> bool:
 
 def verify_installation(root: Path, *, force: bool = False) -> None:
     installed = ensure_engine(root)
+    installed = ensure_browser(root) or installed
     stamp = root / '.state/setup-stamp.json'
     fingerprint = setup_fingerprint(root)
     if not force and not installed and stamp.exists():
@@ -68,6 +70,6 @@ def verify_installation(root: Path, *, force: bool = False) -> None:
     env = dict(os.environ)
     for key in ('CONTROL_PLANE_API_KEY', 'OPENAI_API_KEY', 'OPENAI_ADMIN_KEY'):
         env.pop(key, None)
-    for script, timeout in [('tests/smoke_mac_mcp.py', 180), ('tests/smoke_mcp.py', 120), ('tests/smoke_approval_mcp.py', 180)]:
+    for script, timeout in [('tests/smoke_mac_mcp.py', 180), ('tests/smoke_mcp.py', 120), ('tests/smoke_approval_mcp.py', 180), ('tests/smoke_browser_mcp.py', 180)]:
         subprocess.run([sys.executable, str(root / script)], cwd=root, env=env, check=True, timeout=timeout)
     private_write(stamp, json.dumps({'fingerprint': fingerprint, 'engine': DC_VERSION}).encode())

@@ -98,7 +98,7 @@ class ValidationTests(unittest.TestCase):
 
     def test_local_files_are_allowlisted(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / "input"
+            root = Path(tmp).resolve() / "input"
             root.mkdir()
             (root / "sample.mp4").write_bytes(b"not needed")
             (root / "secret.txt").write_bytes(b"private")
@@ -165,7 +165,7 @@ def await_job(jobs, job_id, timeout=15):
 class JobTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.root = Path(self.tmp.name)
+        self.root = Path(self.tmp.name).resolve()
         self.backend = FakeBackend()
         self.jobs = Jobs(self.root, self.backend)
 
@@ -272,7 +272,7 @@ class JobTests(unittest.TestCase):
         other = self.root / "other"
         other.mkdir()
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp).resolve()
             (root / "input").symlink_to(other, target_is_directory=True)
             with self.assertRaises(BridgeError):
                 Jobs(root)

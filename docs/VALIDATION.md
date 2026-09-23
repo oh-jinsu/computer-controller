@@ -1,3 +1,31 @@
+# Validation — Mac Bridge 0.4.0
+
+Executed on the user's macOS development worktree, Python 3.12.14, Node 22.23.2, MCP SDK 1.28.0, Desktop Commander 0.2.51 and Playwright MCP 0.0.82. Development used `feat/browser-context`, based on 66d84ae; the existing running bridge and its persisted approval setting were not replaced during development.
+
+## Executed
+
+- **148 unit tests passed.** Includes 37 added browser/context/approval checks and the existing suite. Mocked approval/SDK/native tests remain distinct from real integration tests. macOS temporary-directory fixtures were canonicalized to account for /var -> /private/var; production path restrictions were not relaxed.
+- `smoke_mac_mcp.py`: actual SDK handshake, all 34 tools registered, Desktop Commander read/write/edit/command, path and PID guards, pause, original video tools retained.
+- `smoke_mcp.py`: actual video SDK handshake, FFmpeg extraction, real image return, invalid URL rejection.
+- `smoke_approval_mcp.py`: persisted always mode across a new MCP process, local test-file write/edit/command, backups/audit, mode revocation and pause.
+- `smoke_browser_mcp.py`: real SDK -> integrated bridge -> real Playwright MCP -> local Chrome, using an ephemeral loopback-only fixture website and disposable profile. Verified navigation, observed target references, text input, click, key input, viewport resize, tabs, console messages and request metadata.
+- Browser screenshot returned as an actual **800x600 JPEG image block**, decoded with Pillow. This was a capture of the local test web page, not the user's personal screen or a generated substitute.
+- Test localStorage persisted after closing and reopening the dedicated browser. Explicit summary content/revision persisted after starting a completely new MCP server process. Stale revisions were rejected and the latest note was preserved.
+- `mac_pause` closed the dedicated browser and blocked browser/context operations while video remained available.
+- Full `verify_installation(..., force=True)` startup gate completed with exit 0, including all four real MCP smoke scripts. Python compilation, Bash syntax, Node adapter syntax and Git whitespace checks also completed.
+
+Machine output is summarized in `docs/test-evidence/browser-context-0.4.0.txt`. Raw local logs remain under Git-ignored `.state/test-runs/`. Installed SDK emits a Pydantic lifespan forward-reference warning; the real integration tests complete despite that warning. It is not suppressed or misreported as an error-free dependency audit.
+
+## Not established by these tests
+
+Real-site login/2FA behavior, personal Chrome session attachment, an end-to-end call to the newly added tools through the refreshed ChatGPT connection, general Mac GUI clicking and native Godot window capture were not tested here. Browser localStorage persistence is not a claim that every site's authentication persists indefinitely.
+
+The GitHub workflow runs unit tests and the existing engine/video/approval integrations. A completed hosted CI run is not implied by these local results. Native browser integration was run on the user's Mac and is included in the local startup gate, not claimed as a completed Linux browser CI job.
+
+---
+
+# Historical validation records
+
 # Validation — Mac Bridge 0.3.1
 
 ## Executed in the build container (2026-09-23)

@@ -21,7 +21,7 @@ from mac_bridge.native import NativeApproval, capture_window, resize_capture
 class CoreTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        p = Path(self.tmp.name)
+        p = Path(self.tmp.name).resolve()
         self.root, self.project = p / 'bridge', p / 'project'
         self.root.mkdir(); self.project.mkdir()
         self.policy = Policy(self.root, self.project)

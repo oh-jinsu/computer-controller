@@ -14,6 +14,7 @@ from pydantic import Field
 from typing import Annotated
 
 from .core import BridgeError, Jobs, Request
+from . import __version__
 
 INSTRUCTIONS = (
     "Extract REAL video frames for visual reference. Call start_extraction with a user-provided "
@@ -105,7 +106,7 @@ def create_server(root: Path, port: int = 8766, *, name: str = "Scene Bridge",
     @mcp.tool(annotations=local_read)
     def bridge_status() -> CallToolResult:
         """Check server and dependency presence without exposing tokens or local file paths."""
-        return response({"version": "0.3.0", "ffmpeg": bool(shutil.which("ffmpeg")),
+        return response({"version": __version__, "ffmpeg": bool(shutil.which("ffmpeg")),
                          "ffprobe": bool(shutil.which("ffprobe")), "deno": bool(shutil.which("deno")),
                          "max_frames": 12, "max_video_seconds": 14400,
                          "semantic_scene_detection": False, "public_hosting": False})

@@ -35,3 +35,7 @@ The local Desktop Commander engine is pinned to 0.2.51 and the MCP SDK to 1.28.0
 The combined Mac server uses stdio behind the private tunnel. Never expose it as an unauthenticated public server. Tunnel access and workspace configuration are part of the access boundary. Run only one active stdio tunnel-client per tunnel ID; a new local profile on migration does not create a separate hosted tunnel. Older clients do not share the new local launch lock, so they must be stopped explicitly.
 
 Official references: OpenAI Secure MCP Tunnel and openai/tunnel-client; DesktopCommanderMCP SECURITY.md; macOS Screen Recording documentation. The README contains their source locations.
+
+## Browser and handoff extension (0.4.0)
+
+See [BROWSER-CONTEXT.md](BROWSER-CONTEXT.md) for the dedicated-profile, URL, output, approval and persistence boundaries. Browser typing/navigation can mutate remote state. Page text and saved summaries remain untrusted data. Origin checks and private directories are not a sandbox against software running as the same OS user. No personal Chrome profile, arbitrary evaluation, cookie export or file-upload tool is exposed. The normal browser sandbox remains enabled. Local summaries use revision comparison and an advisory file lock; old versions are retained rather than silently overwritten. Neither browser profiles nor summaries are committed.

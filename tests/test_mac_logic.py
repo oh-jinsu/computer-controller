@@ -44,6 +44,20 @@ class FakeDC:
     async def stop_owned(self): return {'requested_stop': [], 'unconfirmed': []}
 
 
+class FakeBrowser:
+    def __init__(self, root, policy):
+        self.root = root; self.policy = policy; self.calls = []; self.closed = 0
+    def status(self):
+        return {'installed': True, 'running': bool(self.calls), 'personal_profile_access': False}
+    async def invoke(self, name, args, *, mode=None):
+        self.policy.require_active()
+        self.calls.append((name, args, mode))
+        return Data(content=[], structuredContent={'called': name})
+    async def close(self):
+        self.closed += 1
+        return {'closed': True}
+
+
 class LogicTests(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
@@ -66,19 +80,21 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        parent = Path(self.tmp.name); self.root = parent / 'bridge'; self.project = parent / 'project'
+        parent = Path(self.tmp.name).resolve(); self.root = parent / 'bridge'; self.project = parent / 'project'
         (self.root / '.state').mkdir(parents=True); self.project.mkdir()
         (self.root / '.state/mac-settings.json').write_text(json.dumps({'workspace': str(self.project)}))
         self.approver = mock.Mock(); self.approver.approve.return_value = False
         def build_dc(root, policy):
             self.dc = FakeDC(root, policy); return self.dc
-        with mock.patch.object(self.server, 'DesktopClient', side_effect=build_dc), mock.patch.object(self.server, 'NativeApproval', return_value=self.approver):
+        def build_browser(root, policy):
+            self.browser = FakeBrowser(root, policy); return self.browser
+        with mock.patch.object(self.server, 'DesktopClient', side_effect=build_dc), mock.patch.object(self.server, 'NativeApproval', return_value=self.approver), mock.patch.object(self.server, 'BrowserClient', side_effect=build_browser):
             self.mcp, self.jobs = self.server.create_server(self.root)
 
     def tearDown(self): self.jobs.close(); self.tmp.cleanup()
 
     async def test_tools_and_write_annotations(self):
-        self.assertEqual(len(self.mcp.tools), 19)
+        self.assertEqual(len(self.mcp.tools), 34)
         self.assertFalse(self.mcp.annotations['mac_start_process'].readOnlyHint)
         self.assertFalse(self.mcp.annotations['mac_write_file'].readOnlyHint)
         self.assertTrue(self.mcp.annotations['mac_read_file'].readOnlyHint)
@@ -249,7 +265,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_always_keeps_write_annotations_and_no_policy_tool(self):
         self.always()
-        self.assertEqual(len(self.mcp.tools), 19)
+        self.assertEqual(len(self.mcp.tools), 34)
         self.assertFalse(self.mcp.annotations['mac_write_file'].readOnlyHint)
         self.assertTrue(self.mcp.annotations['mac_start_process'].destructiveHint)
         self.assertNotIn('mac_set_approval_mode', self.mcp.tools)
@@ -257,6 +273,91 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         for tool in ('mac_write_file', 'mac_start_process', 'mac_send_input'):
             self.assertNotIn('approved', inspect.signature(self.mcp.tools[tool]).parameters)
             self.assertNotIn('approval_mode', inspect.signature(self.mcp.tools[tool]).parameters)
+
+
+
+    async def test_browser_denial_does_not_launch_or_navigate(self):
+        r = await self.mcp.tools['browser_navigate']('https://example.com/')
+        self.assertTrue(r.isError)
+        self.assertEqual(self.browser.calls, [])
+
+    async def test_browser_always_mode_has_no_native_dialog(self):
+        self.always()
+        r = await self.mcp.tools['browser_navigate']('http://localhost:8080/')
+        self.assertFalse(r.isError)
+        self.approver.approve.assert_not_called()
+        self.assertEqual(self.browser.calls[-1], ('browser_navigate', {'url': 'http://localhost:8080/'}, 'always'))
+
+    async def test_browser_ask_approval_applies_only_to_shown_target(self):
+        self.approver.approve.return_value = True
+        r = await self.mcp.tools['browser_click']('e5', 'test button')
+        self.assertFalse(r.isError)
+        self.assertEqual(self.browser.calls[-1][1], {'target': 'e5', 'element': 'test button'})
+        self.assertEqual(self.browser.calls[-1][2], 'ask')
+
+    async def test_browser_pause_during_approval_cancels(self):
+        def approve(*args): self.dc.policy.pause(); return True
+        self.approver.approve.side_effect = approve
+        r = await self.mcp.tools['browser_navigate']('https://example.com/')
+        self.assertTrue(r.isError)
+        self.assertEqual(self.browser.calls, [])
+
+    async def test_browser_mode_change_during_approval_cancels(self):
+        def approve(*args): self.always(); return True
+        self.approver.approve.side_effect = approve
+        r = await self.mcp.tools['browser_navigate']('https://example.com/')
+        self.assertTrue(r.isError)
+        self.assertEqual(self.browser.calls, [])
+
+    async def test_browser_forbidden_scheme_rejected_without_prompt(self):
+        r = await self.mcp.tools['browser_navigate']('file:///private')
+        self.assertTrue(r.isError)
+        self.approver.approve.assert_not_called()
+        self.assertEqual(self.browser.calls, [])
+
+    async def test_browser_screenshot_has_no_output_path_or_full_page(self):
+        r = await self.mcp.tools['browser_screenshot']()
+        self.assertFalse(r.isError)
+        self.assertEqual(self.browser.calls[-1], ('browser_take_screenshot', {'type': 'jpeg', 'scale': 'css', 'fullPage': False}, None))
+
+    async def test_browser_tabs_require_observed_index(self):
+        r = await self.mcp.tools['browser_tabs']('close')
+        self.assertTrue(r.isError)
+        self.approver.approve.assert_not_called()
+
+    async def test_browser_typing_and_context_annotations_remain_mutations(self):
+        for name in ['browser_navigate', 'browser_click', 'browser_type', 'browser_press_key', 'browser_tabs', 'mac_context_save']:
+            self.assertFalse(self.mcp.annotations[name].readOnlyHint, name)
+        for name in ['browser_screenshot', 'browser_snapshot', 'mac_context_read']:
+            self.assertTrue(self.mcp.annotations[name].readOnlyHint, name)
+        for name in ['browser_evaluate', 'browser_run_code', 'browser_file_upload', 'browser_cookie_list']:
+            self.assertNotIn(name, self.mcp.tools)
+
+    async def test_context_save_ask_denied_no_content_stored(self):
+        r = await self.mcp.tools['mac_context_save']('test', 'Title', 'not stored')
+        self.assertTrue(r.isError)
+        r = await self.mcp.tools['mac_context_list']()
+        self.assertEqual(r.structuredContent['contexts'], [])
+
+    async def test_context_save_always_and_revision_conflict(self):
+        self.always()
+        r = await self.mcp.tools['mac_context_save']('test', 'Title', 'saved')
+        self.assertFalse(r.isError)
+        revision = r.structuredContent['revision']
+        read = await self.mcp.tools['mac_context_read']('test')
+        self.assertEqual(read.structuredContent['content'], 'saved')
+        r = await self.mcp.tools['mac_context_save']('test', 'Title', 'updated', revision)
+        self.assertFalse(r.isError)
+        r = await self.mcp.tools['mac_context_save']('test', 'Title', 'stale', revision)
+        self.assertTrue(r.isError)
+        self.approver.approve.assert_not_called()
+
+    async def test_pause_also_closes_dedicated_browser(self):
+        r = await self.mcp.tools['mac_pause']()
+        self.assertFalse(r.isError)
+        self.assertEqual(self.browser.closed, 1)
+        r = await self.mcp.tools['browser_snapshot']()
+        self.assertTrue(r.isError)
 
 
 if __name__ == '__main__': unittest.main()

@@ -37,7 +37,7 @@ async def test():
             async with ClientSession(r, w, read_timeout_seconds=timedelta(seconds=45)) as client:
                 await client.initialize()
                 tools = {t.name: t for t in (await client.list_tools()).tools}
-                assert len(tools) == 19, sorted(tools)
+                assert len(tools) == 34, sorted(tools)
                 for name in ['start_extraction', 'get_extraction', 'get_frame', 'list_local_videos', 'bridge_status']:
                     assert name in tools, name
                 assert tools['mac_write_file'].annotations.readOnlyHint is False
@@ -73,7 +73,7 @@ async def test():
             assert not result.isError, result
             assert any('MAC_BRIDGE_ENGINE_SMOKE' in getattr(c, 'text', '') for c in result.content), result
             assert len(dc.pids) == 1, 'Could not identify the engine-created process PID'
-    print('Mac MCP 검사 통과: 실제 SDK handshake, 19개 도구, DC 읽기/쓰기/편집/명령, 경로 거부, PID 제한, 일시 중지, 영상 도구 보존.')
+    print('Mac MCP 검사 통과: 실제 SDK handshake, 34개 도구, DC 읽기/쓰기/편집/명령, 경로 거부, PID 제한, 일시 중지, 영상 도구 보존.')
     print('창 캡처·네이티브 승인 UI·ChatGPT 터널은 이 검사로 검증하지 않습니다.')
 
 

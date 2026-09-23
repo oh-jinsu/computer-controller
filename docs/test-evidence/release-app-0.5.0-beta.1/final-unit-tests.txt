@@ -1,0 +1,5 @@
+Executing <Task finished name='mac-bridge-browser' coro=<BrowserClient._serve() done, defined at <USER_HOME>/dev/mac-bridge-release-app/mac_bridge/browser.py:189> result=None created at <USER_HOME>/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/asyncio/tasks.py:420> took 0.175 seconds
+----------------------------------------------------------------------
+Ran 168 tests in 1.884s
+
+OK

@@ -80,7 +80,7 @@ def windows(app_name: str) -> list[dict]:
         raise MacError('Specify an application name, such as Godot; do not enumerate all apps')
     cg, cf = quartz()
     if not cg.CGPreflightScreenCaptureAccess():
-        raise MacError('Screen Recording permission is missing. Run Mac-Screen-Permission.command locally, then restart the launcher if macOS requests it.')
+        raise MacError('Screen Recording permission is missing. Use the Mac Bridge app screen-permission menu (or Mac-Screen-Permission.command for source installs), then restart if macOS requests it.')
     info = cg.CGWindowListCopyWindowInfo(1 | 16, 0)  # on-screen only, exclude desktop
     if not info:
         raise MacError('macOS returned no window information')

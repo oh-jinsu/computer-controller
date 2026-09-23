@@ -54,6 +54,7 @@ def clean_env(home: Path) -> dict[str, str]:
 class Policy:
     def __init__(self, root: Path, workspace: Path):
         self.root = root.resolve()
+        self.protected_roots = (self.root,)
         self.state = private_dir(self.root / '.state')
         self.workspace = workspace.expanduser().resolve(strict=True)
         if not self.workspace.is_dir() or self.workspace == Path('/'):
@@ -78,7 +79,7 @@ class Policy:
         resolved = path.resolve()
         if not resolved.is_relative_to(self.workspace):
             raise MacError('Path is outside the selected project directory')
-        if resolved == self.root or resolved.is_relative_to(self.root):
+        if any(resolved == protected or resolved.is_relative_to(protected) for protected in self.protected_roots):
             raise MacError('Bridge code, credentials, cache and approvals are not exposed by file tools')
         relative = resolved.relative_to(self.workspace)
         blocked = {'.git', '.ssh', '.aws', '.gnupg', '.azure', '.kube', '.state',

@@ -336,6 +336,10 @@ class Jobs:
         self._closed = False
         self.cleanup()
 
+    def is_busy(self) -> bool:
+        with self._lock:
+            return any(job.get("status") in ("queued", "running") for job in self._jobs.values())
+
     def local_videos(self) -> list[dict]:
         files = []
         for p in sorted(self.input_root.iterdir()):

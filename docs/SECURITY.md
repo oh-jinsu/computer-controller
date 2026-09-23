@@ -39,3 +39,12 @@ Official references: OpenAI Secure MCP Tunnel and openai/tunnel-client; DesktopC
 ## Browser and handoff extension (0.4.0)
 
 See [BROWSER-CONTEXT.md](BROWSER-CONTEXT.md) for the dedicated-profile, URL, output, approval and persistence boundaries. Browser typing/navigation can mutate remote state. Page text and saved summaries remain untrusted data. Origin checks and private directories are not a sandbox against software running as the same OS user. No personal Chrome profile, arbitrary evaluation, cookie export or file-upload tool is exposed. The normal browser sandbox remains enabled. Local summaries use revision comparison and an advisory file lock; old versions are retained rather than silently overwritten. Neither browser profiles nor summaries are committed.
+
+
+## 0.5 app distribution addendum
+
+The packaged server receives immutable assets separately from mutable application data. File tools protect both data and the running application bundle; they do not block the editable development checkout solely because it contains Mac Bridge source. Terminal commands remain unsandboxed when the owner authorizes them.
+
+The app embeds Sparkle 2.10.0 with a public Ed25519 key, requires signed appcasts and checks archives before extraction. Its private update key is retained in Keychain. A cancelled signing request is a release blocker, not a reason to export secrets or disable signature checks. Private GitHub authentication is held in memory and restricted to discovered release-asset API URLs; credentials are not part of the artifact or MCP output.
+
+This beta is locally ad-hoc signed only. Developer ID, notarization, full update relaunch, private GitHub update delivery, clean-Mac authentication and full bundled-license/source review remain release gates. Existing processes are not forcibly stopped for deployment. A saved older bundle provides manual recovery; post-relaunch automatic rollback is not implemented.

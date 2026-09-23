@@ -1,0 +1,14 @@
+{
+  "display_version": "0.5.0-beta.1",
+  "engine_version": "0.5.0b1",
+  "build_number": 50001,
+  "minimum_macos": "26.0",
+  "architecture": "arm64",
+  "preview": true,
+  "github_repository": "oh-jinsu/mac-bridge",
+  "sparkle_version": "2.10.0",
+  "sparkle_url": "https://github.com/sparkle-project/Sparkle/releases/download/2.10.0/Sparkle-2.10.0.tar.xz",
+  "sparkle_sha256": "c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c",
+  "sparkle_keychain_account": "mac-bridge-releases",
+  "sparkle_public_key": "ugyzWiwhHIhVOKNoR9qttHmK2/lFt/RDVO9wNuifsEM="
+}

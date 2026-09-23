@@ -61,8 +61,12 @@ def create_server(root: Path, port: int = 8766, *, name: str = "Scene Bridge",
         URL t/start query parameters are not used: specify start_seconds or timestamps explicitly.
         """
         try:
-            req = Request.build(source, start_seconds, end_seconds, count, timestamps, max_edge)
-            return response(jobs.submit(req))
+            from mac_bridge.activity import update_admission
+            with update_admission(root):
+                if (root / ".state/UPDATE_DRAIN").exists():
+                    raise BridgeError("An app update is waiting; new video jobs are paused until restart.")
+                req = Request.build(source, start_seconds, end_seconds, count, timestamps, max_edge)
+                return response(jobs.submit(req))
         except BridgeError as exc:
             return response({"error": str(exc)}, error=True)
 

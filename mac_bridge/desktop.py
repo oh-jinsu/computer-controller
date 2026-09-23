@@ -31,8 +31,9 @@ def configure_engine(root: Path, workspace: Path) -> tuple[Path, dict[str, str]]
 
 
 class DesktopClient:
-    def __init__(self, root: Path, policy: Policy):
+    def __init__(self, root: Path, policy: Policy, *, assets: Path | None = None):
         self.root = root
+        self.assets = (assets or root).resolve()
         self.policy = policy
         self.session = None
         self.pids: set[int] = set()
@@ -44,7 +45,7 @@ class DesktopClient:
     async def connect(self):
         from mcp import ClientSession, StdioServerParameters
         from mcp.client.stdio import stdio_client
-        package = self.root / '.runtime' / 'desktop-commander' / 'node_modules' / '@wonderwhy-er' / 'desktop-commander'
+        package = self.assets / '.runtime' / 'desktop-commander' / 'node_modules' / '@wonderwhy-er' / 'desktop-commander'
         package_json = package / 'package.json'
         if not package_json.is_file():
             raise MacError('Desktop Commander dependency missing. Run Mac-Start.command.')
@@ -55,7 +56,7 @@ class DesktopClient:
         if not node:
             raise MacError('Node.js is missing. Run Mac-Start.command.')
         _, env = configure_engine(self.root, self.policy.workspace)
-        params = StdioServerParameters(command=node, args=[str(self.root / 'mac_bridge' / 'dc_entry.mjs')],
+        params = StdioServerParameters(command=node, args=[str(self.assets / 'mac_bridge' / 'dc_entry.mjs')],
                                        cwd=str(self.policy.workspace), env=env)
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write, read_timeout_seconds=timedelta(seconds=25)) as session:

@@ -1,5 +1,6 @@
-"""Pinned Playwright MCP behind the existing connection; never attach to personal Chrome.
-The actor owns its SDK/stdio contexts in ONE task (including shutdown).
+"""Pinned Playwright MCP with dedicated or owner-selected ordinary Chrome connection.
+The actor owns SDK/stdio contexts in ONE task, including shutdown. Personal mode
+uses the official permissioned Chrome channel, never copies profile credentials.
 """
 from __future__ import annotations
 
@@ -13,6 +14,9 @@ import sys
 from urllib.parse import urlsplit
 
 from .approvals import approval_mode
+from .browser_connection import (browser_settings, connection_environment,
+                                 personal_arguments, personal_connection_status,
+                                 start_personal_chrome)
 from .policy import MacError, Policy, clean_env, private_dir, private_write
 
 PLAYWRIGHT_MCP_VERSION = '0.0.82'
@@ -58,36 +62,19 @@ def installed(root: Path) -> bool:
         return False
 
 
-def browser_settings(root: Path) -> dict:
-    path = root / '.state/browser-settings.json'
-    if path.is_symlink():
-        raise MacError('Browser settings must not be a symlink.')
-    if not path.exists():
-        return {'schema': 1, 'headless': True}
-    if path.stat().st_size > 4096:
-        raise MacError('Browser settings exceed the size limit.')
-    value = json.loads(path.read_text())
-    if (not isinstance(value, dict) or set(value) != {'schema', 'headless'}
-            or value['schema'] != 1 or type(value['headless']) is not bool):
-        raise MacError('Browser settings must be {"schema":1,"headless":true|false}.')
-    return value
-
-
 def runtime_env(root: Path) -> dict[str, str]:
-    env = clean_env(state_dir(root, 'browser', 'home'))
-    env['PLAYWRIGHT_BROWSERS_PATH'] = str(root / '.runtime/playwright-browsers')
-    env['PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD'] = '1'
-    return env
+    # Installation and dedicated tests never inherit the personal HOME or API keys.
+    return connection_environment(root, {'mode': 'dedicated'})
 
 
-def browser_executable(root: Path) -> str:
+def browser_executable(root: Path, *, data: Path | None = None) -> str:
     if sys.platform == 'darwin' and CHROME.is_file():
         return str(CHROME)
     node = shutil.which('node')
     if not node:
         raise MacError('Node.js is unavailable.')
     result = subprocess.run([node, '-e', 'console.log(require("playwright").chromium.executablePath())'],
-                            cwd=root / '.runtime/playwright', env=runtime_env(root),
+                            cwd=root / '.runtime/playwright', env={**runtime_env(data or root), 'PLAYWRIGHT_BROWSERS_PATH': str(root / '.runtime/playwright-browsers')},
                             check=True, capture_output=True, text=True, timeout=15)
     value = result.stdout.strip()
     if not value or not Path(value).is_file():
@@ -103,7 +90,7 @@ def ensure_browser(root: Path) -> bool:
         if not npm:
             raise MacError('npm is required to install the browser adapter.')
         runtime = private_dir(private_dir(root / '.runtime') / 'playwright')
-        spec = {'private': True, 'name': 'mac-bridge-browser-runtime', 'version': '0.4.0',
+        spec = {'private': True, 'name': 'mac-bridge-browser-runtime', 'version': '0.5.0',
                 'dependencies': {'@playwright/mcp': PLAYWRIGHT_MCP_VERSION}}
         private_write(runtime / 'package.json', json.dumps(spec, indent=2).encode())
         print('Preparing the pinned local Playwright MCP adapter.', flush=True)
@@ -126,7 +113,7 @@ def ensure_browser(root: Path) -> bool:
 
 
 def limited_result(result):
-    """Retain actual image blocks, bound text/encoded image size; never serialize images as text."""
+    """Retain actual images, bound text/encoded image size; never serialize images as text."""
     from mcp.types import CallToolResult, TextContent
     blocks, budget = [], 40000
     for item in result.content:
@@ -144,47 +131,95 @@ def limited_result(result):
 
 
 class BrowserClient:
-    def __init__(self, root: Path, policy: Policy):
+    def __init__(self, root: Path, policy: Policy, *, assets: Path | None = None):
         self.root, self.policy = root, policy
+        self.assets = (assets or root).resolve()
         self.task = None
         self.ready = None
         self.queue = None
         self.last_error = None
+        self.active_settings = None
+        self.connected = False
+        self.task_tab_ready = False
 
     def status(self) -> dict:
-        return {'installed': installed(self.root), 'mcp_version': PLAYWRIGHT_MCP_VERSION,
-                'running': self.task is not None and not self.task.done(),
-                'headless': browser_settings(self.root)['headless'],
-                'profile': 'dedicated persistent profile; NOT personal Chrome',
-                'last_error': self.last_error, 'screen_recording_permission_required': False,
-                'arbitrary_code_tool': False, 'file_upload_tool': False, 'personal_profile_access': False}
+        settings = browser_settings(self.root)
+        personal = settings['mode'] == 'personal'
+        result = {'installed': installed(self.assets), 'mcp_version': PLAYWRIGHT_MCP_VERSION,
+                  'running': self.task is not None and not self.task.done(),
+                  'connected': self.connected, 'mode': settings['mode'],
+                  'headless': settings['headless'],
+                  'profile': ('ordinary Chrome, existing login state; permissioned CDP channel'
+                              if personal else 'dedicated persistent profile; NOT personal Chrome'),
+                  'last_error': self.last_error, 'screen_recording_permission_required': False,
+                  'arbitrary_code_tool': False, 'file_upload_tool': False,
+                  'personal_profile_access': personal, 'task_tab_ready': self.task_tab_ready}
+        if personal:
+            result.update(personal_connection_status())
+        return result
+
+    async def _dispatch(self, session, name: str, arguments: dict):
+        """First personal navigation creates a NEW task tab, not an existing user tab.
+        Selecting/closing an existing tab remains an explicit observed-index operation.
+        """
+        personal = self.active_settings['mode'] == 'personal'
+        upstream_name, upstream_args = name, arguments
+        if personal and not self.task_tab_ready:
+            if name == 'browser_navigate':
+                upstream_name = 'browser_tabs'
+                upstream_args = {'action': 'new', 'url': arguments['url']}
+            elif name != 'browser_tabs' or arguments.get('action') not in {'new', 'select', 'list'}:
+                raise MacError('Navigate to start a fresh task tab, or explicitly select an observed tab first.')
+        result = limited_result(await session.call_tool(upstream_name, upstream_args))
+        if not result.isError:
+            self.connected = True
+            self.last_error = None
+            if upstream_name == 'browser_tabs':
+                action = upstream_args.get('action')
+                if action in {'new', 'select'}:
+                    self.task_tab_ready = True
+                elif action == 'close':
+                    # The backend may select an unrelated remaining tab. Do not act there
+                    # until a new navigation or explicit selection establishes the target.
+                    self.task_tab_ready = False
+        else:
+            self.last_error = '\n'.join(getattr(x, 'text', '') for x in result.content)[:500]
+        return result
 
     async def _serve(self):
         from mcp import ClientSession, StdioServerParameters
         from mcp.client.stdio import stdio_client
         current = None
         try:
-            if not installed(self.root):
+            if not installed(self.assets):
                 raise MacError('Playwright MCP is not installed. Run Mac-Start.command once.')
-            directory = state_dir(self.root, 'browser')
-            work = state_dir(self.root, 'browser', 'workspace')
-            profile = state_dir(self.root, 'browser', 'profile')
+            self.active_settings = browser_settings(self.root)
+            personal = self.active_settings['mode'] == 'personal'
             output = state_dir(self.root, 'browser', 'output')
-            executable = await asyncio.to_thread(browser_executable, self.root)
-            args = [str(runtime_package(self.root) / 'cli.js'), '--executable-path', executable,
-                    '--user-data-dir', str(profile), '--output-dir', str(output),
+            args = [str(runtime_package(self.assets) / 'cli.js'), '--output-dir', str(output),
                     '--output-max-size', '20971520', '--no-webmcp', '--codegen', 'none',
-                    '--block-service-workers', '--sandbox', '--image-responses', 'allow',
-                    '--viewport-size', '1280x800', '--timeout-navigation', '15000',
-                    '--timeout-action', '5000', '--timeout-settle', '200']
-            if browser_settings(self.root)['headless']:
-                args.append('--headless')
+                    '--image-responses', 'allow', '--timeout-navigation', '15000',
+                    '--timeout-action', '5000', '--timeout-settle', '200', '--idle-timeout', '0']
+            if personal:
+                await asyncio.to_thread(start_personal_chrome)
+                args.extend(personal_arguments())
+                work = self.policy.workspace
+            else:
+                work = state_dir(self.root, 'browser', 'workspace')
+                profile = state_dir(self.root, 'browser', 'profile')
+                executable = await asyncio.to_thread(browser_executable, self.assets, data=self.root)
+                args.extend(['--executable-path', executable, '--user-data-dir', str(profile),
+                             '--block-service-workers', '--sandbox', '--viewport-size', '1280x800'])
+                if self.active_settings['headless']:
+                    args.append('--headless')
             node = shutil.which('node')
             if not node:
                 raise MacError('Node.js is unavailable.')
-            params = StdioServerParameters(command=node, args=args, cwd=str(work), env=runtime_env(self.root))
+            params = StdioServerParameters(command=node, args=args, cwd=str(work),
+                                            env={**connection_environment(self.root, self.active_settings),
+                                                 "PLAYWRIGHT_BROWSERS_PATH": str(self.assets / ".runtime/playwright-browsers")})
             async with stdio_client(params) as (reader, writer):
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=25)) as session:
+                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=30)) as session:
                     await session.initialize()
                     tools = {t.name: t for t in (await session.list_tools()).tools}
                     if not TOOLS.issubset(tools):
@@ -200,12 +235,15 @@ class BrowserClient:
                             break
                         name, args, mode, future = current
                         if future.cancelled():
+                            current = None
                             continue
                         try:
                             self.policy.require_active()
+                            if browser_settings(self.root) != self.active_settings:
+                                raise MacError('Browser mode changed. Close the browser connection before retrying.')
                             if mode is not None and approval_mode(self.root) != mode:
                                 raise MacError('Approval mode changed before browser execution; retry.')
-                            result = limited_result(await session.call_tool(name, args))
+                            result = await self._dispatch(session, name, args)
                             if not future.done():
                                 future.set_result(result)
                         except Exception as exc:
@@ -216,6 +254,8 @@ class BrowserClient:
         except Exception as exc:
             self.last_error = str(exc)[:500]
         finally:
+            self.connected = False
+            self.task_tab_ready = False
             message = self.last_error or 'Browser session closed; unexecuted requests were cancelled.'
             if not self.ready.done():
                 self.ready.set_exception(MacError(message))
@@ -235,8 +275,11 @@ class BrowserClient:
         if name == 'browser_tabs' and arguments.get('url'):
             checked_url(arguments['url'])
         if self.task is None or self.task.done():
-            if mode is None:
+            if mode is None or not (name == 'browser_navigate' or
+                                   name == 'browser_tabs' and arguments.get('action') == 'new'):
                 raise MacError('Browser is not started. Navigate to a requested URL first.')
+            self.connected = False
+            self.task_tab_ready = False
             self.queue = asyncio.Queue(maxsize=8)
             self.ready = asyncio.get_running_loop().create_future()
             self.task = asyncio.create_task(self._serve(), name='mac-bridge-browser')
@@ -253,7 +296,13 @@ class BrowserClient:
 
     async def close(self) -> dict:
         task = self.task
+        was_personal = self.active_settings is not None and self.active_settings['mode'] == 'personal'
         if task is not None and not task.done():
+            # Do not let queued-but-unexecuted changes drain after a stop request.
+            while not self.queue.empty():
+                pending = self.queue.get_nowait()
+                if pending is not None and not pending[3].done():
+                    pending[3].set_exception(MacError('Browser connection closed before execution.'))
             try:
                 self.queue.put_nowait(None)
                 await asyncio.wait_for(asyncio.shield(task), timeout=8)
@@ -264,5 +313,10 @@ class BrowserClient:
                 except asyncio.CancelledError:
                     pass
         self.task = None
-        return {'closed': True, 'personal_browser_untouched': True,
-                'profile_preserved': True}
+        self.connected = False
+        self.task_tab_ready = False
+        # Do not issue the upstream browser_close/Browser.close command against
+        # personal Chrome. Closing the child transport detaches CDP instead.
+        return {'closed': True, 'personal_browser_untouched': not was_personal,
+                'personal_browser_closed': False, 'profile_preserved': True,
+                'personal_task_tabs_left_open': was_personal}

@@ -100,3 +100,12 @@ Those tests exercise the real SDK and installed engine against disposable projec
 The unit tests and real Linux MCP smoke checks are included in `.github/workflows/tests.yml`. No native macOS UI coverage is claimed from that workflow.
 
 A changed source failing startup verification remains stopped. Git changes are not silently reset/rolled back. Existing legacy installation files and local settings are not removed during migration.
+
+## 0.5.0-beta.2 public-update preparation
+
+- Mac regression suite: **206 tests passed**. Certificate/signing subprocesses are mocked in unit tests; no real Developer ID identity was available.
+- Swift URL policy: **20 compiled native checks passed**, including allowed release paths and rejection of other hosts/repos, non-HTTPS, embedded credentials, ports, queries and encoded paths.
+- A new beta.2 app was built, copied to an unrelated temporary directory, and run with its own Python/native runtimes and bundled-only PATH. Actual MCP (34 tools), file/terminal, FFmpeg image extraction, local test-browser input/click/JPEG, and update drain passed. The copied bundle signature remained valid. No GitHub CLI was bundled.
+- Heuristic scan of **113 reachable Git blobs**, plus current source, found no candidates for the configured private-key/API-token patterns. No oversized blobs were skipped. This is not a complete privacy/history or license audit.
+- Read-only Developer ID preflight: **no usable Developer ID Application certificate**. No Apple login, certificate generation, key export, Keychain permission change, OS security change, repository visibility change, or running tunnel replacement was attempted.
+- Still unverified: real production signing/notarization, clean-Mac Gatekeeper acceptance and production public GitHub update/relaunch. The prior beta.1 isolated Sparkle fixture results do not prove this full route.

@@ -174,7 +174,7 @@ if __name__ == '__main__':
             with tarfile.open(archive) as tar:
                 tar.extractall(archive.parent, filter='data')
         self.copy_file(node_root / 'bin/node', bin_dir / 'node')
-        for name in ['ffmpeg', 'ffprobe', 'deno', 'gh']:
+        for name in ['ffmpeg', 'ffprobe', 'deno']:
             found = shutil.which(name)
             if not found:
                 raise RuntimeError('Build dependency missing: ' + name)
@@ -216,12 +216,14 @@ if __name__ == '__main__':
         run(['xcrun', 'swiftc', '-parse-as-library', '-swift-version', '5', '-O', '-target', 'arm64-apple-macosx26.0',
              '-framework', 'AppKit', '-framework', 'Sparkle', '-F', framework_dir,
              '-Xlinker', '-rpath', '-Xlinker', '@executable_path/../Frameworks',
+             ROOT / 'packaging/macos/PublicUpdatePolicy.swift',
              ROOT / 'packaging/macos/MacBridge.swift', '-o', macos / 'MacBridge'])
         plist = {'CFBundleExecutable': 'MacBridge', 'CFBundleIdentifier': 'com.ohjinsu.mac-bridge',
             'CFBundleName': 'Mac Bridge', 'CFBundleDisplayName': 'Mac Bridge', 'CFBundlePackageType': 'APPL',
             'CFBundleVersion': str(RELEASE['build_number']), 'CFBundleShortVersionString': RELEASE['display_version'],
             'LSMinimumSystemVersion': RELEASE['minimum_macos'], 'LSUIElement': True, 'NSHighResolutionCapable': True,
-            'SUPublicEDKey': PUBLIC_KEY, 'SURequireSignedFeed': True, 'SUVerifyUpdateBeforeExtraction': True,
+            'SUFeedURL': RELEASE['update_feed_url'],
+            'SUSignedFeedFailureExpirationInterval': 0, 'SUPublicEDKey': PUBLIC_KEY, 'SURequireSignedFeed': True, 'SUVerifyUpdateBeforeExtraction': True,
             'SUEnableAutomaticChecks': True, 'SUAllowsAutomaticUpdates': True,
             'SUAutomaticallyUpdate': True, 'SUSendProfileInfo': False, 'SUScheduledCheckInterval': 21600,
             'MBUpdateRepository': RELEASE['github_repository'], 'MBPreviewBuild': RELEASE['preview'],
@@ -260,7 +262,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--runtime-source', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=ROOT / 'dist')
-    parser.add_argument('--identity', default='-')
+    parser.add_argument('--identity', default='-', choices=['-'], help='Local preview only. Use sign_and_notarize.py for production Developer ID signing.')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         raise SystemExit('Build the .app on macOS.')

@@ -60,7 +60,7 @@ def import_legacy(source: Path, data: Path) -> dict:
     mode = approval_mode(source)
     browser = read_browser(source)
     # Validate everything before writing; do not execute old command/profile values.
-    private_write(destination / 'mac-settings.json', json.dumps({'workspace': str(workspace), 'version': '0.5.0b1'}).encode())
+    private_write(destination / 'mac-settings.json', json.dumps({'workspace': str(workspace), 'version': '0.5.0b2'}).encode())
     private_write(destination / 'approval-settings.json', json.dumps({'schema': 1, 'mode': mode}).encode())
     private_write(destination / 'browser-settings.json', json.dumps(browser).encode())
     private_write(destination / 'migration.json', json.dumps({'legacy_root': str(source), 'schema': 1}).encode())
@@ -121,7 +121,7 @@ def bundle_doctor() -> dict:
         raise MacError('Executable code must not live in mutable application data.')
     env = environment()
     for name, args in [('node', ['--version']), ('ffmpeg', ['-version']), ('ffprobe', ['-version']),
-                       ('deno', ['--version']), ('tunnel-client', ['--version']), ('gh', ['--version'])]:
+                       ('deno', ['--version']), ('tunnel-client', ['--version'])]:
         result = subprocess.run([str(BIN / name), *args], env=env, capture_output=True, timeout=20)
         if result.returncode:
             raise MacError('Bundled runtime failed: ' + name)

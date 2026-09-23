@@ -87,6 +87,15 @@ def main():
     notarized = ticket.returncode == 0
     if args.publish and not (developer_id and notarized):
         raise SystemExit('Stable/publication gate: Developer ID and notarization are required. Use a private draft preview instead.')
+    if args.publish:
+        if CONFIG.get('preview') or info.get('MBPreviewBuild'):
+            raise SystemExit('A preview must not become the public latest stable release.')
+        expected_feed = f'https://github.com/{CONFIG["github_repository"]}/releases/latest/download/appcast.xml'
+        if info.get('SUFeedURL') != expected_feed:
+            raise SystemExit('Public stable releases must embed the expected unauthenticated update feed.')
+        public_repo = json.loads(subprocess.check_output(['gh', 'repo', 'view', CONFIG['github_repository'], '--json', 'isPrivate'], text=True))
+        if public_repo['isPrivate']:
+            raise SystemExit('Repository is still private. Publication never changes repository visibility.')
     version = info['CFBundleShortVersionString']; tag = 'v' + version
     name = 'Mac-Bridge-' + version + '-macos26-arm64.zip'
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
@@ -117,13 +126,16 @@ def main():
     notes.write_text(f'''# Mac Bridge {version}
 
 Independent application bundle: Python, Node, FFmpeg/ffprobe, Deno,
-Desktop Commander, Playwright, tunnel-client, cloudflared and GitHub CLI included.
+Desktop Commander, Playwright, tunnel-client and cloudflared included.
+No GitHub CLI or GitHub login is required on the receiving Mac.
 Development source is not the running application. Runtime state is stored in
 ~/Library/Application Support/Mac Bridge, outside the app bundle.
 
 Sparkle checks signed feeds and Ed25519-signed archives. Updates defer replacement
-while the app has active work and preserve a previous app copy. A private GitHub
-repository stays private: the app uses normal GitHub CLI authentication.
+while the app has active work and preserve a previous app copy. The app uses the
+public latest stable release feed without API tokens. Drafts and prereleases are
+not offered automatically. While the repository is private, updates stay unavailable;
+the app never asks the recipient to authenticate with GitHub.
 
 Architecture: Apple Silicon (arm64). Minimum OS: macOS 26.0.
 Developer ID signed: {developer_id}. Notarized: {notarized}.
@@ -149,6 +161,8 @@ contexts and backups remain in the old folder (not automatically copied/deleted)
                '--title', f'Mac Bridge {version}', '--notes-file', str(notes)]
         if args.upload_draft:
             cmd += ['--draft', '--prerelease']
+        elif args.publish:
+            cmd += ['--latest']
         cmd += [str(archive), str(feed), str(checksums), str(notes)]
         completed = run(cmd, capture_output=True, text=True)
         evidence.update(uploaded=True, draft=args.upload_draft, release_url=completed.stdout.strip())

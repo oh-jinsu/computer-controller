@@ -3,8 +3,6 @@ import Foundation
 import Sparkle
 
 struct CommandResult { let status: Int32; let out: Data; let err: Data }
-struct ReleaseAsset: Decodable { let id: Int; let name: String; let url: String; let browser_download_url: String }
-struct Release: Decodable { let draft: Bool; let prerelease: Bool; let assets: [ReleaseAsset] }
 
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let resources = Bundle.main.resourceURL!
@@ -19,21 +17,15 @@ struct Release: Decodable { let draft: Bool; let prerelease: Bool; let assets: [
     var personal: NSButton!
     var autoUpdate: NSButton!
     var runner: Process?
-    var authProcess: Process?
     var runnerLog: FileHandle?
     var updaterController: SPUStandardUpdaterController!
-    var feed: String?
-    var apiAssets: [String: String] = [:]
-    var updateAuthorization: String?
     var updaterStarted = false
     var updatePending: (() -> Void)?
     var preparingUpdate = false
-    var checking = false
     var quitPending = false
     var statusTimer: Timer?
     var latestStatus: [String: Any] = [:]
     let noConnect = CommandLine.arguments.contains("--no-connect") || CommandLine.arguments.contains("--ui-smoke")
-    let repo = "oh-jinsu/mac-bridge"
 
     nonisolated static func execute(_ executable: URL, _ args: [String], input: Data? = nil, env: [String: String]? = nil) -> CommandResult {
         let process = Process(); let stdout = Pipe(); let stderr = Pipe(); let stdin = Pipe()
@@ -59,7 +51,6 @@ struct Release: Decodable { let draft: Bool; let prerelease: Bool; let assets: [
         var env: [String: String] = ["HOME": NSHomeDirectory(), "LANG": "en_US.UTF-8", "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1"]
         env["PATH"] = resources.appendingPathComponent("bin").path + ":/usr/bin:/bin:/usr/sbin:/sbin"
         env["PYTHONPATH"] = resources.appendingPathComponent("engine").path
-        env["GH_PROMPT_DISABLED"] = "1"
         return env
     }
 
@@ -90,7 +81,6 @@ struct Release: Decodable { let draft: Bool; let prerelease: Bool; let assets: [
         buildWindow()
         refreshStatus()
         statusTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in Task { @MainActor in self?.refreshStatus(); self?.continueUpdate() } }
-        Timer.scheduledTimer(withTimeInterval: 21600, repeats: true) { [weak self] _ in Task { @MainActor in self?.warmUpdates(manual: false) } }
         if noConnect {
             message.stringValue = "UI 테스트 모드 — 기존 서버에 연결하거나 설정을 변경하지 않습니다."
             window.orderFrontRegardless()
@@ -105,7 +95,8 @@ struct Release: Decodable { let draft: Bool; let prerelease: Bool; let assets: [
             if result["configured"] as? Bool == true { self.start() }
             else { self.showSettings() }
         }
-        warmUpdates(manual: false)
+        startPublicUpdater()
+        if autoUpdate.state == .on { updaterController.updater.checkForUpdatesInBackground() }
     }
 
     func buildWindow() {
@@ -130,32 +121,10 @@ struct Release: Decodable { let draft: Bool; let prerelease: Bool; let assets: [
         autoUpdate.state = UserDefaults.standard.object(forKey: "MBUpdatesEnabled") as? Bool == false ? .off : .on
         view.addSubview(autoUpdate)
         let migrate = NSButton(title: "기존 설정 가져오기…", target: self, action: #selector(importSettings)); migrate.frame = NSRect(x: 24, y: 44, width: 190, height: 34); view.addSubview(migrate)
-        let github = NSButton(title: "GitHub 연결…", target: self, action: #selector(signInGitHub)); github.frame = NSRect(x: 218, y: 44, width: 150, height: 34); view.addSubview(github)
         let save = NSButton(title: "저장", target: self, action: #selector(saveSettings)); save.frame = NSRect(x: 380, y: 44, width: 78, height: 34); view.addSubview(save)
         let connect = NSButton(title: "연결 시작", target: self, action: #selector(start)); connect.frame = NSRect(x: 465, y: 44, width: 99, height: 34); view.addSubview(connect)
     }
 
-    @objc func signInGitHub() {
-        guard authProcess == nil else { return }
-        let p = Process(); let output = Pipe(); let input = Pipe()
-        p.executableURL = resources.appendingPathComponent("bin/gh")
-        p.arguments = ["auth", "login", "--hostname", "github.com", "--git-protocol", "https", "--web"]
-        var env = runtimeEnvironment; env.removeValue(forKey: "GH_PROMPT_DISABLED"); env["BROWSER"] = "/usr/bin/open"
-        p.environment = env; p.standardInput = input; p.standardOutput = output; p.standardError = output
-        output.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            let data = handle.availableData
-            guard !data.isEmpty else { handle.readabilityHandler = nil; return }
-            let text = String(data: data, encoding: .utf8) ?? ""
-            DispatchQueue.main.async { self?.message.stringValue = String(text.suffix(480)) }
-        }
-        p.terminationHandler = { [weak self] process in DispatchQueue.main.async {
-            self?.authProcess = nil
-            self?.message.stringValue = process.terminationStatus == 0 ? "GitHub 연결 완료. 비공개 저장소의 서명된 업데이트를 확인합니다." : "GitHub 인증을 마치지 못했습니다. 현재 앱은 계속 사용할 수 있습니다."
-            self?.warmUpdates(manual: false)
-        } }
-        do { try p.run(); authProcess = p; try input.fileHandleForWriting.write(contentsOf: Data("\n".utf8)); try input.fileHandleForWriting.close() }
-        catch { message.stringValue = "GitHub 인증 시작에 실패했습니다." }
-    }
     func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
         updatePending = nil
         helper(["cancel-update"]) { [weak self] _, _ in self?.message.stringValue = "업데이트가 중단되었습니다. 현재 실행본과 설정은 유지됩니다." }
@@ -221,7 +190,6 @@ struct Release: Decodable { let draft: Bool; let prerelease: Bool; let assets: [
     @objc func stop() { runner?.terminate() }
     @objc func quit() { NSApp.terminate(nil) }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        authProcess?.terminate()
         if let runner = runner, runner.isRunning { quitPending = true; runner.terminate(); return .terminateLater }
         return .terminateNow
     }
@@ -229,52 +197,35 @@ struct Release: Decodable { let draft: Bool; let prerelease: Bool; let assets: [
     @objc func showPrevious() { NSWorkspace.shared.open(URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support/Mac Bridge/previous")) }
     @objc func toggleAutomatic() {
         UserDefaults.standard.set(autoUpdate.state == .on, forKey: "MBUpdatesEnabled")
-        if updaterStarted { updaterController.updater.automaticallyChecksForUpdates = autoUpdate.state == .on; updaterController.updater.automaticallyDownloadsUpdates = autoUpdate.state == .on }
-        else if autoUpdate.state == .on { warmUpdates(manual: false) }
-    }
-    @objc func checkUpdates() { warmUpdates(manual: true) }
-
-    func warmUpdates(manual: Bool) {
-        guard !checking, !noConnect, (manual || autoUpdate.state == .on) else { return }; checking = true
-        let gh = resources.appendingPathComponent("bin/gh"); let env = runtimeEnvironment; let repo = self.repo
-        let preview = Bundle.main.object(forInfoDictionaryKey: "MBPreviewBuild") as? Bool == true
-        DispatchQueue.global(qos: .utility).async {
-            let releases = Self.execute(gh, ["api", "repos/\(repo)/releases?per_page=20"], env: env)
-            let rows = (try? JSONDecoder().decode([Release].self, from: releases.out)) ?? []
-            let selected = rows.first { !$0.draft && (preview || !$0.prerelease) && $0.assets.contains { $0.name == "appcast.xml" } }
-            // Uses the installed GitHub CLI's normal authenticated keychain access.
-            // The token exists only in process memory; never send it through the MCP or persist it.
-            let credentials = selected == nil ? nil : Self.execute(gh, ["auth", "token", "--hostname", "github.com"], env: env)
-            let token = credentials.flatMap { $0.status == 0 ? String(data: $0.out, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) : nil }
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }; self.checking = false
-                guard let selected = selected, let asset = selected.assets.first(where: { $0.name == "appcast.xml" }), let token = token, !token.isEmpty else {
-                    if manual { self.showSettings(); self.message.stringValue = "자동 업데이트 대기: 서명된 게시 릴리스 또는 이 비공개 저장소의 GitHub 인증이 아직 없습니다. 현재 버전은 그대로 유지됩니다." }; return
-                }
-                let prefix = "https://api.github.com/repos/\(repo)/releases/assets/"
-                guard asset.url.hasPrefix(prefix) else { return }
-                self.feed = asset.url
-                self.apiAssets = Dictionary(uniqueKeysWithValues: selected.assets.filter { $0.url.hasPrefix(prefix) }.map { ($0.browser_download_url, $0.url) })
-                self.updateAuthorization = "Bearer " + token
-                self.updaterController.updater.httpHeaders = ["Authorization": "Bearer " + token, "Accept": "application/octet-stream"]
-                if !self.updaterStarted { self.updaterController.startUpdater(); self.updaterStarted = true }
-                self.updaterController.updater.automaticallyChecksForUpdates = self.autoUpdate.state == .on
-                self.updaterController.updater.automaticallyDownloadsUpdates = self.autoUpdate.state == .on
-                if manual { self.updaterController.checkForUpdates(nil) }
-                else { self.updaterController.updater.checkForUpdatesInBackground() }
-            }
+        startPublicUpdater()
+        if updaterStarted {
+            updaterController.updater.automaticallyChecksForUpdates = autoUpdate.state == .on
+            updaterController.updater.automaticallyDownloadsUpdates = autoUpdate.state == .on
         }
     }
-    func feedURLString(for updater: SPUUpdater) -> String? { feed }
+    func startPublicUpdater() {
+        guard !noConnect, !updaterStarted else { return }
+        guard Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String == PublicUpdatePolicy.feedURL,
+              Bundle.main.object(forInfoDictionaryKey: "SURequireSignedFeed") as? Bool == true,
+              Bundle.main.object(forInfoDictionaryKey: "SUVerifyUpdateBeforeExtraction") as? Bool == true else {
+            message.stringValue = "공개 업데이트 설정을 확인하지 못했습니다. 현재 버전을 유지합니다."
+            return
+        }
+        // Sparkle owns scheduling. Never retrieve credentials or shell out to gh.
+        updaterController.updater.httpHeaders = [:]
+        updaterController.updater.automaticallyChecksForUpdates = autoUpdate.state == .on
+        updaterController.updater.automaticallyDownloadsUpdates = autoUpdate.state == .on
+        updaterController.startUpdater()
+        updaterStarted = true
+    }
+    @objc func checkUpdates() {
+        startPublicUpdater()
+        if updaterStarted { updaterController.checkForUpdates(nil) }
+    }
     func updater(_ updater: SPUUpdater, shouldDownloadReleaseNotesForUpdate item: SUAppcastItem) -> Bool { false }
     func updater(_ updater: SPUUpdater, shouldProceedWithUpdate item: SUAppcastItem, updateCheck: SPUUpdateCheck) throws {
-        guard let url = item.fileURL?.absoluteString, apiAssets[url] != nil else { throw NSError(domain: "MacBridge", code: 1, userInfo: [NSLocalizedDescriptionKey: "이 저장소의 검증된 릴리스 파일이 아닙니다."]) }
-    }
-    func updater(_ updater: SPUUpdater, willDownloadUpdate item: SUAppcastItem, with request: NSMutableURLRequest) {
-        if let original = item.fileURL?.absoluteString, let api = apiAssets[original] {
-            request.url = URL(string: api)
-            request.setValue(updateAuthorization, forHTTPHeaderField: "Authorization")
-            request.setValue("application/octet-stream", forHTTPHeaderField: "Accept")
+        guard PublicUpdatePolicy.acceptsArchive(item.fileURL) else {
+            throw NSError(domain: "MacBridge", code: 1, userInfo: [NSLocalizedDescriptionKey: "허용된 공개 릴리스 파일 주소가 아닙니다."])
         }
     }
     func updater(_ updater: SPUUpdater, shouldPostponeRelaunchForUpdate item: SUAppcastItem, untilInvokingBlock installHandler: @escaping () -> Void) -> Bool {

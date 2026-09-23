@@ -18,3 +18,6 @@
 - App update acceptance requires Sparkle signed feeds and signed archives; never disable signature checks to ship a preview. The release signing key stays in Keychain. A rejected/cancelled keychain request is not permission to export the key or change its ACL.
 - Current beta is ad-hoc signed, NOT Developer ID signed or notarized. Store only in a private draft until release signing, notarization and real update/relaunch tests pass. Do not promise automatic post-relaunch rollback: only the prior bundle is preserved for manual recovery.
 - An app import preserves approval mode/tunnel/workspace, but old video/context/log/backup files remain in the source data directory; never delete that directory as part of installation.
+
+- Public distribution uses the fixed HTTPS latest stable GitHub Releases feed, with no user GitHub authentication or bundled gh. Keep signed-feed/archive verification and idle drain. Beta drafts are not an automatic beta channel. Never change repository visibility as an implicit release step.
+- Build produces a local ad-hoc preview. Production signing uses sign_and_notarize.py on a new COPY after explicit selection of an installed Developer ID Application identity and notarytool Keychain profile. Never substitute an Apple Development/Distribution identity, export keys, or alter Keychain ACLs.

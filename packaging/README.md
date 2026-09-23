@@ -16,3 +16,9 @@ Build with a prepared developer runtime. The produced app does not perform a pac
 Use `prepare_release.py --archive EXISTING.zip` to preserve a draft's exact ZIP bytes. The command compares every app file/symlink to the verified build, then signs it without recompression. `update_draft.py SIGNED_OUTPUT_DIR` may then attach the signed feed/notes/checksums to the existing private draft; it refuses replacing a different archive and never publishes the draft.
 
 `smoke_sparkle_update.py --evidence OUTPUT.json` is a macOS-only real updater fixture test. The test host source `packaging/tests/SparkleSmoke.m` is never included in the shipping application. It neither starts a tunnel nor uses personal browser data.
+
+## beta.2 public channel
+
+End-user applications no longer include gh or a GitHub sign-in UI. Publishing developers still use gh. The signed feed is the public latest stable release asset; while the repository is private or only has drafts/prereleases, no automatic update is offered.
+
+Developer ID readiness: `python packaging/scripts/sign_and_notarize.py --preflight`. Production signing/notarization works on a new app COPY with an explicit identity/profile; see docs/APP-DISTRIBUTION.md. No usable identity is installed on the build Mac yet. Never label a local preview as notarized.

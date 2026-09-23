@@ -45,12 +45,13 @@ A failed signature, missing GitHub authentication, busy server or unconfirmed se
 | Source/Homebrew/old-Python access denied test | Core file/process/video tests passed |
 | Browser under the extra external deny sandbox | Timed out; not claimed as passing |
 | Browser in relocated app with bundled-only PATH | Passed: navigation/input/click/JPEG |
-| Unit/regression tests | 168 passed after final bundle-protection test |
+| Unit/regression tests | 185 passed, including 17 archive/draft-publishing guard tests |
 | Ad-hoc application code signature | Verified; not Developer ID |
 | Sparkle public key and signed-feed requirement | Embedded |
-| Archive signing with the release key | Blocked: Keychain returned cancelled access |
-| Published signed appcast | Not created/published |
-| Actual automatic update installation/relaunch | Not yet tested |
+| Archive signing with the release key | Signed and verified after owner-authorized Keychain access |
+| Signed appcast | Uploaded to the existing private draft; downloaded back and signature verified; no published update channel |
+| Sparkle framework installation/relaunch | Passed in a disposable, separately identified app; tampered feed/archive rejected |
+| Production app/private-GitHub update installation/relaunch | Not yet tested |
 | Developer ID signing and Apple notarization | Not available on the build Mac |
 | Existing live tunnel switched to the app | Not performed |
 
@@ -80,3 +81,25 @@ Do not export the release signing key from Keychain, add an environment bypass, 
 - Sparkle publishing: https://sparkle-project.org/documentation/publishing/
 - Sparkle delegate: https://sparkle-project.org/documentation/api-reference/Protocols/SPUUpdaterDelegate.html
 - Apple notarization: https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution
+
+## Repeatable updater verification
+
+`python packaging/scripts/smoke_sparkle_update.py --evidence /path/to/result.json` builds a tiny test-only Objective-C host with the same Sparkle framework and public key. It serves a loopback-only signed feed. The real framework must reject a modified feed before downloading the archive, reject modified archive bytes before installation, and install/relaunch the valid test app from version 1 to 2. The production Mac Bridge app, current tunnel, personal Chrome, user settings and production app identifier are never used. Signing is through the official Keychain tool; no key export. This does not substitute for a notarized production-app update test.
+
+`python packaging/scripts/update_draft.py dist/signed-beta-1` verifies the feed and archive again, then updates only an existing private draft. An existing ZIP must have exactly the same bytes. The signed feed is downloaded back from GitHub and verified before upload completion is reported. No draft is published by this command.
+
+### 2026-09-23 signing follow-up
+
+The owner-approved signing retry succeeded. The original ZIP already stored in the draft was matched file-for-file to the verified built application, then signed without recompressing or replacing it. Recompressing an identical app can produce different ZIP bytes; the updater correctly refused that mismatch. The `--archive` option now supports safe recovery using the existing exact artifact.
+
+The existing private draft now contains the byte-identical ZIP, signed `appcast.xml`, checksums, and revised release notes. The feed was downloaded back from GitHub and its signature verified again. See `docs/test-evidence/release-app-0.5.0-beta.1/signed-release-status.json` and `sparkle-update-test.json`. The production app's private-GitHub download/delegate/relaunch path is still not an end-to-end-tested deployment; the successful fixture test is separately identified. The live 0.4.0 CLI/tunnel remains unchanged.
+
+To resume an interrupted signing run without replacing a pre-existing draft archive:
+
+```sh
+python packaging/scripts/prepare_release.py \
+  "dist/final-beta-1-protected/Mac Bridge.app" \
+  --archive dist/private-draft-beta-1/Mac-Bridge-0.5.0-beta.1-macos26-arm64.zip \
+  --output dist/new-signing-output
+python packaging/scripts/update_draft.py dist/new-signing-output
+```

@@ -1,5 +1,14 @@
 # Validation — Mac Bridge 0.4.0
 
+## Signed update follow-up — 2026-09-23
+
+- 185 unit/regression tests passed on the Mac (17 new archive/publishing-guard tests).
+- Real Sparkle 2.10.0 fixture: a tampered signed feed was rejected before archive download; a tampered archive was rejected without installation; a valid signed update was installed and the fixture relaunched at version 2. Both cryptographic checks stayed enabled.
+- The production preview ZIP and appcast were signed via the existing Keychain key without exporting it. The unchanged ZIP and signed metadata are in the existing private draft. The uploaded appcast was downloaded back and verified.
+- Not claimed: Developer ID/notarization; a production Mac Bridge private-GitHub update/relaunch cycle; replacing the current live tunnel.
+- Evidence: `docs/test-evidence/release-app-0.5.0-beta.1/signed-release-status.json`, `sparkle-update-test.json`, and `signing-followup-unit-tests.txt`.
+
+
 Executed on the user's macOS development worktree, Python 3.12.14, Node 22.23.2, MCP SDK 1.28.0, Desktop Commander 0.2.51 and Playwright MCP 0.0.82. Development used `feat/browser-context`, based on 66d84ae; the existing running bridge and its persisted approval setting were not replaced during development.
 
 ## Executed

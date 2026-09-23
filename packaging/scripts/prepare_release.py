@@ -7,10 +7,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+import os
 import plistlib
 import shutil
+import stat
 import subprocess
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = json.loads((ROOT / 'packaging/release.json').read_text())
@@ -20,10 +23,52 @@ def run(args, **kwargs):
     return subprocess.run([str(x) for x in args], check=True, **kwargs)
 
 
+def verify_existing_archive(archive: Path, app: Path) -> None:
+    """Compare every archived app file to the already code-signature-verified bundle.
+    Read ZIP entries without extracting or running anything. Preserving ZIP bytes
+    lets a cancelled signing request resume without replacing the draft artifact.
+    """
+    if archive.is_symlink() or not archive.is_file():
+        raise ValueError('Expected a regular existing ZIP file.')
+    found = set()
+    expected = {p.relative_to(app).as_posix() for p in app.rglob('*')
+                if p.is_symlink() or p.is_file()}
+    with zipfile.ZipFile(archive) as z:
+        seen = set()
+        for item in z.infolist():
+            name = PurePosixPath(item.filename)
+            if not name.parts or name.is_absolute() or '..' in name.parts or item.filename in seen:
+                raise ValueError('Unsafe or duplicate archive entry.')
+            seen.add(item.filename)
+            if name.parts[0] == '__MACOSX':
+                continue  # ditto resource-fork metadata, not application source.
+            if name.parts[0] != app.name:
+                raise ValueError('Archive contains a different application.')
+            relative = name.relative_to(app.name).as_posix()
+            if relative == '.' or item.is_dir():
+                continue
+            source = app / relative
+            if relative not in expected:
+                raise ValueError('Archive contains an unexpected file: ' + relative)
+            if stat.S_ISLNK(item.external_attr >> 16):
+                if not source.is_symlink() or z.read(item).decode() != os.readlink(source):
+                    raise ValueError('Archived symlink differs: ' + relative)
+            else:
+                if source.is_symlink() or not source.is_file():
+                    raise ValueError('Archived file type differs: ' + relative)
+                with z.open(item) as a, source.open('rb') as b:
+                    if hashlib.file_digest(a, 'sha256').digest() != hashlib.file_digest(b, 'sha256').digest():
+                        raise ValueError('Archived file differs from the verified build: ' + relative)
+            found.add(relative)
+    if found != expected:
+        raise ValueError('Archive is missing files from the verified application.')
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('app', type=Path)
     parser.add_argument('--output', type=Path, default=ROOT / 'dist/release')
+    parser.add_argument('--archive', type=Path, help='Reuse byte-identical existing preview ZIP after matching its contents to the verified app')
     parser.add_argument('--upload-draft', action='store_true')
     parser.add_argument('--publish', action='store_true')
     args = parser.parse_args()
@@ -48,7 +93,12 @@ def main():
     archive = output / name
     if archive.exists():
         raise SystemExit('Release archive already exists. Use a fresh output folder; never silently replace a signed archive.')
-    run(['/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', app, archive])
+    if args.archive is not None:
+        original = args.archive.expanduser().absolute()
+        verify_existing_archive(original, app)
+        shutil.copy2(original, archive)
+    else:
+        run(['/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', app, archive])
     account = CONFIG['sparkle_keychain_account']
     sign = ROOT / '.cache/sparkle/bin/sign_update'
     signed = subprocess.run([str(sign), '--account', account, '-p', str(archive)], capture_output=True, text=True)

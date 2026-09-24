@@ -1,5 +1,13 @@
 # Changes
 
+## Unreleased — 요청·응답 로그
+
+- MCP 도구 호출 시작/종료, 안전한 대상·결과 요약, 요청 상관 ID, 승인/지연/취소와 시간을 stderr 및 순환 JSONL에 기록합니다.
+- SDK 입력 검증/도구 오류도 기록하며 본문·스크립트·응답 원문·인증 정보는 제외합니다.
+- 로그 실패가 작업 결과를 바꾸거나 재실행하지 않도록 하고, stdout의 MCP 통신과 기존 승인/audit 규칙을 유지합니다.
+- CLI 터널의 기본 로그를 warn으로 낮췄습니다. `--tunnel-log-level info`로 연결 진단 로그를 복원할 수 있습니다.
+- 현재 실행본/기존 공증 ZIP은 변경하지 않습니다. 다음 앱 빌드는 새 버전·서명·공증이 필요합니다.
+
 ## Documentation — beta.2 onboarding
 
 - Replaced the accumulated developer-first README with six end-user installation steps, optional browser/screen permissions, daily use, updates, migration and troubleshooting.

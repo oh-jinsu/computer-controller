@@ -38,3 +38,6 @@ jobs:
         run: python tests/smoke_mcp.py
       - name: Persistent always-allow mode through real MCP (disposable files only)
         run: python tests/smoke_approval_mcp.py
+
+      - name: Request logging through real stdio (disposable data; no tunnel)
+        run: python tests/smoke_request_logging.py

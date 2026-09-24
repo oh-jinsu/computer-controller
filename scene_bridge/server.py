@@ -124,6 +124,8 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8766)
     args = parser.parse_args()
     mcp, jobs = create_server(args.root, args.port)
+    from mac_bridge.request_logging import install_request_logging
+    install_request_logging(mcp, args.root.resolve())
     try:
         mcp.run(transport=args.transport)
     finally:

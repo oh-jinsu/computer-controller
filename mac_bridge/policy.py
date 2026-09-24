@@ -124,6 +124,8 @@ class Policy:
         fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, 'O_NOFOLLOW', 0), 0o600)
         with os.fdopen(fd, 'a', encoding='utf-8') as stream:
             stream.write(json.dumps(row) + '\n')
+        from .request_logging import request_phase
+        request_phase(state)
 
     def history(self, count: int = 20) -> list[dict]:
         count = max(1, min(count, 100))

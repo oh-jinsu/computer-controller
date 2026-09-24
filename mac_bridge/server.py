@@ -275,6 +275,9 @@ def main():
     parser.add_argument('--assets', type=Path)
     args = parser.parse_args()
     mcp, jobs = create_server(args.root, assets=args.assets)
+    from .request_logging import install_request_logging
+    workspace = Path(json.loads((args.root / ".state/mac-settings.json").read_text())["workspace"]).expanduser().resolve()
+    install_request_logging(mcp, args.root.resolve(), workspace=workspace)
     try:
         mcp.run(transport='stdio')
     finally:

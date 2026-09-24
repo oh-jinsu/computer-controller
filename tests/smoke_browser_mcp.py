@@ -77,7 +77,7 @@ async def run():
                 async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=80)) as client:
                     await client.initialize()
                     tools = {t.name: t for t in (await client.list_tools()).tools}
-                    assert len(tools) == 34, sorted(tools)
+                    assert len(tools) == 29, sorted(tools)
                     assert not tools['browser_navigate'].annotations.readOnlyHint
                     assert not tools['browser_type'].annotations.readOnlyHint
                     assert not tools['mac_context_save'].annotations.readOnlyHint
@@ -140,8 +140,8 @@ async def run():
                     assert not (await call('browser_status')).structuredContent['running']
                     assert (await client.call_tool('browser_navigate', {'url': url})).isError
                     assert (await client.call_tool('mac_context_read', {'name': 'smoke'})).isError
-                    await call('list_local_videos')
-                    evidence.append('pause closes browser and blocks context/browser operations; video remains available')
+                    assert (await client.call_tool('mac_start_process', {'command': 'echo NO'})).isError
+                    evidence.append('pause closes browser and blocks context/browser operations; video workflow uses the same paused process gate')
             # Simulate a LOCAL restart only inside the disposable fixture root.
             (root / '.state/MAC_PAUSED').unlink()
             async with stdio_client(params) as (reader, writer):

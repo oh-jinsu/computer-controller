@@ -42,7 +42,7 @@ async def run(runtime: Path):
                 async with ClientSession(r, w, read_timeout_seconds=timedelta(seconds=40)) as client:
                     await client.initialize()
                     tools = await client.list_tools()
-                    assert len(tools.tools) == 34
+                    assert len(tools.tools) == 29
                     async def call(name, args=None, error=False):
                         result = await client.call_tool(name, args or {})
                         assert bool(result.isError) == error, name
@@ -61,8 +61,8 @@ async def run(runtime: Path):
                     await call('mac_list_directory', {'depth': secret}, error=True)
                     await call(secret, {}, error=True)
                     await call('browser_snapshot', {}, error=True)
-                    await call('bridge_status')
-                    await call('list_local_videos')
+                    await call('mac_status')
+                    await call('mac_list_directory')
         rows = [json.loads(line) for line in (root / '.state/request-logs/requests.jsonl').read_text().splitlines()]
         human = stderr_path.read_text()
         assert secret not in human, 'Private content leaked to stderr'
@@ -79,7 +79,7 @@ async def run(runtime: Path):
         assert (workspace / 'output.txt').read_text() == secret
         report = {'passed': True, 'calls': len(starts), 'errors_logged': 5,
                   'request_response_ids_match': True, 'private_content_absent_from_logs': True,
-                  'stdio_protocol_and_tool_results_preserved': True, 'tool_schema_count': 34,
+                  'stdio_protocol_and_tool_results_preserved': True, 'tool_schema_count': 29,
                   'not_tested': ['live tunnel restart', 'new app build/notarization', 'personal Chrome']}
         print(json.dumps(report, ensure_ascii=False, indent=2))
         print('\nACTUAL LOG EXCERPT (disposable test data):')

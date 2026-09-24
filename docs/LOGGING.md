@@ -26,7 +26,7 @@
 
 `mac_start_process`의 `process_state=started`는 프로세스를 시작했다는 뜻이지 작업 완료가 아닙니다. `mac_process_output`에 완료 메시지가 있을 때 `reported_exit_code`를 따로 표시합니다. 따라서 `RES OK`와 셸 작업의 성공은 구분해야 합니다. 종료 코드는 엔진 응답에서 읽은 값이며 독립적인 OS 검증은 아닙니다.
 
-영상은 `queued/running/complete/failed` 상태를 구분합니다. 이미지 데이터 자체는 기록하지 않습니다. 이 로그는 MCP 도구 실행 기록이며, ChatGPT 대화 원문·모델 추론 과정·모든 HTTP 패킷을 기록하는 기능이 아닙니다. 터널 내부의 command/workflow ID가 MCP 요청에 전달되지 않으면 임의로 연결했다고 표시하지 않습니다.
+영상 확인은 일반 프로세스로 기록됩니다. `mac_process_output`에서 `started/progress/complete/error/cancelled` 진행 이벤트와 종료 코드를 확인합니다. 이미지 데이터 자체는 기록하지 않습니다. 이 로그는 MCP 도구 실행 기록이며, ChatGPT 대화 원문·모델 추론 과정·모든 HTTP 패킷을 기록하는 기능이 아닙니다. 터널 내부의 command/workflow ID가 MCP 요청에 전달되지 않으면 임의로 연결했다고 표시하지 않습니다.
 
 ## 기록하지 않는 것
 

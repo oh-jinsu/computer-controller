@@ -163,21 +163,33 @@ def run_process(args: list[str], timeout: float, *, purpose: str, limit: int = 1
     with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
         try:
             with subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=out, stderr=err) as p:
-                deadline = time.monotonic() + timeout
-                while p.poll() is None:
-                    if out.tell() > limit or err.tell() > limit:
-                        p.kill()
-                        p.wait()
-                        raise BridgeError(f"{purpose} 결과가 허용 크기를 넘었습니다.")
-                    left = deadline - time.monotonic()
-                    if left <= 0:
-                        p.kill()
-                        p.wait()
-                        raise BridgeError(f"{purpose} 시간 제한을 넘었습니다. 범위를 줄여 다시 시도하세요.")
-                    try:
-                        p.wait(timeout=min(0.1, left))
-                    except subprocess.TimeoutExpired:
-                        pass
+                try:
+                    deadline = time.monotonic() + timeout
+                    while p.poll() is None:
+                        if out.tell() > limit or err.tell() > limit:
+                            p.kill()
+                            p.wait()
+                            raise BridgeError(f"{purpose} 결과가 허용 크기를 넘었습니다.")
+                        left = deadline - time.monotonic()
+                        if left <= 0:
+                            p.kill()
+                            p.wait()
+                            raise BridgeError(f"{purpose} 시간 제한을 넘었습니다. 범위를 줄여 다시 시도하세요.")
+                        try:
+                            p.wait(timeout=min(0.1, left))
+                        except subprocess.TimeoutExpired:
+                            pass
+                except BaseException:
+                    # CLI cancellation must terminate and reap the current decoder/resolver.
+                    # Never let Popen.__exit__ wait indefinitely on an orphaned child.
+                    if p.poll() is None:
+                        p.terminate()
+                        try:
+                            p.wait(timeout=3)
+                        except subprocess.TimeoutExpired:
+                            p.kill()
+                            p.wait()
+                    raise
                 if out.tell() > limit or err.tell() > limit:
                     raise BridgeError(f"{purpose} 결과가 허용 크기를 넘었습니다.")
                 out.seek(0)
@@ -320,7 +332,7 @@ def make_sheet(directory: Path, frames: list[dict]) -> dict:
 
 
 class Jobs:
-    """Bounded, single-user jobs. Cache lives for the lifetime of this process."""
+    """Legacy library runner retained for compatibility tests; NOT instantiated by MCP or CLI."""
     def __init__(self, root: Path, backend: Backend | None = None):
         self.root = root.resolve()
         self.input_root = self.root / "input"

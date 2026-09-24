@@ -52,7 +52,7 @@ async def test():
             assert status.structuredContent['approval_mode'] == 'always'
             assert status.structuredContent['approval_mode_persistent'] is True
             tools = {t.name: t for t in (await client.list_tools()).tools}
-            assert len(tools) == 34
+            assert len(tools) == 29
             assert tools['mac_start_process'].annotations.readOnlyHint is False
             r = await client.call_tool('mac_write_file', {'path': 'sample.txt', 'content': 'after\n'})
             assert not r.isError, r

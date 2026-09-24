@@ -1,0 +1,27 @@
+{
+  "version": "0.5.0-beta.5",
+  "tool_count": 29,
+  "unit_tests_passed": 315,
+  "real_smokes_passed": [
+    "smoke_mac_mcp.py",
+    "smoke_mcp.py",
+    "smoke_approval_mcp.py",
+    "smoke_browser_mcp.py",
+    "smoke_request_logging.py"
+  ],
+  "video_fixture": "synthetic local FFmpeg test video; not user media",
+  "observed": [
+    "generic mac_read_file returns PNG and JPEG image blocks",
+    "two explicit FFmpeg sample timestamps",
+    "complete result plus exit 0",
+    "results readable after MCP restart",
+    "pause blocks generic video commands",
+    "active decoder reaped on SIGTERM"
+  ],
+  "not_tested": [
+    "online YouTube access",
+    "new beta5 app notarization",
+    "public release",
+    "live beta5 tunnel swap at this point"
+  ]
+}

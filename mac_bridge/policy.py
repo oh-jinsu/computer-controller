@@ -47,7 +47,8 @@ def clean_env(home: Path) -> dict[str, str]:
     permitted = ('PATH', 'TMPDIR', 'LANG', 'LC_ALL', 'LC_CTYPE', 'TERM', 'USER', 'LOGNAME')
     result = {k: os.environ[k] for k in permitted if k in os.environ}
     result.update(HOME=str(home), SHELL='/bin/sh', PUPPETEER_SKIP_DOWNLOAD='true',
-                  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='true', DO_NOT_TRACK='1')
+                  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='true', DO_NOT_TRACK='1',
+                  PYTHONDONTWRITEBYTECODE='1', PYTHONNOUSERSITE='1')
     return result
 
 

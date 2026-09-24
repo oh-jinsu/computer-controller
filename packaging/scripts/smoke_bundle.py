@@ -83,6 +83,18 @@ async def run():
                     output = text(await call('mac_process_output', pid=pid))
                     assert str(project) in text(result) + output
                     checks.append('actual local terminal command from bundled engine')
+                    # Normal Python shell commands must never write bytecode inside the signed app.
+                    import shlex
+                    baseline = {p.relative_to(APP) for p in APP.rglob('*.pyc')}
+                    command = shlex.join([str(RESOURCES / 'python/bin/python3'), '-c',
+                        "import sys,json,hashlib,plistlib;assert sys.dont_write_bytecode;print('SIGNED_APP_BYTECODE_GUARD_OK')"])
+                    check = await call('mac_start_process', command=command)
+                    check_pid = int(re.search(r'PID (\d+)', text(check)).group(1))
+                    check_output = text(await call('mac_process_output', pid=check_pid))
+                    assert 'SIGNED_APP_BYTECODE_GUARD_OK' in text(check) + check_output
+                    assert {p.relative_to(APP) for p in APP.rglob('*.pyc')} == baseline
+                    checks.append('normal bundled Python shell command preserved signed bundle: no bytecode writes')
+
                     job = data(await call('start_extraction', source='local:test.mp4', count=3))
                     ready = await call('get_extraction', job_id=job['job_id'], wait_seconds=8)
                     assert any(block.type == 'image' for block in ready.content), text(ready)

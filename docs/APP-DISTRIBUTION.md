@@ -1,4 +1,4 @@
-# Mac Bridge app distribution — 0.5.0-beta.2
+# Mac Bridge app distribution
 
 ## End-user installation
 
@@ -78,3 +78,5 @@ Still pending: clean-Mac installation testing, licensing/source obligations for 
 - Apple Developer ID certificates: https://developer.apple.com/help/account/certificates/create-developer-id-certificates
 - Apple code signing: https://developer.apple.com/library/archive/technotes/tn2206/_index.html
 - Apple notarization: https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution
+
+Public beta releases use `--publish-prerelease`; they remain outside the stable `latest` feed. See [release pipeline](RELEASE-PIPELINE.md) and [third-party source distribution](../THIRD-PARTY.md).

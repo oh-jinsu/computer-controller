@@ -1,0 +1,14 @@
+{
+  "git_history_objects_checked": 243,
+  "history_candidate_review": "input/README.txt contains installation instructions only",
+  "secret_patterns_found": 0,
+  "metadata_endpoints_checked": 4,
+  "workflow_logs_checked": 16,
+  "workflow_secret_patterns_found": 0,
+  "source_archives_and_patches": 394,
+  "notices": 1332,
+  "unit_regression_tests": 333,
+  "scope": "Heuristic secret and file-type checks, not a guarantee of complete security or privacy audit",
+  "apple_notarization": "Must be validated for final beta.7 artifact; not claimed by preflight",
+  "live_app_changed": false
+}

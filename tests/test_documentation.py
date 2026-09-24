@@ -8,7 +8,7 @@ import unittest
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCUMENTS = ('README.md', 'docs/DEVELOPMENT.md', 'docs/BROWSER-CONTEXT.md',
+DOCUMENTS = ('README.md', 'docs/INSTALL.md', 'docs/DEVELOPMENT.md', 'docs/BROWSER-CONTEXT.md',
              'docs/APP-DISTRIBUTION.md', 'docs/RELEASE-STATUS.md', 'docs/VIDEO-WORKFLOW.md')
 
 
@@ -40,9 +40,9 @@ class DocumentationTests(unittest.TestCase):
                 checked += 1
         self.assertGreater(checked, 20)
 
-    def test_six_first_time_steps_are_sequential(self):
-        headings = re.findall(r'^### (\d+)\. ', (ROOT / 'README.md').read_text(), re.M)
-        self.assertEqual(headings, ['1', '2', '3', '4', '5', '6'])
+    def test_installation_is_short_sequential_checklist(self):
+        headings = re.findall(r'^(\d+)\. ', (ROOT / 'README.md').read_text().split('## 설치', 1)[1].split('## 선택 설정', 1)[0], re.M)
+        self.assertEqual(headings, ['1', '2', '3', '4', '5', '6', '7'])
 
     def test_readme_keeps_terminal_bootstrap_in_developer_guide(self):
         readme = (ROOT / 'README.md').read_text()
@@ -54,7 +54,7 @@ class DocumentationTests(unittest.TestCase):
         self.assertIn('bash Mac-Release.command --publish', development)
 
     def test_documented_app_buttons_exist_in_actual_ui(self):
-        readme = (ROOT / 'README.md').read_text()
+        readme = (ROOT / 'docs/INSTALL.md').read_text()
         swift = (ROOT / 'packaging/macos/MacBridge.swift').read_text()
         for label in ['연결 시작', '연결 중지', '설정…', '화면 기록 권한…', '업데이트 확인…',
                       '이전 실행본 보기', '로그 보기', '기존 설정 가져오기…',
@@ -72,17 +72,20 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(config['architecture'], 'arm64')
 
     def test_user_guide_distinguishes_runtime_and_update_signing_keys(self):
-        readme = (ROOT / 'README.md').read_text()
+        readme = (ROOT / 'docs/INSTALL.md').read_text()
         for text in ['Runtime API 키', '업데이트 서명용 비밀키', '각 사용자는 자신의 터널과 키',
                      'Apple Developer Program', '키체인', '보안 샌드박스가 아닙니다']:
             self.assertIn(text, readme)
 
     def test_user_guide_does_not_hide_beta_limits(self):
         readme = (ROOT / 'README.md').read_text()
-        for text in ['Draft', '아직 누구나 다운로드할 수 있는 공개 정식 배포는 아닙니다',
-                     '브라우저 파일 업로드', '별도 백그라운드 창', '자동 복구는 구현하지 않았습니다',
-                     '재시작만으로도 해제되지 않습니다', 'Source code (zip)']:
+        for text in ['공개 베타', '브라우저 파일 업로드', '별도 백그라운드', '안정판 자동 업데이트 대상이 아닙니다']:
             self.assertIn(text, readme)
+        details = (ROOT / 'docs/INSTALL.md').read_text()
+        for text in ['자동 복구는 구현하지 않았습니다', '재시작만으로도 해제되지 않습니다', 'Source code (zip)']:
+            self.assertIn(text, details)
+        self.assertLess(len(readme.splitlines()), 50)
+        self.assertLess(len(readme), 2600)
 
     def test_onboarding_never_instructs_gatekeeper_bypass(self):
         for name in DOCUMENTS:
@@ -92,7 +95,7 @@ class DocumentationTests(unittest.TestCase):
                 self.assertNotIn(command, text, name)
 
     def test_app_data_paths_not_source_relative(self):
-        readme = (ROOT / 'README.md').read_text()
+        readme = (ROOT / 'docs/INSTALL.md').read_text()
         control = (ROOT / 'mac_bridge/app_control.py').read_text()
         self.assertIn('Library/Application Support/Mac Bridge', control)
         self.assertIn('~/Library/Application Support/Mac Bridge/input', readme)

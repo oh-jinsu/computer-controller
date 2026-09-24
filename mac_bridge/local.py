@@ -119,8 +119,10 @@ def bind_profile(root: Path, config: dict, tunnel: str, env: dict) -> tuple[dict
 
 
 def start(root: Path, legacy: Path | None = None, *, recheck: bool = False,
-          selected_approval_mode: str | None = None) -> int:
+          selected_approval_mode: str | None = None, tunnel_log_level: str = 'warn') -> int:
     from .setup import verify_installation
+    if tunnel_log_level not in {'warn', 'info'}:
+        raise MacError('Tunnel log level must be warn or info.')
     if selected_approval_mode is not None:
         validate_mode(selected_approval_mode)
     tunnel = shutil.which('tunnel-client')
@@ -151,10 +153,11 @@ def start(root: Path, legacy: Path | None = None, *, recheck: bool = False,
                                        else '매번 확인'), flush=True)
         if mode == 'always':
             print('요청된 파일 변경·명령·프로세스 입력은 Mac 승인창 없이 실행됩니다. 터미널은 샌드박스가 아닙니다.', flush=True)
+        print('작업 로그: 도구·대상 요약 → 결과·시간 (본문/키 제외), .state/request-logs/requests.jsonl', flush=True)
         print('전체 종료: Ctrl+C / Mac 작업만 중지: Mac-Stop.command', flush=True)
         print('업데이트: 종료 → git pull --ff-only → bash Mac-Start.command\n', flush=True)
         try:
-            return subprocess.call([tunnel, 'run', '--profile', config['profile']], env=env)
+            return subprocess.call([tunnel, 'run', '--profile', config['profile'], '--log.level', tunnel_log_level], env=env)
         except KeyboardInterrupt:
             return 0
 
@@ -164,6 +167,7 @@ def main() -> int:
     parser.add_argument('action', choices=['start', 'pause', 'permission', 'check', 'approval'])
     parser.add_argument('--migrate', type=Path, help='Import non-secret settings from an old installation once')
     parser.add_argument('--recheck', action='store_true', help='Force the real local MCP smoke tests')
+    parser.add_argument('--tunnel-log-level', choices=['warn', 'info'], default='warn', help='Keep transport noise quiet; info restores connection dispatch diagnostics')
     parser.add_argument('--approval-mode', choices=MODES, help='Persist owner choice when starting: ask or always')
     parser.add_argument('--mode', choices=MODES, help='Set mode with the approval action; omit to show it')
     args = parser.parse_args()
@@ -178,7 +182,7 @@ def main() -> int:
     if sys.platform != 'darwin':
         raise MacError('Mac 실행/권한 관리는 macOS에서 실행하세요. 유닛 테스트는 Linux에서도 실행됩니다.')
     if args.action == 'start':
-        return start(ROOT, args.migrate, recheck=args.recheck, selected_approval_mode=args.approval_mode)
+        return start(ROOT, args.migrate, recheck=args.recheck, selected_approval_mode=args.approval_mode, tunnel_log_level=args.tunnel_log_level)
     if args.action == 'approval':
         mode = approval_mode(ROOT) if args.mode is None else set_approval_mode(ROOT, args.mode)
         print('로컬 승인 모드: ' + mode + ' (재시작 후에도 유지)')

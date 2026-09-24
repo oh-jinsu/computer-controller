@@ -176,7 +176,7 @@ class StandaloneTests(unittest.TestCase):
 
     def test_standalone_tree_has_all_runtime_sources(self):
         for name in ['run_server.py', 'mac_bridge/server.py', 'mac_bridge/local.py',
-                     'mac_bridge/dc_entry.mjs', 'scene_bridge/core.py', 'scene_bridge/server.py']:
+                     'mac_bridge/dc_entry.mjs', 'scene_bridge/core.py', 'mac_bridge/video.py']:
             self.assertTrue((ROOT / name).is_file(), name)
         self.assertFalse((ROOT / 'payload').exists())
         self.assertFalse((ROOT / 'updater.py').exists())

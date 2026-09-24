@@ -76,7 +76,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         cls.modules_patch.stop()
         # Keep stubs scoped to this logic test process.
         sys.modules.pop('mac_bridge.server', None)
-        sys.modules.pop('scene_bridge.server', None)
+        sys.modules.pop('mac_bridge.responses', None)
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -89,16 +89,18 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         def build_browser(root, policy):
             self.browser = FakeBrowser(root, policy); return self.browser
         with mock.patch.object(self.server, 'DesktopClient', side_effect=build_dc), mock.patch.object(self.server, 'NativeApproval', return_value=self.approver), mock.patch.object(self.server, 'BrowserClient', side_effect=build_browser):
-            self.mcp, self.jobs = self.server.create_server(self.root)
+            self.mcp = self.server.create_server(self.root)
 
-    def tearDown(self): self.jobs.close(); self.tmp.cleanup()
+    def tearDown(self): self.tmp.cleanup()
 
     async def test_tools_and_write_annotations(self):
-        self.assertEqual(len(self.mcp.tools), 34)
+        self.assertEqual(len(self.mcp.tools), 29)
         self.assertFalse(self.mcp.annotations['mac_start_process'].readOnlyHint)
         self.assertFalse(self.mcp.annotations['mac_write_file'].readOnlyHint)
         self.assertTrue(self.mcp.annotations['mac_read_file'].readOnlyHint)
         self.assertNotIn('mac_resume', self.mcp.tools)
+        for name in ('start_extraction', 'get_extraction', 'get_frame', 'list_local_videos', 'bridge_status'):
+            self.assertNotIn(name, self.mcp.tools)
 
     async def test_denial_does_not_run_command(self):
         r = await self.mcp.tools['mac_start_process']('echo unsafe')
@@ -265,7 +267,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_always_keeps_write_annotations_and_no_policy_tool(self):
         self.always()
-        self.assertEqual(len(self.mcp.tools), 34)
+        self.assertEqual(len(self.mcp.tools), 29)
         self.assertFalse(self.mcp.annotations['mac_write_file'].readOnlyHint)
         self.assertTrue(self.mcp.annotations['mac_start_process'].destructiveHint)
         self.assertNotIn('mac_set_approval_mode', self.mcp.tools)

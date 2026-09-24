@@ -31,8 +31,7 @@ _CURRENT: ContextVar = ContextVar('mac_bridge_request_log', default=None)
 MAX_BYTES = 2_000_000
 SLOW_AFTER = 5
 SLOW_EVERY = 15
-TOOLS = frozenset('''start_extraction get_extraction get_frame list_local_videos bridge_status
-mac_status mac_list_directory mac_read_file mac_write_file mac_edit_file mac_start_process
+TOOLS = frozenset('''mac_status mac_list_directory mac_read_file mac_write_file mac_edit_file mac_start_process
 mac_process_output mac_send_input mac_stop_process mac_list_sessions mac_list_windows
 mac_capture_window mac_pause mac_recent_actions browser_status browser_navigate browser_snapshot
 browser_screenshot browser_click browser_type browser_press_key browser_resize browser_tabs

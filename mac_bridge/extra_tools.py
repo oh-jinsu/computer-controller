@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 from pydantic import Field
 
-from scene_bridge.server import response
+from .responses import response
 from .approvals import approval_mode
 from .browser import checked_url
 from .context_store import ContextStore

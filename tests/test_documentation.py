@@ -9,7 +9,7 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCUMENTS = ('README.md', 'docs/DEVELOPMENT.md', 'docs/BROWSER-CONTEXT.md',
-             'docs/APP-DISTRIBUTION.md', 'docs/RELEASE-STATUS.md')
+             'docs/APP-DISTRIBUTION.md', 'docs/RELEASE-STATUS.md', 'docs/VIDEO-WORKFLOW.md')
 
 
 def anchors(markdown: str) -> set[str]:

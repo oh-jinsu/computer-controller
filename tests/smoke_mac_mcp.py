@@ -37,9 +37,9 @@ async def test():
             async with ClientSession(r, w, read_timeout_seconds=timedelta(seconds=45)) as client:
                 await client.initialize()
                 tools = {t.name: t for t in (await client.list_tools()).tools}
-                assert len(tools) == 34, sorted(tools)
+                assert len(tools) == 29, sorted(tools)
                 for name in ['start_extraction', 'get_extraction', 'get_frame', 'list_local_videos', 'bridge_status']:
-                    assert name in tools, name
+                    assert name not in tools, name
                 assert tools['mac_write_file'].annotations.readOnlyHint is False
                 assert tools['mac_start_process'].annotations.readOnlyHint is False
                 assert tools['mac_read_file'].annotations.readOnlyHint is True
@@ -57,8 +57,8 @@ async def test():
                 assert not paused.isError
                 denied = await client.call_tool('mac_list_directory', {})
                 assert denied.isError
-                video = await client.call_tool('list_local_videos', {})
-                assert not video.isError, video
+                video = await client.call_tool('mac_start_process', {'command': 'echo NO'})
+                assert video.isError, video
         # Engine-only smoke, against disposable files. Not a bypass exposed through MCP.
         policy = Policy(root, project)
         policy.pause_file.unlink(missing_ok=True)
@@ -73,7 +73,7 @@ async def test():
             assert not result.isError, result
             assert any('MAC_BRIDGE_ENGINE_SMOKE' in getattr(c, 'text', '') for c in result.content), result
             assert len(dc.pids) == 1, 'Could not identify the engine-created process PID'
-    print('Mac MCP 검사 통과: 실제 SDK handshake, 34개 도구, DC 읽기/쓰기/편집/명령, 경로 거부, PID 제한, 일시 중지, 영상 도구 보존.')
+    print('Mac MCP 검사 통과: 실제 SDK handshake, 29개 공통 도구, DC 읽기/쓰기/편집/명령, 경로 거부, PID 제한, 일시 중지, 일시 중지 중 영상 명령도 거부.')
     print('창 캡처·네이티브 승인 UI·ChatGPT 터널은 이 검사로 검증하지 않습니다.')
 
 

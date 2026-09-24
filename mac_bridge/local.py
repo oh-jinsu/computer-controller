@@ -197,7 +197,7 @@ def main() -> int:
     if args.action == 'pause':
         private_write(ROOT / '.state/MAC_PAUSED', b'local pause\n')
         print('새 Mac 작업을 차단하고 이 서버가 시작한 프로세스 중지를 시도합니다.')
-        print('영상/터널은 유지됩니다. 전체 종료는 실행 창에서 Ctrl+C, 재개는 재시작입니다.')
+        print('터널은 유지됩니다. 영상 작업도 일반 프로세스와 함께 중지됩니다. 전체 종료는 실행 창에서 Ctrl+C, 재개는 재시작입니다.')
         print('분리 실행된 하위 프로세스는 남을 수 있습니다.')
         return 0
     allowed = screen_permission(request=True)

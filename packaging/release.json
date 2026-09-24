@@ -1,7 +1,7 @@
 {
-  "display_version": "0.5.0-beta.2",
-  "engine_version": "0.5.0b2",
-  "build_number": 50002,
+  "display_version": "0.5.0-beta.5",
+  "engine_version": "0.5.0b5",
+  "build_number": 50005,
   "minimum_macos": "26.0",
   "architecture": "arm64",
   "preview": true,

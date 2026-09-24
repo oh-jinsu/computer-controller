@@ -44,7 +44,7 @@ Mac Bridge는 설치된 Playwright MCP의 `--cdp-endpoint chrome` 경로로 연�
 | `browser_network_requests` | 현재 페이지의 요청 메타데이터 조회. 임의 쿠키·헤더 추출 도구가 아님 |
 | `browser_close` | 브리지의 브라우저 연결 해제. 일반 Chrome은 종료하지 않음 |
 
-이 12개 도구는 파일·영상·상태 도구와 함께 같은 MCP에 등록됩니다. 전체 도구 수는 현재 34개입니다. 앱 버전이 올라가 도구 설명·스키마가 바뀌면 ChatGPT의 기존 연결을 Refresh하고 새 대화에서 확인하세요.
+이 12개 도구는 파일·영상·상태 도구와 함께 같은 MCP에 등록됩니다. 전체 도구 수는 현재 29개입니다. 앱 버전이 올라가 도구 설명·스키마가 바뀌면 ChatGPT의 기존 연결을 Refresh하고 새 대화에서 확인하세요.
 
 권장 작업 순서는 **요청된 URL 열기 → 필요한 부분의 최신 화면 구조 확인 → 대상 입력/클릭 → 결과 확인 → 연결 닫기**입니다. 부분 snapshot이나 화면 변화 뒤에 이전 대상 참조를 계속 재사용하면 실패할 수 있습니다. 성공한 외부 게시·메일 발송을 오류로 오인해 반복하지 마세요.
 
@@ -85,3 +85,6 @@ Playwright MCP는 `0.0.82`로 고정했습니다. 앱에 런타임을 포함하�
 `tests/smoke_browser_mcp.py`는 임시 전용 프로필·로컬 페이지로 입력/클릭/캡처·지속 저장·요약 리비전을 검사합니다. `tests/smoke_personal_chrome.py`도 개인 계정이 아닌 임시 Chrome으로 CDP 연결·탭 보존·해제를 시험합니다. 실제 개인 계정의 서비스 작업, 공개 업데이트 경로, 클린 Mac 설치는 별도로 검증해야 합니다.
 
 [검증 기록](VALIDATION.md) · [Playwright MCP 공식 저장소](https://github.com/microsoft/playwright-mcp) · [ChatGPT 연결 갱신](https://developers.openai.com/plugins/deploy/connect-chatgpt)
+
+
+현재 영상 확인은 [공통 프로세스·파일 작업 절차](VIDEO-WORKFLOW.md)를 사용합니다. 이전 전용 영상 MCP 도구와 input 폴더 제한은 새 실행 경로에 적용되지 않습니다. pause/업데이트 대기는 공통 프로세스 관리로 처리합니다.

@@ -26,3 +26,6 @@ render-output/
 
 # Extracted video frames and metadata contain user media.
 output/
+
+# Ordinary workflow artifacts (not source)
+.mac-bridge-artifacts/

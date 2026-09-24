@@ -224,7 +224,7 @@ def prepare_update(data: Path) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['status', 'import', 'configure', 'doctor', 'serve', 'worker', 'prepare-update', 'cancel-update', 'permission'])
+    parser.add_argument('action', choices=['status', 'import', 'configure', 'doctor', 'serve', 'worker', 'prepare-update', 'cancel-update', 'permission', 'permission-status'])
     parser.add_argument('--data', type=Path, default=DEFAULT_DATA)
     parser.add_argument('--source', type=Path)
     args = parser.parse_args()
@@ -237,9 +237,9 @@ def main() -> int:
         return 0
     if args.action == 'serve':
         return serve(data)
-    if args.action == 'permission':
+    if args.action in ('permission', 'permission-status'):
         from .native import screen_permission
-        result = {'screen_recording_allowed': screen_permission(request=True)}
+        result = {'screen_recording_allowed': screen_permission(request=args.action == 'permission')}
     elif args.action == 'doctor':
         result = bundle_doctor()
     elif args.action == 'import':

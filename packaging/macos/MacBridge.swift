@@ -7,6 +7,9 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     let resources = Bundle.main.resourceURL!
     var stateItem: NSMenuItem!
+    var screenStatusItem: NSMenuItem!
+    var screenPermissionLabel: NSTextField!
+    var screenPermissionBusy = false
     var statusBar: NSStatusItem!
     var window: NSWindow!
     var message: NSTextField!
@@ -73,6 +76,8 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
         let menu = NSMenu()
         stateItem = NSMenuItem(title: "Mac Bridge · 확인 중", action: nil, keyEquivalent: "")
         menu.addItem(stateItem)
+        screenStatusItem = NSMenuItem(title: "화면 캡처 · 확인 중", action: nil, keyEquivalent: "")
+        menu.addItem(screenStatusItem)
         for (title, action) in [("연결 시작", #selector(start)), ("연결 중지", #selector(stop)), ("설정…", #selector(showSettings)), ("화면 기록 권한…", #selector(screenPermission)), ("업데이트 확인…", #selector(checkUpdates)), ("이전 실행본 보기", #selector(showPrevious)), ("로그 보기", #selector(showLogs)), ("종료", #selector(quit))] {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self; menu.addItem(item)
         }
@@ -95,6 +100,8 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
             if result["configured"] as? Bool == true { self.start() }
             else { self.showSettings() }
         }
+        // Independent from tunnel startup: missing screen permission never blocks file work.
+        checkScreenPermission()
         startPublicUpdater()
         if autoUpdate.state == .on { updaterController.updater.checkForUpdatesInBackground() }
     }
@@ -120,6 +127,10 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
         autoUpdate.frame = NSRect(x: 26, y: 107, width: 535, height: 24)
         autoUpdate.state = UserDefaults.standard.object(forKey: "MBUpdatesEnabled") as? Bool == false ? .off : .on
         view.addSubview(autoUpdate)
+        screenPermissionLabel = NSTextField(labelWithString: "화면 캡처: 확인 중")
+        screenPermissionLabel.frame = NSRect(x: 26, y: 81, width: 535, height: 20)
+        screenPermissionLabel.font = NSFont.systemFont(ofSize: 12)
+        view.addSubview(screenPermissionLabel)
         let migrate = NSButton(title: "기존 설정 가져오기…", target: self, action: #selector(importSettings)); migrate.frame = NSRect(x: 24, y: 44, width: 190, height: 34); view.addSubview(migrate)
         let save = NSButton(title: "저장", target: self, action: #selector(saveSettings)); save.frame = NSRect(x: 380, y: 44, width: 78, height: 34); view.addSubview(save)
         let connect = NSButton(title: "연결 시작", target: self, action: #selector(start)); connect.frame = NSRect(x: 465, y: 44, width: 99, height: 34); view.addSubview(connect)
@@ -130,12 +141,69 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
         helper(["cancel-update"]) { [weak self] _, _ in self?.message.stringValue = "업데이트가 중단되었습니다. 현재 실행본과 설정은 유지됩니다." }
     }
 
-    @objc func screenPermission() {
-        helper(["permission"]) { [weak self] value, _ in
-            self?.message.stringValue = value["screen_recording_allowed"] as? Bool == true ? "화면 기록 권한이 허용되어 있습니다." : "시스템 설정에서 Mac Bridge의 화면 기록 권한을 허용한 뒤, 요청되면 앱을 재시작하세요."
-            if value["screen_recording_allowed"] as? Bool != true { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!) }
+    func displayScreenPermission(_ allowed: Bool?) {
+        let label: String
+        switch allowed {
+        case true?: label = "허용됨"
+        case false?: label = "미허용 · ‘화면 기록 권한…’에서 허용하세요"
+        case nil: label = "확인 실패 · ‘화면 기록 권한…’에서 다시 확인하세요"
+        }
+        screenStatusItem.title = "화면 캡처 · " + label
+        screenPermissionLabel.stringValue = "화면 캡처: " + label
+    }
+
+    func openScreenPermissionSettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+    }
+
+    func checkScreenPermission(manual: Bool = false) {
+        guard !noConnect, screenStatusItem != nil, !screenPermissionBusy else { return }
+        screenPermissionBusy = true
+        // Query the SAME bundled helper used for capture, not a cached preference.
+        // This action checks permission only: no screenshot, window enumeration or recording.
+        helper(["permission-status"]) { [weak self] value, code in
+            guard let self = self else { return }
+            let allowed = code == 0 ? value["screen_recording_allowed"] as? Bool : nil
+            let defaults = UserDefaults.standard
+            let action = ScreenPermissionPolicy.action(allowed: allowed,
+                previouslyRequested: defaults.bool(forKey: ScreenPermissionPolicy.requestedKey),
+                manual: manual, disabled: self.noConnect)
+            switch action {
+            case .disabled:
+                self.screenPermissionBusy = false
+            case .allowed:
+                defaults.set(true, forKey: ScreenPermissionPolicy.requestedKey)
+                self.displayScreenPermission(true)
+                self.screenPermissionBusy = false
+            case .unavailable:
+                self.displayScreenPermission(nil)
+                self.screenPermissionBusy = false
+            case .settings(let open):
+                self.displayScreenPermission(false)
+                self.screenPermissionBusy = false
+                if open { self.openScreenPermissionSettings() }
+            case .request:
+                // Persist BEFORE requesting so relaunch/reentrant activation cannot spam prompts.
+                defaults.set(true, forKey: ScreenPermissionPolicy.requestedKey)
+                self.screenStatusItem.title = "화면 캡처 · macOS 승인 대기"
+                self.screenPermissionLabel.stringValue = "화면 캡처: macOS에서 허용해 주세요. 요청한 창만 캡처합니다."
+                self.helper(["permission"]) { [weak self] result, status in
+                    guard let self = self else { return }
+                    let granted = status == 0 ? result["screen_recording_allowed"] as? Bool : nil
+                    self.displayScreenPermission(granted)
+                    self.screenPermissionBusy = false
+                    // A denial must not immediately open another prompt/settings window.
+                    // The menu remains available for an explicit later settings change.
+                }
+            }
         }
     }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        checkScreenPermission()
+    }
+
+    @objc func screenPermission() { checkScreenPermission(manual: true) }
     @objc func showSettings() { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); loadSettingsFields() }
     func loadSettingsFields() { helper(["status"]) { [weak self] value, _ in
         guard let self = self else { return }

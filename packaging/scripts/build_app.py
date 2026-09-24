@@ -217,6 +217,7 @@ if __name__ == '__main__':
              '-framework', 'AppKit', '-framework', 'Sparkle', '-F', framework_dir,
              '-Xlinker', '-rpath', '-Xlinker', '@executable_path/../Frameworks',
              ROOT / 'packaging/macos/PublicUpdatePolicy.swift',
+             ROOT / 'packaging/macos/ScreenPermissionPolicy.swift',
              ROOT / 'packaging/macos/MacBridge.swift', '-o', macos / 'MacBridge'])
         plist = {'CFBundleExecutable': 'MacBridge', 'CFBundleIdentifier': 'com.ohjinsu.mac-bridge',
             'CFBundleName': 'Mac Bridge', 'CFBundleDisplayName': 'Mac Bridge', 'CFBundlePackageType': 'APPL',

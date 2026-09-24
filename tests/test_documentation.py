@@ -44,6 +44,30 @@ class DocumentationTests(unittest.TestCase):
         headings = re.findall(r'^(\d+)\. ', (ROOT / 'README.md').read_text().split('## 설치', 1)[1].split('## 선택 설정', 1)[0], re.M)
         self.assertEqual(headings, ['1', '2', '3', '4', '5', '6', '7'])
 
+    def test_readme_has_direct_onboarding_links_and_nonfixed_app_name(self):
+        readme = (ROOT / 'README.md').read_text()
+        self.assertIn('https://platform.openai.com/settings/organization/tunnels', readme)
+        self.assertIn('https://platform.openai.com/api-keys', readme)
+        self.assertIn('https://chatgpt.com/plugins', readme)
+        self.assertIn('Create MCP App', readme)
+        self.assertIn('앱 이름은 원하는 이름', readme)
+        self.assertIn('docs/images/mac-bridge-settings.png', readme)
+        self.assertTrue((ROOT / 'docs/images/mac-bridge-settings.png').is_file())
+        self.assertNotIn('→ My Mac →', readme)
+
+    def test_new_install_defaults_to_no_local_approval_dialogs(self):
+        approvals = (ROOT / 'mac_bridge/approvals.py').read_text()
+        control = (ROOT / 'mac_bridge/app_control.py').read_text()
+        swift = (ROOT / 'packaging/macos/MacBridge.swift').read_text()
+        self.assertIn("return 'always'", approvals)
+        self.assertIn("values.get('approval_mode', 'always')", control)
+        self.assertIn('always.state = .on', swift)
+        self.assertIn('personal.state = .on', swift)
+        self.assertIn('configured ? (value["approval_mode"]', swift)
+        self.assertIn('configured ? (value["browser_mode"]', swift)
+        readme = (ROOT / 'README.md').read_text()
+        self.assertIn('승인창 없이 사용 + 평소 Chrome 로그인 상태 사용이 기본값', readme)
+
     def test_readme_keeps_terminal_bootstrap_in_developer_guide(self):
         readme = (ROOT / 'README.md').read_text()
         for command in ['git clone https://', 'bash Mac-Start.command', 'brew install', 'pip install']:
@@ -66,8 +90,8 @@ class DocumentationTests(unittest.TestCase):
     def test_release_filename_matches_current_configuration(self):
         config = json.loads((ROOT / 'packaging/release.json').read_text())
         expected = f'Mac-Bridge-{config["display_version"]}-macos26-arm64.zip'
-        for path in ['README.md', 'docs/RELEASE-STATUS.md']:
-            self.assertIn(expected, (ROOT / path).read_text())
+        self.assertIn(expected, (ROOT / 'docs/RELEASE-STATUS.md').read_text())
+        self.assertIn('Mac-Bridge-...-macos26-arm64.zip', (ROOT / 'README.md').read_text())
         self.assertEqual(config['minimum_macos'], '26.0')
         self.assertEqual(config['architecture'], 'arm64')
 

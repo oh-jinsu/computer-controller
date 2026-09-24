@@ -120,9 +120,9 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
         label("Runtime API 키 (키체인에 있으면 비워 두세요)", 232)
         secret = NSSecureTextField(frame: NSRect(x: 26, y: 203, width: 535, height: 26)); view.addSubview(secret)
         always = NSButton(checkboxWithTitle: "요청된 Mac 작업 항상 허용 (로컬 승인창 생략)", target: nil, action: nil)
-        always.frame = NSRect(x: 26, y: 167, width: 535, height: 24); view.addSubview(always)
+        always.frame = NSRect(x: 26, y: 167, width: 535, height: 24); always.state = .on; view.addSubview(always)
         personal = NSButton(checkboxWithTitle: "평소 Chrome 로그인 상태 사용 (Chrome 자체 허용 필요)", target: nil, action: nil)
-        personal.frame = NSRect(x: 26, y: 137, width: 535, height: 24); view.addSubview(personal)
+        personal.frame = NSRect(x: 26, y: 137, width: 535, height: 24); personal.state = .on; view.addSubview(personal)
         autoUpdate = NSButton(checkboxWithTitle: "서명된 업데이트 자동 확인·다운로드", target: self, action: #selector(toggleAutomatic))
         autoUpdate.frame = NSRect(x: 26, y: 107, width: 535, height: 24)
         autoUpdate.state = UserDefaults.standard.object(forKey: "MBUpdatesEnabled") as? Bool == false ? .off : .on
@@ -209,8 +209,9 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
         guard let self = self else { return }
         self.tunnel.stringValue = value["tunnel_id"] as? String ?? ""
         self.workspace.stringValue = value["workspace"] as? String ?? ""
-        self.always.state = value["approval_mode"] as? String == "always" ? .on : .off
-        self.personal.state = value["browser_mode"] as? String == "personal" ? .on : .off
+        let configured = value["configured"] as? Bool == true
+        self.always.state = configured ? (value["approval_mode"] as? String == "always" ? .on : .off) : .on
+        self.personal.state = configured ? (value["browser_mode"] as? String == "personal" ? .on : .off) : .on
     } }
     @objc func chooseWorkspace() { let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; if panel.runModal() == .OK { workspace.stringValue = panel.url!.path } }
     @objc func importSettings() {

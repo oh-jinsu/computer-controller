@@ -1,5 +1,13 @@
 # Changes
 
+## 0.5.0-beta.8 — simplified onboarding defaults
+
+- README 설치를 터널 생성 → Runtime API 키 → 앱 실행 → Create MCP App 순서의 짧은 체크리스트로 정리하고 직접 이동 링크를 추가했습니다.
+- 앱 이름을 `My Mac`으로 고정하지 않고 사용자가 원하는 MCP App 이름을 쓰도록 안내합니다.
+- 실제 Mac Bridge 설정 화면 스크린샷을 README에 추가했습니다.
+- 새 설치의 기본값을 `요청된 Mac 작업 항상 허용` ON, `평소 Chrome 로그인 상태 사용` ON으로 변경했습니다. 기존 사용자의 저장된 선택은 유지합니다.
+- Chrome 자체의 remote-debugging/연결 승인과 macOS 화면 기록 승인은 운영체제·브라우저 권한으로 계속 별도입니다.
+
 ## 0.5.0-beta.7 — first public beta
 
 - Concise seven-step installation checklist; detailed onboarding in docs/INSTALL.md.

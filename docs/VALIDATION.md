@@ -41,7 +41,7 @@ The GitHub workflow runs unit tests and the existing engine/video/approval integ
 
 - Retrieved the live `main` ref and source files through the GitHub connector. Verified that the mounted 0.3.0 source, after matching the published README, has exactly the live Git tree `9aedf1f607cebea77ec0f7600682db7c17caff77` (commit `2bf58df4c04a00c65c236d7db27e88313c73ba95`). No user Mac checkout was accessed.
 - Linux / CPython 3.13.5: **111 unit/regression tests passed**, including the 82 existing tests, 17 approval-settings/local-CLI tests and 12 always-mode server-logic tests. FFmpeg video tests use real synthetic media. MCP/native UI/engine responses in unit tests remain mocked.
-- Checked persistent opt-in without expiry/task scope, default ask, local revocation, preservation of tunnel/workspace settings, private atomic persistence, corrupt/oversized/symlink refusal, no environment override, backup/audit, pause, exact edits, source-change protection, path/PID restrictions and cancellation if mode changes before execution.
+- Checked persistent approval mode without expiry/task scope, default always for fresh installs, local switch to ask/revocation, preservation of tunnel/workspace settings, private atomic persistence, corrupt/oversized/symlink refusal, no environment override, backup/audit, pause, exact edits, source-change protection, path/PID restrictions and cancellation if mode changes before execution.
 - Python compileall, Bash syntax and Node adapter syntax were checked separately.
 - Installing MCP 1.28.0 in this container failed because PyPI DNS resolution was unavailable. No actual MCP/engine or native macOS/tunnel success is claimed from container unit tests.
 

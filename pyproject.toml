@@ -1,6 +1,6 @@
 [project]
 name = "mac-bridge"
-version = "0.5.0b2"
+version = "0.5.0b3"
 description = "One private MCP server for macOS development and reference-video frames"
 requires-python = ">=3.11"
 dependencies = [

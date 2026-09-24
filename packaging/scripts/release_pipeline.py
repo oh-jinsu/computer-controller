@@ -109,6 +109,21 @@ def publication_gate(config: dict, private: bool, publish: bool):
         raise ReleaseError('Stable publication needs a PUBLIC repository and a non-preview version. No visibility or version is changed automatically. Use --draft or --prepare-only.')
 
 
+def prerelease_gate(config: dict, private: bool):
+    if private or not config['preview']:
+        raise ReleaseError('Public beta publication needs a PUBLIC repository and an explicitly preview version.')
+
+
+def distribution_source(app: Path) -> Path:
+    record = json.loads((app / 'Contents/Resources/Licenses/Distribution/SOURCE-ARCHIVE.json').read_text())
+    if record.get('filename') != 'Third-Party-Sources.tar.gz':
+        raise ReleaseError('Unexpected dependency source artifact.')
+    source = ROOT / '.cache/distribution/Third-Party-Sources.tar.gz'
+    if source.is_symlink() or not source.is_file() or digest(source) != record['sha256']:
+        raise ReleaseError('Corresponding dependency sources do not match this app; publication blocked.')
+    return source
+
+
 def app_info(app: Path, config: dict) -> dict:
     if app.is_symlink() or app.name != APP_NAME or not app.is_dir():
         raise ReleaseError('Select a physical Mac Bridge.app bundle.')
@@ -238,6 +253,8 @@ class Pipeline:
         if self.mode != 'prepare':
             meta = self.runner.json(['gh', 'repo', 'view', self.config['github_repository'], '--json', 'isPrivate'], 'repository')
             publication_gate(self.config, meta['isPrivate'], self.mode == 'publish')
+            if self.mode == 'prerelease':
+                prerelease_gate(self.config, meta['isPrivate'])
             remote = self.runner.json(['gh', 'api', 'repos/' + self.config['github_repository'] + '/commits/' + commit,
                                       '--jq', '{sha:.sha}'], 'remote-source')
             if remote.get('sha') != commit:
@@ -442,7 +459,14 @@ class Pipeline:
             '첫 전환은 기존 실행을 중지한 후 앱에서 설정을 가져오세요. 기존 자료는 삭제하지 마세요.\n'
             '일반 Chrome 업로드·별도 백그라운드 창 및 실제 공개 피드 기반 앱 교체는 검증 범위에 포함되지 않았습니다.\n'
             'Draft/prerelease는 자동 업데이트 최신 안정판으로 제공되지 않습니다.\n')
-        files = [archive, attempt / 'appcast.xml', attempt / 'RELEASE-NOTES.md', attempt / 'BUILD-PROVENANCE.json']
+        source_archive = distribution_source(app)
+        shutil.copyfile(source_archive, attempt / source_archive.name)
+        (attempt / 'THIRD-PARTY.md').write_text((ROOT / 'THIRD-PARTY.md').read_text())
+        with (attempt / 'RELEASE-NOTES.md').open('a') as stream:
+            stream.write('\n설치: [README](https://github.com/' + self.config['github_repository'] + '#설치).\n'
+                'FFmpeg GPLv3 및 LGPL 구성요소의 대응 소스·빌드 방법은 같은 릴리스의 Third-Party-Sources.tar.gz에 있습니다.\n')
+        files = [archive, attempt / 'appcast.xml', attempt / 'RELEASE-NOTES.md', attempt / 'BUILD-PROVENANCE.json',
+                 attempt / source_archive.name, attempt / 'THIRD-PARTY.md']
         (attempt / 'SHA256SUMS.txt').write_text(''.join(digest(p) + '  ' + p.name + '\n' for p in files))
         files.append(attempt / 'SHA256SUMS.txt')
         self.checkpoint('sparkle', folder=str(attempt), sha256={p.name: digest(p) for p in files})
@@ -473,6 +497,8 @@ class Pipeline:
         repo = self.config['github_repository']; tag = 'v' + self.config['display_version']
         meta = self.runner.json(['gh', 'repo', 'view', repo, '--json', 'isPrivate'], 'repository-final')
         publication_gate(self.config, meta['isPrivate'], self.mode == 'publish')
+        if self.mode == 'prerelease':
+            prerelease_gate(self.config, meta['isPrivate'])
         commit = self.state['binding']['source_commit']
         # Drafts are not returned by the public tag endpoint: use authenticated release view.
         cmd = ['gh', 'release', 'view', tag, '--repo', repo, '--json', 'databaseId,isDraft,isPrerelease,targetCommitish,url,assets,body']
@@ -518,8 +544,9 @@ class Pipeline:
                         raise ReleaseError('Downloaded GitHub asset differs: ' + name)
         if {x['name'] for x in verified['assets']} != set(expected):
             raise ReleaseError('GitHub release asset set is incomplete.')
-        if self.mode == 'publish' and verified['isDraft']:
-            self.runner.run(['gh', 'release', 'edit', tag, '--repo', repo, '--draft=false', '--latest'], 'publish')
+        if self.mode in {'publish', 'prerelease'} and verified['isDraft']:
+            flags = ['--latest'] if self.mode == 'publish' else ['--prerelease', '--latest=false']
+            self.runner.run(['gh', 'release', 'edit', tag, '--repo', repo, '--draft=false', *flags], 'publish')
             verified = self.runner.json(cmd, 'published-query')
             if verified['isDraft']:
                 raise ReleaseError('GitHub did not publish the release.')
@@ -552,6 +579,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--publish', action='store_true', help='Complete release then publish a stable version to an ALREADY public repository')
+    modes.add_argument('--publish-prerelease', action='store_true', help='Publish a notarized beta in an already PUBLIC repository; never marks latest stable')
     modes.add_argument('--draft', action='store_true', help='Upload a verified draft; default')
     modes.add_argument('--prepare-only', action='store_true', help='Complete notarized/signed local artifacts without GitHub writes')
     parser.add_argument('--identity', help='Optional exact Developer ID name/fingerprint; auto-select only when unique')
@@ -573,7 +601,7 @@ def main():
         parser.error('--wait-minutes must be 0..120; 0 performs a single status check after upload')
     common = subprocess.check_output(['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'], cwd=ROOT, text=True).strip()
     runtime = (args.runtime_source or Path(common).parent).expanduser().resolve(strict=True)
-    mode = 'publish' if args.publish else 'prepare' if args.prepare_only else 'draft'
+    mode = 'publish' if args.publish else 'prerelease' if args.publish_prerelease else 'prepare' if args.prepare_only else 'draft'
     pipeline = Pipeline(config, folder, runtime, mode, identity=args.identity, wait_seconds=args.wait_minutes * 60)
     pipeline.run(args.adopt_notarized.expanduser().resolve(strict=True) if args.adopt_notarized else None)
     return 0

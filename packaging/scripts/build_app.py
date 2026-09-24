@@ -189,6 +189,14 @@ if __name__ == '__main__':
         print('Copied independent Python, JS dependencies and native executables.', flush=True)
         natives = self.relocate()
         licenses = self.resources / 'Licenses'; licenses.mkdir()
+        source_cache = ROOT / '.cache/distribution'
+        evidence = json.loads((source_cache / 'source-archive.json').read_text())
+        source_archive = source_cache / evidence['filename']
+        with source_archive.open('rb') as stream:
+            if hashlib.file_digest(stream, 'sha256').hexdigest() != evidence['sha256']:
+                raise RuntimeError('Corresponding dependency sources changed; rebuild the source archive.')
+        shutil.copytree(source_cache / 'notices', licenses / 'Distribution', symlinks=False)
+
         shutil.copy2(ROOT / 'THIRD-PARTY.md', licenses / 'Third-party.md')
         shutil.copy2(ROOT / '.cache/sparkle/LICENSE', licenses / 'Sparkle-LICENSE')
         shutil.copy2(node_root / 'LICENSE', licenses / 'Node-LICENSE')
@@ -267,6 +275,9 @@ def main():
     args = parser.parse_args()
     if sys.platform != 'darwin':
         raise SystemExit('Build the .app on macOS.')
+    if not (ROOT / '.cache/distribution/source-archive.json').is_file():
+        run([sys.executable, ROOT / 'packaging/scripts/collect_distribution_sources.py'])
+        run([sys.executable, ROOT / 'packaging/scripts/finalize_distribution_sources.py'])
     Builder(args.runtime_source, args.output.resolve(), args.identity).bundle()
 
 if __name__ == '__main__':

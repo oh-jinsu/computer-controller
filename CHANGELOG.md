@@ -1,5 +1,13 @@
 # Changes
 
+## 0.5.0-beta.7 — first public beta
+
+- Concise seven-step installation checklist; detailed onboarding in docs/INSTALL.md.
+- Include dependency attribution, pinned source archives and build recipes alongside the app.
+- Same 29-tool runtime and screenshot onboarding as beta.6; no unfinished browser-workspace feature enabled.
+- Publication remains gated on this artifact's Developer ID signature and notarization; never inherits another beta's ticket.
+
+
 ## 0.5.0-beta.6 — 시작 시 화면 캡처 권한 안내
 
 - 앱 시작·다시 활성화 시 실제 캡처 helper의 권한을 조회하고, 최초 미허용 상태에서 시스템 승인 요청을 한 번 표시합니다.

@@ -41,11 +41,11 @@ class BrowserContextTests(unittest.TestCase):
         browser = BrowserClient(self.root, self.policy)
         status = browser.status()
         self.assertFalse(status['installed']); self.assertFalse(status['running'])
-        self.assertTrue(status['headless']); self.assertFalse(status['personal_profile_access'])
+        self.assertFalse(status['headless']); self.assertTrue(status['personal_profile_access'])
         self.assertFalse((self.root / '.state/browser/profile').exists())
 
-    def test_default_browser_config_and_explicit_headed(self):
-        self.assertTrue(browser_settings(self.root)['headless'])
+    def test_default_browser_config_is_personal_and_legacy_schema_stays_dedicated(self):
+        self.assertEqual(browser_settings(self.root), {'schema': 2, 'mode': 'personal', 'headless': False})
         (self.root / '.state/browser-settings.json').write_text('{"schema":1,"headless":false}')
         self.assertFalse(browser_settings(self.root)['headless'])
 

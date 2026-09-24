@@ -83,6 +83,8 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         parent = Path(self.tmp.name).resolve(); self.root = parent / 'bridge'; self.project = parent / 'project'
         (self.root / '.state').mkdir(parents=True); self.project.mkdir()
         (self.root / '.state/mac-settings.json').write_text(json.dumps({'workspace': str(self.project)}))
+        from mac_bridge.approvals import set_approval_mode
+        set_approval_mode(self.root, 'ask')
         self.approver = mock.Mock(); self.approver.approve.return_value = False
         def build_dc(root, policy):
             self.dc = FakeDC(root, policy); return self.dc

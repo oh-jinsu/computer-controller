@@ -50,10 +50,10 @@ bash Mac-Start.command
 
 ## 승인·브라우저 모드
 
-소스 설치에서 소유자가 항상 허용을 선택하려면 처음 한 번:
+새 소스 설치도 기본값은 `always`입니다. 요청마다 승인창을 띄우려면 처음 한 번 `ask`로 바꾸세요.
 
 ```sh
-bash Mac-Start.command --approval-mode always
+bash Mac-Start.command --approval-mode ask
 ```
 
 다음부터는 `bash Mac-Start.command`입니다. 현재 모드 확인과 변경:

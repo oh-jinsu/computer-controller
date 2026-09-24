@@ -75,10 +75,11 @@ class ReleaseAppTests(unittest.TestCase):
         save.assert_called_once()
         self.assertNotIn('test-key', ''.join(p.read_text() for p in (self.data / '.state').glob('*.json')))
 
-    def test_empty_key_reuses_keychain(self):
+    def test_empty_key_reuses_keychain_and_new_install_defaults_always(self):
         with mock.patch('keyring.set_password') as save:
             configure(self.data, {'tunnel_id': 'tunnel_release12345678', 'workspace': str(self.workspace), 'runtime_key': ''})
         save.assert_not_called()
+        self.assertEqual(status(self.data)['approval_mode'], 'always')
 
     def test_unknown_settings_rejected(self):
         with self.assertRaises(MacError): configure(self.data, {'shell_command': 'x'})

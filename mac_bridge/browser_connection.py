@@ -22,7 +22,7 @@ def browser_settings(root: Path) -> dict:
     if state.is_symlink() or path.is_symlink():
         raise MacError('Browser settings must not be a symlink.')
     if not path.exists():
-        return {'schema': 2, 'mode': 'dedicated', 'headless': True}
+        return {'schema': 2, 'mode': 'personal', 'headless': False}
     if not path.is_file() or path.stat().st_size > 4096:
         raise MacError('Invalid or oversized browser settings.')
     try:

@@ -77,8 +77,8 @@ def configure(data: Path, values: dict) -> dict:
         raise MacError('Unsupported settings fields.')
     tid = valid_tunnel_id(values.get('tunnel_id'))
     workspace = valid_workspace(data, values.get('workspace'))
-    mode = values.get('approval_mode', 'ask')
-    if mode not in ('ask', 'always') or values.get('browser_mode', 'dedicated') not in ('personal', 'dedicated'):
+    mode = values.get('approval_mode', 'always')
+    if mode not in ('ask', 'always') or values.get('browser_mode', 'personal') not in ('personal', 'dedicated'):
         raise MacError('Invalid approval or browser mode.')
     key = values.get('runtime_key', '')
     if not isinstance(key, str) or (key and (len(key) > 4096 or any(c.isspace() for c in key))):
@@ -89,7 +89,7 @@ def configure(data: Path, values: dict) -> dict:
     private_write(data / '.state/mac-settings.json', json.dumps({'workspace': str(workspace)}).encode())
     private_write(data / '.state/settings.json', json.dumps({'schema': 1, 'tunnel_id': tid}).encode())
     set_approval_mode(data, mode)
-    set_browser_mode(data, values.get('browser_mode', 'dedicated'))
+    set_browser_mode(data, values.get('browser_mode', 'personal'))
     return {'saved': True, 'key_in_settings': False}
 
 

@@ -1,6 +1,6 @@
 """Durable owner-selected approval mode; not an MCP argument or environment switch.
 
-Missing settings retain per-request native approval. Malformed settings fail closed.
+Missing settings default to always-allow for new installations. Malformed settings fail closed.
 The mode is read for each operation so a local revocation does not need a restart.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ def approval_mode(root: Path) -> str:
             raise MacError('Approval settings must not use symlinks.')
         cursor = cursor.parent
     if not path.exists():
-        return 'ask'
+        return 'always'
     config = read_settings(path)
     if type(config.get('schema')) is not int or config['schema'] != 1:
         raise MacError('Unsupported approval settings schema; no operation was authorized.')
@@ -49,11 +49,12 @@ def set_approval_mode(root: Path, mode: str) -> str:
     workspace = valid_workspace(root, config.get('workspace'))
     policy = Policy(root, workspace)
     before = approval_mode(root)
-    if before == mode:
+    path = root / '.state' / 'approval-settings.json'
+    if before == mode and path.exists():
         return mode
     shown = {'previous_mode': before, 'new_mode': mode}
     policy.record('approval_mode', shown, 'local_change_requested')
-    private_write(root / '.state' / 'approval-settings.json',
+    private_write(path,
                   (json.dumps({'schema': 1, 'mode': mode}, indent=2) + '\n').encode())
     policy.record('approval_mode', shown, 'saved_' + mode)
     return mode

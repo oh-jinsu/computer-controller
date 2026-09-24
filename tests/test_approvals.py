@@ -31,8 +31,8 @@ class ApprovalSettingsTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_legacy_default_ask_does_not_create_settings(self):
-        self.assertEqual(approval_mode(self.root), 'ask')
+    def test_new_install_default_always_does_not_create_settings(self):
+        self.assertEqual(approval_mode(self.root), 'always')
         self.assertFalse(self.path.exists())
 
     def test_always_persists_without_scope_or_expiration(self):
@@ -110,9 +110,9 @@ class ApprovalSettingsTests(unittest.TestCase):
         with self.assertRaises(MacError):
             approval_mode(self.root)
 
-    def test_environment_does_not_opt_in(self):
-        with mock.patch.dict(os.environ, {'MAC_BRIDGE_APPROVAL_MODE': 'always', 'AUTO_APPROVE': 'true'}):
-            self.assertEqual(approval_mode(self.root), 'ask')
+    def test_environment_does_not_override_default(self):
+        with mock.patch.dict(os.environ, {'MAC_BRIDGE_APPROVAL_MODE': 'ask', 'AUTO_APPROVE': 'false'}):
+            self.assertEqual(approval_mode(self.root), 'always')
 
     def test_failed_save_keeps_prior_choice(self):
         set_approval_mode(self.root, 'always')

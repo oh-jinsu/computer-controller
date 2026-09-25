@@ -70,14 +70,14 @@ async def run():
                     discovery = await client.discover()
                     assert '2026-07-28' in discovery.supported_versions, discovery
                     tools = {t.name: t for t in (await client.list_tools()).tools}
-                    assert len(tools) == 29, sorted(tools)
+                    assert len(tools) == 31, sorted(tools)
                     async def call(name, **arguments):
                         result = await client.call_tool(name, arguments)
                         assert not result.is_error, (name, text(result))
                         return result
                     state = data(await call('mac_status'))
                     assert state['independent_runtime'] and not state['source_checkout_is_runtime'] and state['desktop_connected']
-                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (29 tools)')
+                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (31 tools)')
                     await call('mac_write_file', path='editable.py', content='new')
                     assert (project / 'editable.py').read_text() == 'new'
                     checks.append('development source file read/write allowed; application resources stayed separate')
@@ -86,6 +86,15 @@ async def run():
                     output = text(await call('mac_process_output', pid=pid))
                     assert str(project) in text(result) + output
                     checks.append('actual local terminal command from bundled engine')
+                    sleeper = await call('mac_start_process', command='sleep 30', wait='start')
+                    sleeper_pid = int(re.search(r'PID (\d+)', text(sleeper)).group(1))
+                    processes = await call('mac_list_processes', limit=200)
+                    sleeper_row = next(row for row in data(processes)['processes'] if row['pid'] == sleeper_pid)
+                    assert sleeper_row['killable'] and sleeper_row['kill_token']
+                    killed = await call('mac_kill_process', pid=sleeper_pid, kill_token=sleeper_row['kill_token'])
+                    killed_data = data(killed)
+                    assert sleeper_pid in killed_data['termination_signalled'] and killed_data['descendants_first']
+                    checks.append('process inventory and observed-token descendant-first cleanup')
                     # Normal Python shell commands must never write bytecode inside the signed app.
                     import shlex
                     baseline = {p.relative_to(APP) for p in APP.rglob('*.pyc')}

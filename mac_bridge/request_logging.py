@@ -33,16 +33,16 @@ MAX_BYTES = 2_000_000
 SLOW_AFTER = 5
 SLOW_EVERY = 15
 TOOLS = frozenset('''mac_status mac_list_directory mac_read_file mac_write_file mac_edit_file mac_start_process
-mac_process_output mac_send_input mac_stop_process mac_list_sessions mac_list_windows
+mac_process_output mac_send_input mac_stop_process mac_list_sessions mac_list_processes mac_kill_process mac_list_windows
 mac_capture_window mac_pause mac_recent_actions browser_status browser_navigate browser_snapshot
 browser_screenshot browser_click browser_type browser_press_key browser_resize browser_tabs
 browser_console_messages browser_network_requests browser_close mac_context_list mac_context_read
 mac_context_save'''.split())
-NUMBERS = frozenset('depth offset length timeout_ms wait_timeout_ms pid window_id owner_pid max_edge count index width height start_seconds end_seconds wait_seconds'.split())
+NUMBERS = frozenset('depth offset length timeout_ms wait_timeout_ms pid window_id owner_pid max_edge count limit index width height start_seconds end_seconds wait_seconds'.split())
 BOOLEANS = frozenset({'submit', 'include_static'})
 ENUMS = {'action': {'list', 'new', 'select', 'close'}, 'level': {'debug', 'info', 'warning', 'error'},
          'wait': {'complete', 'start'}}
-TEXT_FIELDS = frozenset({'content', 'text', 'old_string', 'new_string', 'title', 'element', 'name'})
+TEXT_FIELDS = frozenset({'content', 'text', 'old_string', 'new_string', 'title', 'element', 'name', 'query'})
 APP_NAMES = {'Google Chrome', 'Chrome', 'Godot', 'Xcode', 'Mac Bridge', 'Terminal', 'Safari'}
 PHASES = {'approval_requested': 'approval_wait', 'auto_approved': 'auto_approved',
           'denied_or_timed_out': 'approval_denied', 'approval_mode_changed': 'approval_changed'}

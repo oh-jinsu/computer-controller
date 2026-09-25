@@ -106,7 +106,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     def tearDown(self): self.tmp.cleanup()
 
     async def test_tools_and_write_annotations(self):
-        self.assertEqual(len(self.mcp.tools), 29)
+        self.assertEqual(len(self.mcp.tools), 31)
         self.assertFalse(self.mcp.annotations['mac_start_process'].read_only_hint)
         self.assertFalse(self.mcp.annotations['mac_write_file'].read_only_hint)
         self.assertTrue(self.mcp.annotations['mac_read_file'].read_only_hint)
@@ -181,6 +181,27 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         for tool in ['mac_process_output', 'mac_stop_process']:
             r = await self.mcp.tools[tool](1)
             self.assertTrue(r.is_error)
+        self.assertEqual(self.dc.calls, [])
+
+    async def test_process_inventory_and_kill_tools_are_guarded(self):
+        rows = [{'pid': 456, 'name': 'Godot.app', 'killable': True, 'kill_token': 'token-123456'}]
+        with mock.patch.object(self.server, 'process_inventory', return_value=rows):
+            listed = await self.mcp.tools['mac_list_processes']('godot', 20)
+        self.assertEqual(listed.structured_content['processes'], rows)
+        self.assertTrue(self.mcp.annotations['mac_list_processes'].read_only_hint)
+        self.assertTrue(self.mcp.annotations['mac_kill_process'].destructive_hint)
+
+        self.always()
+        with mock.patch.object(self.server, 'validate_kill_plan', return_value=[{'pid': 456, 'name': 'Godot.app'}]):
+            killed = await self.mcp.tools['mac_kill_process'](456, 'token-123456')
+        self.assertFalse(killed.is_error)
+        self.assertEqual(self.dc.calls[-1], ('kill_process', {'pid': 456}))
+
+    async def test_kill_process_refuses_unvalidated_pid(self):
+        self.always()
+        with mock.patch.object(self.server, 'validate_kill_plan', side_effect=ValueError('not project related')):
+            result = await self.mcp.tools['mac_kill_process'](456, 'token-123456')
+        self.assertTrue(result.is_error)
         self.assertEqual(self.dc.calls, [])
 
     async def test_paused_read_rejected(self):
@@ -300,7 +321,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_always_keeps_write_annotations_and_no_policy_tool(self):
         self.always()
-        self.assertEqual(len(self.mcp.tools), 29)
+        self.assertEqual(len(self.mcp.tools), 31)
         self.assertFalse(self.mcp.annotations['mac_write_file'].read_only_hint)
         self.assertTrue(self.mcp.annotations['mac_start_process'].destructive_hint)
         self.assertNotIn('mac_set_approval_mode', self.mcp.tools)

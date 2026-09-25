@@ -57,3 +57,8 @@ Windows 11 x64용 첫 Preview입니다. 파일명은 `Mac-Bridge-0.5.0-beta.10-w
 ## 0.5.0-beta.12 — MCP 2026-07-28 discovery
 
 ChatGPT 플러그인 새로고침이 사용하는 `server/discover`를 지원하도록 Python MCP SDK 2.2.0과 `MCPServer`로 마이그레이션한 Preview입니다. 빌드 번호는 `50012`이며 Windows 빌드의 파일명 규칙은 `Mac-Bridge-0.5.0-beta.12-windows-x64.zip`입니다. 소스 smoke에서 2026-07-28 discovery, 29개 도구, Desktop Commander, 요청 로그, 영상 및 전용 브라우저 경로를 검증합니다. 로컬 Preview 빌드와 사용 중 앱 교체 검증은 서명·공증된 공개 릴리스와 구분합니다.
+
+
+## 0.5.0-beta.13 — process inventory and cleanup
+
+프로젝트 개발 중 남는 Godot·Node·Python·서버 계열 프로세스를 확인하고 정리할 수 있도록 `mac_list_processes`와 `mac_kill_process`를 추가한 Preview입니다. 빌드 번호는 `50013`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.13-windows-x64.zip`입니다. 전체 도구 수는 31개입니다. 종료 도구는 목록에서 방금 관찰한 동일 프로세스의 `kill_token`을 요구하고, Mac Bridge 자체 및 선택한 프로젝트와 무관한 프로세스는 거부합니다.

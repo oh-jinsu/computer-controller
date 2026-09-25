@@ -1,5 +1,12 @@
 # Changes
 
+## 0.5.0-beta.13 — process inventory and cleanup
+
+- `mac_list_processes`를 추가해 현재 사용자 프로세스를 CPU/메모리/명령 요약과 함께 확인하고, 프로젝트/브리지 관련 프로세스를 먼저 표시합니다.
+- `mac_kill_process`를 추가해 `mac_list_processes`에서 방금 관찰한 `killable=true` 프로세스만 종료할 수 있습니다. PID 재사용을 막기 위해 `kill_token`이 일치해야 합니다.
+- Mac Bridge 자체 프로세스와 무관한 사용자 앱은 종료 대상으로 노출하지 않으며, 브리지에서 시작했거나 선택한 작업 폴더와 연관된 프로세스만 종료 가능하도록 유지합니다.
+- 번들된 Desktop Commander의 `list_processes`/`kill_process` 지원을 어댑터에 포함하고 전체 MCP 도구 수를 31개로 늘렸습니다.
+
 ## 0.5.0-beta.12 — MCP 2026-07-28 discovery
 
 - Python MCP SDK를 2.2.0으로 올리고 서버를 `MCPServer` API로 마이그레이션해 `server/discover`와 2026-07-28 프로토콜 discovery를 지원합니다.

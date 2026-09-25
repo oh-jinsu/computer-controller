@@ -78,7 +78,7 @@ async def run(exe: Path) -> None:
                 async with ClientSession(reader, writer, read_timeout_seconds=180) as client:
                     await client.initialize()
                     tools = {t.name: t for t in (await client.list_tools()).tools}
-                    assert len(tools) == 29, sorted(tools)
+                    assert len(tools) == 31, sorted(tools)
 
                     async def call(name, **arguments):
                         result = await client.call_tool(name, arguments)

@@ -41,7 +41,7 @@ async def run(runtime: Path):
                 async with ClientSession(r, w, read_timeout_seconds=40) as client:
                     await client.initialize()
                     tools = await client.list_tools()
-                    assert len(tools.tools) == 29
+                    assert len(tools.tools) == 31
                     async def call(name, args=None, error=False):
                         result = await client.call_tool(name, args or {})
                         assert bool(result.is_error) == error, name
@@ -78,7 +78,7 @@ async def run(runtime: Path):
         assert (workspace / 'output.txt').read_text() == secret
         report = {'passed': True, 'calls': len(starts), 'errors_logged': 5,
                   'request_response_ids_match': True, 'private_content_absent_from_logs': True,
-                  'stdio_protocol_and_tool_results_preserved': True, 'tool_schema_count': 29,
+                  'stdio_protocol_and_tool_results_preserved': True, 'tool_schema_count': 31,
                   'not_tested': ['live tunnel restart', 'new app build/notarization', 'personal Chrome']}
         print(json.dumps(report, ensure_ascii=False, indent=2))
         print('\nACTUAL LOG EXCERPT (disposable test data):')

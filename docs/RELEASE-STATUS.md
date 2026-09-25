@@ -67,3 +67,8 @@ ChatGPT 플러그인 새로고침이 사용하는 `server/discover`를 지원하
 ## 0.5.0-beta.14 — file batch, move, info and search tools
 
 개발 작업의 MCP 왕복을 줄이기 위해 `mac_read_multiple_files`, `mac_create_directory`, `mac_move_file`, `mac_file_info`, `mac_search`를 추가한 Preview입니다. 빌드 번호는 `50014`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.14-windows-x64.zip`입니다. 전체 도구 수는 36개입니다. 모든 파일/검색 도구는 선택한 작업 폴더 및 기존 비밀 경로 제한을 유지하고, 생성/이동은 저장된 승인 모드를 따릅니다.
+
+
+## 0.5.0-beta.15 — transactional batch file mutations
+
+여러 파일 변경의 ChatGPT↔MCP 왕복을 줄이기 위해 `mac_batch_files`를 추가한 Preview입니다. 빌드 번호는 `50015`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.15-windows-x64.zip`입니다. 전체 도구 수는 37개입니다. `write`·`edit`·`move`·`mkdir`·`delete`를 최대 50개까지 한 번에 preflight하고 승인 한 번으로 실행하며, 기존 파일 백업·경로 재검증·실패 시 역순 rollback을 수행합니다. `delete`는 일반 파일만 내부 복구 보관소로 이동하므로 영구 삭제하지 않습니다.

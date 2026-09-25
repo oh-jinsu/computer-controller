@@ -32,7 +32,7 @@ _CURRENT: ContextVar = ContextVar('mac_bridge_request_log', default=None)
 MAX_BYTES = 2_000_000
 SLOW_AFTER = 5
 SLOW_EVERY = 15
-TOOLS = frozenset('''mac_status mac_list_directory mac_read_file mac_read_multiple_files mac_create_directory mac_move_file mac_file_info mac_search mac_write_file mac_edit_file mac_start_process
+TOOLS = frozenset('''mac_status mac_list_directory mac_read_file mac_read_multiple_files mac_create_directory mac_move_file mac_file_info mac_search mac_batch_files mac_write_file mac_edit_file mac_start_process
 mac_process_output mac_send_input mac_stop_process mac_list_sessions mac_list_processes mac_kill_process mac_list_windows
 mac_capture_window mac_pause mac_recent_actions browser_status browser_navigate browser_snapshot
 browser_screenshot browser_click browser_type browser_press_key browser_resize browser_tabs
@@ -232,6 +232,8 @@ def summarize_arguments(arguments: object, workspace: Path | None = None) -> dic
             result[key] = path_summary(value, workspace)
         elif key == 'paths' and isinstance(value, list):
             result['paths_count'] = len(value)
+        elif key == 'operations' and isinstance(value, list):
+            result['operations_count'] = len(value)
         elif key == 'command' and isinstance(value, str):
             result['command'] = command_summary(value, workspace)
             result['command_chars'] = len(value)

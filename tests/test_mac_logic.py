@@ -112,7 +112,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     def tearDown(self): self.tmp.cleanup()
 
     async def test_tools_and_write_annotations(self):
-        self.assertEqual(len(self.mcp.tools), 36)
+        self.assertEqual(len(self.mcp.tools), 37)
         self.assertFalse(self.mcp.annotations['mac_start_process'].read_only_hint)
         self.assertFalse(self.mcp.annotations['mac_write_file'].read_only_hint)
         self.assertTrue(self.mcp.annotations['mac_read_file'].read_only_hint)
@@ -169,6 +169,28 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(r.is_error); self.assertEqual(p.read_text(), 'after')
         backups = list((self.root / '.state/file-backups').rglob('a.txt'))
         self.assertEqual(backups[0].read_text(), 'before')
+
+    async def test_batch_files_uses_one_approval_and_preserves_denied_state(self):
+        from mac_bridge.batch_files import BatchEdit, BatchWrite
+        target = self.project / 'batch.txt'; target.write_text('before TOKEN')
+        ops = [
+            BatchEdit(op='edit', path='batch.txt', old_string='TOKEN', new_string='EDITED'),
+            BatchWrite(op='write', path='created.txt', content='created'),
+        ]
+        denied = await self.mcp.tools['mac_batch_files'](ops)
+        self.assertTrue(denied.is_error)
+        self.assertEqual(target.read_text(), 'before TOKEN')
+        self.assertFalse((self.project / 'created.txt').exists())
+        self.approver.approve.assert_called_once()
+
+        self.approver.reset_mock()
+        self.always()
+        done = await self.mcp.tools['mac_batch_files'](ops)
+        self.assertFalse(done.is_error)
+        self.assertEqual(target.read_text(), 'before EDITED')
+        self.assertEqual((self.project / 'created.txt').read_text(), 'created')
+        self.approver.approve.assert_not_called()
+        self.assertTrue(self.mcp.annotations['mac_batch_files'].destructive_hint)
 
     async def test_multi_read_file_info_and_search_use_project_guardrails(self):
         (self.project / 'a.txt').write_text('alpha')
@@ -364,7 +386,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_always_keeps_write_annotations_and_no_policy_tool(self):
         self.always()
-        self.assertEqual(len(self.mcp.tools), 36)
+        self.assertEqual(len(self.mcp.tools), 37)
         self.assertFalse(self.mcp.annotations['mac_write_file'].read_only_hint)
         self.assertTrue(self.mcp.annotations['mac_start_process'].destructive_hint)
         self.assertNotIn('mac_set_approval_mode', self.mcp.tools)

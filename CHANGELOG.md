@@ -1,5 +1,12 @@
 # Changes
 
+## 0.5.0-beta.15 — transactional batch file mutations
+
+- `mac_batch_files`를 추가해 최대 50개의 `write`, `edit`, `move`, `mkdir`, `delete` 작업을 한 번의 MCP 호출과 한 번의 승인으로 처리합니다.
+- 전체 배치를 먼저 검증하고 승인 뒤 경로 상태를 다시 확인합니다. 기존 쓰기/편집 대상은 백업하며, 중간 실패 시 이미 적용된 작업을 역순으로 원복합니다.
+- `delete`는 일반 파일만 허용하며 영구 삭제 대신 내부 복구 보관소로 이동합니다. `move`는 덮어쓰기를 허용하지 않습니다.
+- 배치 요청 로그에는 작업 내용이나 파일 내용 대신 작업 개수만 기록합니다. 전체 MCP 도구 수는 37개입니다.
+
 ## 0.5.0-beta.14 — file batch, move, info and search tools
 
 - `mac_read_multiple_files`를 추가해 관련 파일 최대 20개를 한 번에 읽을 수 있습니다. 프로젝트/비밀 경로 제한은 기존 `mac_read_file`과 동일하고 총 입력 크기는 8 MiB로 제한합니다.

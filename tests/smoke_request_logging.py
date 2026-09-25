@@ -41,7 +41,7 @@ async def run(runtime: Path):
                 async with ClientSession(r, w, read_timeout_seconds=40) as client:
                     await client.initialize()
                     tools = await client.list_tools()
-                    assert len(tools.tools) == 36
+                    assert len(tools.tools) == 37
                     async def call(name, args=None, error=False):
                         result = await client.call_tool(name, args or {})
                         assert bool(result.is_error) == error, name
@@ -51,6 +51,9 @@ async def run(runtime: Path):
                     body = await call('mac_read_file', {'path': 'sample.txt'})
                     assert secret in ''.join(getattr(x, 'text', '') for x in body.content)
                     await call('mac_write_file', {'path': 'output.txt', 'content': secret})
+                    await call('mac_batch_files', {'operations': [
+                        {'op': 'write', 'path': 'batch-output.txt', 'content': secret},
+                    ]})
                     result = await call('mac_start_process', {'command': 'printf ' + secret, 'timeout_ms': 1000})
                     text = ''.join(getattr(x, 'text', '') for x in result.content)
                     assert re.search(r'Process started with PID \d+', text), text
@@ -68,17 +71,18 @@ async def run(runtime: Path):
         assert secret not in json.dumps(rows), 'Private content leaked to JSONL'
         starts = [row for row in rows if row['event'] == 'request']
         ends = [row for row in rows if row['event'] == 'response']
-        assert len(starts) == len(ends) == 12, (len(starts), len(ends))
-        assert len({row['trace_id'] for row in starts}) == 12
+        assert len(starts) == len(ends) == 13, (len(starts), len(ends))
+        assert len({row['trace_id'] for row in starts}) == 13
         assert {row['trace_id'] for row in starts} == {row['trace_id'] for row in ends}
         assert all('duration_ms' in row and 'rpc_id' in row for row in ends)
         assert sum(row['status'] == 'error' for row in ends) == 5
         assert any(row.get('phase') == 'auto_approved' for row in rows)
         assert not any('Processing request of type' in line for line in human.splitlines())
         assert (workspace / 'output.txt').read_text() == secret
+        assert (workspace / 'batch-output.txt').read_text() == secret
         report = {'passed': True, 'calls': len(starts), 'errors_logged': 5,
                   'request_response_ids_match': True, 'private_content_absent_from_logs': True,
-                  'stdio_protocol_and_tool_results_preserved': True, 'tool_schema_count': 36,
+                  'stdio_protocol_and_tool_results_preserved': True, 'tool_schema_count': 37,
                   'not_tested': ['live tunnel restart', 'new app build/notarization', 'personal Chrome']}
         print(json.dumps(report, ensure_ascii=False, indent=2))
         print('\nACTUAL LOG EXCERPT (disposable test data):')

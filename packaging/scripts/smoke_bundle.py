@@ -70,14 +70,14 @@ async def run():
                     discovery = await client.discover()
                     assert '2026-07-28' in discovery.supported_versions, discovery
                     tools = {t.name: t for t in (await client.list_tools()).tools}
-                    assert len(tools) == 36, sorted(tools)
+                    assert len(tools) == 37, sorted(tools)
                     async def call(name, **arguments):
                         result = await client.call_tool(name, arguments)
                         assert not result.is_error, (name, text(result))
                         return result
                     state = data(await call('mac_status'))
                     assert state['independent_runtime'] and not state['source_checkout_is_runtime'] and state['desktop_connected']
-                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (36 tools)')
+                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (37 tools)')
                     await call('mac_write_file', path='editable.py', content='new')
                     assert (project / 'editable.py').read_text() == 'new'
                     (project / 'second.txt').write_text('bundle-search-marker\n')
@@ -91,6 +91,20 @@ async def run():
                     (project / 'move-me.txt').write_text('move-bundle-marker')
                     await call('mac_move_file', source='move-me.txt', destination='nested/path/moved.txt')
                     assert (project / 'nested/path/moved.txt').read_text() == 'move-bundle-marker'
+                    (project / 'batch-edit.txt').write_text('before TOKEN after')
+                    (project / 'batch-delete.txt').write_text('delete-bundle-marker')
+                    batch = await call('mac_batch_files', operations=[
+                        {'op': 'mkdir', 'path': 'batch-dir'},
+                        {'op': 'write', 'path': 'batch-dir/new.txt', 'content': 'new-bundle-marker'},
+                        {'op': 'edit', 'path': 'batch-edit.txt', 'old_string': 'TOKEN', 'new_string': 'EDITED'},
+                        {'op': 'move', 'source': 'nested/path/moved.txt', 'destination': 'batch-dir/moved.txt'},
+                        {'op': 'delete', 'path': 'batch-delete.txt'},
+                    ])
+                    batch_data = data(batch)
+                    assert batch_data['operation_count'] == 5 and not (project / 'batch-delete.txt').exists()
+                    assert (project / 'batch-dir/new.txt').read_text() == 'new-bundle-marker'
+                    assert 'EDITED' in (project / 'batch-edit.txt').read_text()
+                    checks.append('single-call preflighted batch mutation with recoverable delete and rollback support')
                     checks.append('batched reads, file info, search, directory creation and non-overwriting move')
                     checks.append('development source file read/write allowed; application resources stayed separate')
                     result = await call('mac_start_process', command='pwd')

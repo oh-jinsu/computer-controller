@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 import json
@@ -40,7 +39,7 @@ def text(result) -> str:
 
 
 def data(result) -> dict:
-    value = getattr(result, "structuredContent", None)
+    value = getattr(result, "structured_content", getattr(result, "structuredContent", None))
     if isinstance(value, dict):
         return value
     return json.loads(text(result))
@@ -76,14 +75,14 @@ async def run(exe: Path) -> None:
                 # A fresh Windows runner can spend well over a minute warming the first
                 # PowerShell child. The product wait ceiling is 10 minutes; keep the smoke
                 # client attached long enough to observe the same completion behavior.
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=180)) as client:
+                async with ClientSession(reader, writer, read_timeout_seconds=180) as client:
                     await client.initialize()
                     tools = {t.name: t for t in (await client.list_tools()).tools}
                     assert len(tools) == 29, sorted(tools)
 
                     async def call(name, **arguments):
                         result = await client.call_tool(name, arguments)
-                        assert not result.isError, (name, text(result))
+                        assert not result.is_error, (name, text(result))
                         return result
 
                     status = data(await call("mac_status"))

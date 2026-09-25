@@ -1,6 +1,6 @@
 # 릴리스 검증·공개 상태
 
-기준: 2026-09-23. 이 문서는 현재 확인된 배포 상태를 구분합니다. 최신 공개 여부는 [Releases](https://github.com/oh-jinsu/mac-bridge/releases)와 릴리스 설명을 확인하세요.
+기준: 2026-09-25. 이 문서는 현재 확인된 배포 상태를 구분합니다. 최신 공개 여부는 [Releases](https://github.com/oh-jinsu/mac-bridge/releases)와 릴리스 설명을 확인하세요.
 
 ## 검증된 파일
 
@@ -52,3 +52,8 @@ Windows 11 x64용 첫 Preview입니다. 파일명은 `Mac-Bridge-0.5.0-beta.10-w
 ## 0.5.0-beta.11 — process completion waiting
 
 `mac_start_process`의 기본 동작을 프로세스 종료 대기로 변경한 cross-platform Preview입니다. Windows 파일명은 `Mac-Bridge-0.5.0-beta.11-windows-x64.zip`이며, macOS는 새 빌드 번호 `50011`로 별도 서명·공증합니다. `wait=start`는 의도적으로 장시간 실행되는 서버·REPL 등에만 사용합니다.
+
+
+## 0.5.0-beta.12 — MCP 2026-07-28 discovery
+
+ChatGPT 플러그인 새로고침이 사용하는 `server/discover`를 지원하도록 Python MCP SDK 2.2.0과 `MCPServer`로 마이그레이션한 Preview입니다. 빌드 번호는 `50012`이며 Windows 빌드의 파일명 규칙은 `Mac-Bridge-0.5.0-beta.12-windows-x64.zip`입니다. 소스 smoke에서 2026-07-28 discovery, 29개 도구, Desktop Commander, 요청 로그, 영상 및 전용 브라우저 경로를 검증합니다. 로컬 Preview 빌드와 사용 중 앱 교체 검증은 서명·공증된 공개 릴리스와 구분합니다.

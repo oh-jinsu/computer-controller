@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 import json
@@ -70,29 +69,30 @@ async def run():
             (root / 'mac_bridge').symlink_to(ROOT / 'mac_bridge', target_is_directory=True)
             private_write(root / '.state/mac-settings.json', json.dumps({'workspace': str(project)}).encode())
             set_approval_mode(root, 'always')  # Disposable test root ONLY; never changes the owner's setting.
+            private_write(root / '.state/browser-settings.json', b'{"schema":2,"mode":"dedicated","headless":true}')
             env = clean_env(Path.home()); env['PYTHONPATH'] = str(ROOT)
             params = StdioServerParameters(command=sys.executable, args=['-m', 'mac_bridge.server', '--root', str(root)],
                                            cwd=str(ROOT), env=env)
             async with stdio_client(params) as (reader, writer):
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=80)) as client:
+                async with ClientSession(reader, writer, read_timeout_seconds=80) as client:
                     await client.initialize()
                     tools = {t.name: t for t in (await client.list_tools()).tools}
                     assert len(tools) == 29, sorted(tools)
-                    assert not tools['browser_navigate'].annotations.readOnlyHint
-                    assert not tools['browser_type'].annotations.readOnlyHint
-                    assert not tools['mac_context_save'].annotations.readOnlyHint
-                    assert tools['browser_screenshot'].annotations.readOnlyHint
+                    assert not tools['browser_navigate'].annotations.read_only_hint
+                    assert not tools['browser_type'].annotations.read_only_hint
+                    assert not tools['mac_context_save'].annotations.read_only_hint
+                    assert tools['browser_screenshot'].annotations.read_only_hint
                     assert 'browser_evaluate' not in tools and 'browser_file_upload' not in tools
                     async def call(tool, **args):
                         result = await client.call_tool(tool, args)
-                        assert not result.isError, (tool, text(result))
+                        assert not result.is_error, (tool, text(result))
                         return result
                     status = await call('browser_status')
-                    assert status.structuredContent['installed'] and not status.structuredContent['running']
+                    assert status.structured_content['installed'] and not status.structured_content['running']
                     denied = await client.call_tool('browser_snapshot', {})
-                    assert denied.isError
+                    assert denied.is_error
                     denied = await client.call_tool('browser_navigate', {'url': 'file:///etc/passwd'})
-                    assert denied.isError
+                    assert denied.is_error
                     page = await call('browser_navigate', url=url)
                     snapshot = text(await call('browser_snapshot'))
                     assert 'Mac Bridge local browser test' in snapshot, snapshot
@@ -106,7 +106,7 @@ async def run():
                     await call('browser_resize', width=800, height=600)
                     shot = await call('browser_screenshot')
                     images = [item for item in shot.content if item.type == 'image']
-                    assert len(images) == 1 and images[0].mimeType == 'image/jpeg'
+                    assert len(images) == 1 and images[0].mime_type == 'image/jpeg'
                     raw = base64.b64decode(images[0].data, validate=True)
                     image = Image.open(BytesIO(raw)); image.load()
                     assert image.size == (800, 600), image.size
@@ -124,32 +124,32 @@ async def run():
                     assert '/api' in requests, requests
                     evidence.append('tabs, resize, key input, console and network metadata')
                     await call('browser_close')
-                    assert not (await call('browser_status')).structuredContent['running']
+                    assert not (await call('browser_status')).structured_content['running']
                     await call('browser_navigate', url=url)
                     snapshot = text(await call('browser_snapshot'))
                     assert 'saved:Bridge test' in snapshot, snapshot
                     evidence.append('dedicated profile localStorage persisted across browser restart')
                     first = await call('mac_context_save', name='smoke', title='Local test only', content='Verified local browser test.')
-                    revision = first.structuredContent['revision']
+                    revision = first.structured_content['revision']
                     second = await call('mac_context_save', name='smoke', title='Local test only', content='Updated verified result.', expected_revision=revision)
                     conflict = await client.call_tool('mac_context_save', {'name': 'smoke', 'title': 'stale', 'content': 'Must not replace', 'expected_revision': revision})
-                    assert conflict.isError
-                    assert (await call('mac_context_read', name='smoke')).structuredContent['content'] == 'Updated verified result.'
-                    assert len((await call('mac_context_list')).structuredContent['contexts']) == 1
+                    assert conflict.is_error
+                    assert (await call('mac_context_read', name='smoke')).structured_content['content'] == 'Updated verified result.'
+                    assert len((await call('mac_context_list')).structured_content['contexts']) == 1
                     await call('mac_pause')
-                    assert not (await call('browser_status')).structuredContent['running']
-                    assert (await client.call_tool('browser_navigate', {'url': url})).isError
-                    assert (await client.call_tool('mac_context_read', {'name': 'smoke'})).isError
-                    assert (await client.call_tool('mac_start_process', {'command': 'echo NO'})).isError
+                    assert not (await call('browser_status')).structured_content['running']
+                    assert (await client.call_tool('browser_navigate', {'url': url})).is_error
+                    assert (await client.call_tool('mac_context_read', {'name': 'smoke'})).is_error
+                    assert (await client.call_tool('mac_start_process', {'command': 'echo NO'})).is_error
                     evidence.append('pause closes browser and blocks context/browser operations; video workflow uses the same paused process gate')
             # Simulate a LOCAL restart only inside the disposable fixture root.
             (root / '.state/MAC_PAUSED').unlink()
             async with stdio_client(params) as (reader, writer):
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=80)) as client:
+                async with ClientSession(reader, writer, read_timeout_seconds=80) as client:
                     await client.initialize()
                     result = await client.call_tool('mac_context_read', {'name': 'smoke'})
-                    assert not result.isError and result.structuredContent['content'] == 'Updated verified result.'
-                    assert result.structuredContent['revision'] == second.structuredContent['revision']
+                    assert not result.is_error and result.structured_content['content'] == 'Updated verified result.'
+                    assert result.structured_content['revision'] == second.structured_content['revision']
                     evidence.append('summary survived a new MCP server process; revision conflict rejected')
     finally:
         server.shutdown(); server.server_close(); thread.join(timeout=3)

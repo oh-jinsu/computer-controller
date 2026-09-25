@@ -5,7 +5,6 @@ uses the official permissioned Chrome channel, never copies profile credentials.
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
 import json
 from pathlib import Path
 import shutil
@@ -126,7 +125,7 @@ def limited_result(result):
             if len(item.data) > 8_000_000:
                 raise MacError('Screenshot exceeds the 8 MB encoded image limit; reduce viewport size.')
             blocks.append(item)
-    return CallToolResult(content=blocks, isError=bool(result.isError))
+    return CallToolResult(content=blocks, is_error=bool(result.is_error))
 
 
 class BrowserClient:
@@ -170,7 +169,7 @@ class BrowserClient:
             elif name != 'browser_tabs' or arguments.get('action') not in {'new', 'select', 'list'}:
                 raise MacError('Navigate to start a fresh task tab, or explicitly select an observed tab first.')
         result = limited_result(await session.call_tool(upstream_name, upstream_args))
-        if not result.isError:
+        if not result.is_error:
             self.connected = True
             self.last_error = None
             if upstream_name == 'browser_tabs':
@@ -218,13 +217,13 @@ class BrowserClient:
                                             env={**connection_environment(self.root, self.active_settings),
                                                  "PLAYWRIGHT_BROWSERS_PATH": str(self.assets / ".runtime/playwright-browsers")})
             async with stdio_client(params) as (reader, writer):
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=30)) as session:
+                async with ClientSession(reader, writer, read_timeout_seconds=30) as session:
                     await session.initialize()
                     tools = {t.name: t for t in (await session.list_tools()).tools}
                     if not TOOLS.issubset(tools):
                         raise MacError('Pinned Playwright MCP tools do not match the adapter.')
                     for name in ('browser_click', 'browser_type'):
-                        if 'target' not in tools[name].inputSchema.get('properties', {}):
+                        if 'target' not in tools[name].input_schema.get('properties', {}):
                             raise MacError('Unexpected Playwright target schema; refusing an incompatible runtime.')
                     self.last_error = None
                     self.ready.set_result(None)

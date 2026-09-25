@@ -267,8 +267,8 @@ def error_code(text: str) -> str:
 def summarize_result(result: object, tool: str) -> dict:
     value = getattr(result, 'root', result)
     blocks = getattr(value, 'content', None) or []
-    structured = getattr(value, 'structuredContent', None)
-    summary = {'status': 'error' if getattr(value, 'isError', False) else 'ok',
+    structured = getattr(value, 'structured_content', getattr(value, 'structuredContent', None))
+    summary = {'status': 'error' if getattr(value, 'is_error', getattr(value, 'isError', False)) else 'ok',
                'text_chars': 0, 'images': 0}
     inspected = ''
     for block in blocks:
@@ -469,23 +469,29 @@ class _SDKPayloadFilter(logging.Filter):
 
 
 def install_request_logging(mcp, root: Path, *, workspace: Path | None = None):
-    """Wrap the FINAL SDK handler, preserving schema validation and returned object.
+    """Wrap the FINAL SDK tools/call handler after MCP v2 schema validation.
     Pinned SDK integration: smoke tests must exercise the actual stdio entrypoint.
     No tool schema, permissions, payload or approval selection is changed.
     """
-    from mcp.types import CallToolRequest
-    server = mcp._mcp_server
+    from types import SimpleNamespace
+
+    server = mcp._lowlevel_server
     if getattr(server, '_mac_bridge_request_log', None) is not None:
         return server._mac_bridge_request_log
-    handler = server.request_handlers[CallToolRequest]
+    entry = server.get_request_handler('tools/call')
+    if entry is None:
+        raise RuntimeError('MCP SDK tools/call handler is unavailable')
     sink = RequestLog(root, workspace=workspace)
-    async def logged(request):
-        try:
-            rpc_id = server.request_context.request_id
-        except LookupError:
-            rpc_id = None
-        return await sink.handle(handler, request, rpc_id=rpc_id)
-    server.request_handlers[CallToolRequest] = logged
+
+    async def logged(ctx, params):
+        # RequestLog intentionally sees only the already-validated call-tool params.
+        # Keep its stable request-shaped interface while MCP v2 passes (ctx, params).
+        request = SimpleNamespace(params=params)
+        async def invoke(_request):
+            return await entry.handler(ctx, params)
+        return await sink.handle(invoke, request, rpc_id=ctx.request_id)
+
+    server.add_request_handler('tools/call', entry.params_type, logged)
     server._mac_bridge_request_log = sink
     logger = logging.getLogger('mcp.server.lowlevel.server')
     targets = [logger, *logging.getLogger().handlers]

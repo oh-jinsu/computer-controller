@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
-from datetime import timedelta
 import json
 from pathlib import Path
 import re
@@ -67,7 +66,7 @@ class DesktopClient:
         params = StdioServerParameters(command=node, args=[str(self.assets / 'mac_bridge' / 'dc_entry.mjs')],
                                        cwd=str(self.policy.workspace), env=env)
         async with stdio_client(params) as (read, write):
-            async with ClientSession(read, write, read_timeout_seconds=timedelta(seconds=25)) as session:
+            async with ClientSession(read, write, read_timeout_seconds=25) as session:
                 await session.initialize()
                 response = await session.list_tools()
                 names = {tool.name for tool in response.tools}
@@ -91,7 +90,7 @@ class DesktopClient:
             if not allow_paused:
                 self.policy.require_active()
             result = await self.session.call_tool(name, arguments)
-        if name == 'start_process' and not result.isError:
+        if name == 'start_process' and not result.is_error:
             for block in result.content:
                 text = getattr(block, 'text', '')
                 # Only engine-generated start response, not arbitrary output requests.
@@ -110,7 +109,7 @@ class DesktopClient:
         for pid in tuple(self.pids):
             try:
                 result = await asyncio.wait_for(self.invoke('force_terminate', {'pid': pid}, allow_paused=True), timeout=4)
-                (failed if result.isError else stopped).append(pid)
+                (failed if result.is_error else stopped).append(pid)
                 self.pids.discard(pid)
             except Exception:
                 failed.append(pid)

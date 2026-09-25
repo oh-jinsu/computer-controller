@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from datetime import timedelta
 import json
 import os
 from pathlib import Path
@@ -39,13 +38,13 @@ async def run(runtime: Path):
         stderr_path = parent / 'stderr.txt'
         with stderr_path.open('w+') as stderr:
             async with stdio_client(params, errlog=stderr) as (r, w):
-                async with ClientSession(r, w, read_timeout_seconds=timedelta(seconds=40)) as client:
+                async with ClientSession(r, w, read_timeout_seconds=40) as client:
                     await client.initialize()
                     tools = await client.list_tools()
                     assert len(tools.tools) == 29
                     async def call(name, args=None, error=False):
                         result = await client.call_tool(name, args or {})
-                        assert bool(result.isError) == error, name
+                        assert bool(result.is_error) == error, name
                         return result
                     await call('mac_status')
                     await call('mac_list_directory', {'path': '.', 'depth': 1})

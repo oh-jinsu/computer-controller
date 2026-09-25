@@ -16,7 +16,7 @@ from typing import Annotated, Literal
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from .responses import response
 from .video import INSTRUCTIONS as VIDEO_INSTRUCTIONS, workflow_status
 from . import __version__
@@ -83,10 +83,10 @@ def create_server(root: Path, *, assets: Path | None = None):
                 await browser.close()
                 activity.finish()
 
-    mcp = FastMCP('Mac Bridge', instructions=EXTRA + BROWSER_INSTRUCTIONS + VIDEO_INSTRUCTIONS, lifespan=lifespan)
-    read = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
-    change = ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=True)
-    stop_hint = ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False)
+    mcp = MCPServer('Mac Bridge', instructions=EXTRA + BROWSER_INSTRUCTIONS + VIDEO_INSTRUCTIONS, lifespan=lifespan)
+    read = ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False)
+    change = ToolAnnotations(read_only_hint=False, destructive_hint=True, idempotent_hint=False, open_world_hint=True)
+    stop_hint = ToolAnnotations(read_only_hint=False, destructive_hint=True, idempotent_hint=True, open_world_hint=False)
 
     def guarded(func):
         @functools.wraps(func)
@@ -125,7 +125,7 @@ def create_server(root: Path, *, assets: Path | None = None):
                     raise MacError('File changed before execution. Read it again before retrying.')
                 policy.backup(path, raw)
             result = await dc.invoke(engine_tool, arguments)
-            policy.record(action, shown, 'engine_error' if result.isError else 'completed')
+            policy.record(action, shown, 'engine_error' if result.is_error else 'completed')
             return result
 
     def process_text(result) -> str:
@@ -150,22 +150,22 @@ def create_server(root: Path, *, assets: Path | None = None):
             state = await dc.invoke('read_process_output',
                                     {'pid': pid, 'offset': -1, 'length': 1, 'timeout_ms': 200},
                                     allow_paused=True)
-            if state.isError:
+            if state.is_error:
                 return state
             if process_exit_code(state) is not None:
                 final = await dc.invoke('read_process_output',
                                         {'pid': pid, 'offset': -500, 'length': 500, 'timeout_ms': 200},
                                         allow_paused=True)
-                if final.isError:
+                if final.is_error:
                     return final
                 text = process_text(started) + '\n\n' + process_text(final)
-                return CallToolResult(content=[TextContent(type='text', text=text)], isError=False)
+                return CallToolResult(content=[TextContent(type='text', text=text)], is_error=False)
             await asyncio.sleep(1)
         text = (process_text(started)
                 + f'\n\n⏳ Process is still running after {wait_timeout_ms / 1000:g}s. '
                   'The process was not stopped. Use mac_process_output with this PID, '
                   'or mac_stop_process if the user wants to stop it.')
-        return CallToolResult(content=[TextContent(type='text', text=text)], isError=False)
+        return CallToolResult(content=[TextContent(type='text', text=text)], is_error=False)
 
     @mcp.tool(annotations=read)
     @guarded
@@ -244,7 +244,7 @@ def create_server(root: Path, *, assets: Path | None = None):
         started = await mutate('터미널 명령 실행', {'project': str(policy.workspace), 'command': command},
                                'start_process', {'command': shell, 'timeout_ms': timeout_ms,
                                                  'shell': default_shell()})
-        if started.isError or wait == 'start':
+        if started.is_error or wait == 'start':
             return started
         pid = process_pid(started)
         if pid is None:
@@ -272,8 +272,8 @@ def create_server(root: Path, *, assets: Path | None = None):
         """Stop a process started by this bridge session at the user's request. Never kills arbitrary system PIDs."""
         dc.require_owned(pid)
         result = await dc.invoke('force_terminate', {'pid': pid}, allow_paused=True)
-        policy.record('stop_process', {'pid': pid}, 'engine_error' if result.isError else 'completed')
-        if not result.isError:
+        policy.record('stop_process', {'pid': pid}, 'engine_error' if result.is_error else 'completed')
+        if not result.is_error:
             dc.pids.discard(pid)
         return result
 

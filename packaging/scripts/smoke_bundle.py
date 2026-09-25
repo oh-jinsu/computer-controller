@@ -5,7 +5,6 @@ real site login or external publish action is performed.
 from __future__ import annotations
 import asyncio
 import base64
-from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 import json
@@ -28,7 +27,7 @@ from mac_bridge.app_control import environment, bundle_doctor
 
 
 def text(result): return '\n'.join(getattr(item, 'text', '') for item in result.content)
-def data(result): return result.structuredContent or json.loads(text(result))
+def data(result): return result.structured_content or json.loads(text(result))
 def ref(snapshot, kind, label):
     line = next(line for line in snapshot.splitlines() if kind in line and label in line)
     return re.search(r'\[ref=([^\]]+)\]', line).group(1)
@@ -67,17 +66,18 @@ async def run():
                 args=[str(ASSETS / 'app_entry.py'), 'worker', '--data', str(mutable)],
                 cwd=str(root), env=env)
             async with stdio_client(params) as (reader, writer):
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=60)) as client:
-                    await client.initialize()
+                async with ClientSession(reader, writer, read_timeout_seconds=60) as client:
+                    discovery = await client.discover()
+                    assert '2026-07-28' in discovery.supported_versions, discovery
                     tools = {t.name: t for t in (await client.list_tools()).tools}
                     assert len(tools) == 29, sorted(tools)
                     async def call(name, **arguments):
                         result = await client.call_tool(name, arguments)
-                        assert not result.isError, (name, text(result))
+                        assert not result.is_error, (name, text(result))
                         return result
                     state = data(await call('mac_status'))
                     assert state['independent_runtime'] and not state['source_checkout_is_runtime'] and state['desktop_connected']
-                    checks.append('actual bundled MCP handshake and Desktop Commander connection (29 tools)')
+                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (29 tools)')
                     await call('mac_write_file', path='editable.py', content='new')
                     assert (project / 'editable.py').read_text() == 'new'
                     checks.append('development source file read/write allowed; application resources stayed separate')
@@ -139,10 +139,10 @@ async def run():
                         await call('browser_close')
                     (mutable / '.state/UPDATE_DRAIN').write_text('local update test only')
                     denied = await client.call_tool('mac_start_process', {'command': 'echo should-not-run'})
-                    assert denied.isError and 'update' in text(denied).lower()
+                    assert denied.is_error and 'update' in text(denied).lower()
                     denied_video = await client.call_tool('mac_start_process', {'command': command})
-                    assert denied_video.isError
-                    assert not (await client.call_tool('mac_status', {})).isError
+                    assert denied_video.is_error
+                    assert not (await client.call_tool('mac_status', {})).is_error
                     checks.append('update drain refuses common processes including video workflows; status/cleanup remain available')
                     await asyncio.sleep(0.7)
                     heartbeat = json.loads((mutable / '.state/app-heartbeat.json').read_text())

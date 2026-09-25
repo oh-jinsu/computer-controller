@@ -5,7 +5,6 @@ personal browser, credentials, tunnel or installers are used by this test.
 from __future__ import annotations
 import asyncio
 import base64
-from datetime import timedelta
 import hashlib
 import io
 import json
@@ -58,15 +57,15 @@ async def run():
         log_path = base / 'mcp-stderr.log'
         with log_path.open('w') as stderr:
             async with stdio_client(params, errlog=stderr) as (reader, writer):
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=45)) as client:
+                async with ClientSession(reader, writer, read_timeout_seconds=45) as client:
                     await client.initialize()
                     tools = {t.name for t in (await client.list_tools()).tools}
                     assert len(tools) == 29 and not tools & REMOVED, tools
                     async def call(name, **args):
                         result = await client.call_tool(name, args)
-                        assert not result.isError, (name, text(result))
+                        assert not result.is_error, (name, text(result))
                         return result
-                    status = (await call('mac_status')).structuredContent
+                    status = (await call('mac_status')).structured_content
                     command = status['workflows']['video']['command'] + ' ' + shlex.join([
                         str(video), '--output', str(project / 'frames'), '--timestamps', '0.5', '1.5'])
                     launched = await call('mac_start_process', command=command, timeout_ms=1500)
@@ -87,18 +86,18 @@ async def run():
                     assert hashlib.sha256(video.read_bytes()).hexdigest() == source_digest
                     assert not list((project / 'frames').glob('.partial-*'))
                     denied = await client.call_tool('get_frame', {'job_id': 'old', 'index': 1})
-                    assert denied.isError
+                    assert denied.is_error
                     await call('mac_pause')
                     denied = await client.call_tool('mac_start_process', {'command': command})
-                    assert denied.isError
-                    assert (await client.call_tool('mac_read_file', {'path': result['sheet_path']})).isError
+                    assert denied.is_error
+                    assert (await client.call_tool('mac_read_file', {'path': result['sheet_path']})).is_error
             # Completed results are normal project files: a new server can read them.
             (data / '.state/MAC_PAUSED').unlink()
             async with stdio_client(params, errlog=stderr) as (reader, writer):
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=45)) as client:
+                async with ClientSession(reader, writer, read_timeout_seconds=45) as client:
                     await client.initialize()
                     recovered = await client.call_tool('mac_read_file', {'path': result['sheet_path']})
-                    assert not recovered.isError and any(x.type == 'image' for x in recovered.content)
+                    assert not recovered.is_error and any(x.type == 'image' for x in recovered.content)
         print(json.dumps({'passed': True, 'tool_count': 29,
             'removed_video_tools': sorted(REMOVED),
             'checks': ['actual common process start/output with zero exit code',

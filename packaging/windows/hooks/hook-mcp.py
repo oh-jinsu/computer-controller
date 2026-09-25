@@ -10,4 +10,5 @@ hiddenimports = collect_submodules(
     "mcp",
     filter=lambda name: not (name == "mcp.cli" or name.startswith("mcp.cli.")),
 )
-datas = collect_data_files("mcp")
+hiddenimports += collect_submodules("mcp_types")
+datas = collect_data_files("mcp") + collect_data_files("mcp_types")

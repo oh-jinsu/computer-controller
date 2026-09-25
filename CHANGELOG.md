@@ -1,5 +1,12 @@
 # Changes
 
+## 0.5.0-beta.12 — MCP 2026-07-28 discovery
+
+- Python MCP SDK를 2.2.0으로 올리고 서버를 `MCPServer` API로 마이그레이션해 `server/discover`와 2026-07-28 프로토콜 discovery를 지원합니다.
+- 기존 29개 Mac/브라우저/프로젝트 도구와 legacy `initialize` 기반 내부 어댑터 호환성을 유지합니다.
+- MCP v2의 snake_case Python 모델 필드와 숫자형 timeout API에 맞춰 도구 결과, 이미지, 주석, Desktop Commander/Playwright 클라이언트를 갱신했습니다.
+- 요청 로그 래퍼를 v2 low-level `tools/call` 핸들러에 맞추고, 실제 `server/discover` smoke와 번들 검사를 추가했습니다.
+
 ## 0.5.0-beta.11 — process completion waiting
 
 - `mac_start_process`는 기본적으로 실행한 프로세스가 끝날 때까지 기다린 뒤 PID·종료 코드·보존된 출력을 같은 응답으로 반환합니다.

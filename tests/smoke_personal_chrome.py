@@ -105,7 +105,7 @@ async def run():
                 async def invoke(name, arguments, change=False):
                     result = await browser.invoke(name, arguments, mode='always' if change else None)
                     text = '\n'.join(getattr(c, 'text', '') for c in result.content)
-                    assert not result.isError, (name, text)
+                    assert not result.is_error, (name, text)
                     return result, text
                 await invoke('browser_navigate', {'url': url + '/task'}, True)
                 _, tabs = await invoke('browser_tabs', {'action': 'list'})

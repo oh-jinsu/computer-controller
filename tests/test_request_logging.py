@@ -25,7 +25,7 @@ def response(text='', *, error=False, data=None, image=False):
     blocks = [NS(type='text', text=text)]
     if image:
         blocks.append(NS(type='image', data='DO_NOT_LOG_IMAGE_DATA'))
-    return NS(root=NS(content=blocks, isError=error, structuredContent=data))
+    return NS(root=NS(content=blocks, is_error=error, structured_content=data))
 
 
 class SummaryTests(unittest.TestCase):

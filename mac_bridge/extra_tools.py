@@ -61,7 +61,7 @@ def register_extra_tools(mcp, root: Path, policy, approval, browser, operation_l
             except BaseException:
                 policy.record(action, shown, 'execution_failed_or_cancelled')
                 raise
-            policy.record(action, shown, 'engine_error' if result.isError else 'completed')
+            policy.record(action, shown, 'engine_error' if result.is_error else 'completed')
             return result
 
     async def browser_change(name, args):
@@ -71,7 +71,7 @@ def register_extra_tools(mcp, root: Path, policy, approval, browser, operation_l
         policy.require_active()
         result = await browser.invoke(name, args)
         policy.require_active()
-        policy.record(name, args, 'engine_error' if result.isError else 'completed')
+        policy.record(name, args, 'engine_error' if result.is_error else 'completed')
         return result
 
     @mcp.tool(annotations=read)

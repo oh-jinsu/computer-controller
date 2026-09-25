@@ -30,7 +30,12 @@ def configure_engine(root: Path, workspace: Path) -> tuple[Path, dict[str, str]]
     }
     # Dedicated HOME avoids modifying a separately installed Desktop Commander.
     private_write(config, json.dumps(value).encode())
-    return home, clean_env(home)
+    env = clean_env(home)
+    if sys.platform == 'win32':
+        env['USERPROFILE'] = str(home)
+        env['APPDATA'] = str(private_dir(home / 'AppData/Roaming'))
+        env['LOCALAPPDATA'] = str(private_dir(home / 'AppData/Local'))
+    return home, env
 
 
 class DesktopClient:

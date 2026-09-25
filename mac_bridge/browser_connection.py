@@ -120,6 +120,10 @@ def connection_environment(root: Path, config: dict) -> dict[str, str]:
         for part in ('.state', 'browser', 'home'):
             home = private_dir(home / part)
         env = clean_env(home)
+        if sys.platform == 'win32':
+            env['USERPROFILE'] = str(home)
+            env['APPDATA'] = str(private_dir(home / 'AppData/Roaming'))
+            env['LOCALAPPDATA'] = str(private_dir(home / 'AppData/Local'))
     env['PLAYWRIGHT_BROWSERS_PATH'] = str(root / '.runtime/playwright-browsers')
     env['PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD'] = '1'
     return env

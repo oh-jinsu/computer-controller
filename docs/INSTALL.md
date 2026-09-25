@@ -1,8 +1,8 @@
 # 설치·권한·문제 해결 상세 안내
 
-**ChatGPT에서 내 Mac의 파일, 터미널, Chrome과 영상 프레임을 다루는 개인용 연결 앱입니다.**
+**ChatGPT에서 내 Mac 또는 Windows PC의 파일, 터미널, Chrome과 영상 프레임을 다루는 개인용 연결 앱입니다.**
 
-사용자는 **릴리스 ZIP을 내려받아 `Mac Bridge.app`을 실행**합니다. Homebrew, Python, Node, Git을 따로 설치하거나 소스 코드를 내려받을 필요가 없습니다. 필요한 실행 환경은 앱에 포함되어 있습니다. Google Chrome은 브라우저 기능을 사용할 때만 별도로 필요합니다.
+사용자는 **운영체제에 맞는 릴리스 ZIP을 내려받아 앱을 실행**합니다. Python, Node, Git을 따로 설치하거나 소스 코드를 내려받을 필요가 없습니다. 필요한 실행 환경은 앱에 포함되어 있습니다. Google Chrome은 브라우저 기능을 사용할 때만 별도로 필요합니다.
 
 [릴리스 / 다운로드](https://github.com/oh-jinsu/mac-bridge/releases) · [기존 설치에서 이전하기](#기존-설치에서-이전하기) · [문제 해결](#문제-해결) · [개발자 문서](#개발자-문서)
 
@@ -18,13 +18,23 @@
 | 영상 확인 절차 | 공통 프로세스·파일 도구로 YouTube/로컬 영상의 실제 프레임 추출·이미지 확인 |
 | 작업 인계 | 명시적으로 작성한 작업 요약 저장·불러오기 |
 
-**아직 제공하지 않는 기능:** 브라우저 파일 업로드 도구, 사용 중인 창과 분리된 자동화 전용 백그라운드 창, 일반 Mac 앱의 마우스·키보드 조작, 모든 ChatGPT 대화의 자동 동기화. 따라서 YouTube 영상 업로드 같은 전체 작업이 완성됐다고 안내하지 않습니다. 사이트의 추가 인증이나 접근 제한을 자동으로 우회하지도 않습니다.
+**아직 제공하지 않는 기능:** 브라우저 파일 업로드 도구, 사용 중인 창과 분리된 자동화 전용 백그라운드 창, 일반 데스크톱 앱의 마우스·키보드 조작, 모든 ChatGPT 대화의 자동 동기화. 따라서 YouTube 영상 업로드 같은 전체 작업이 완성됐다고 안내하지 않습니다. 사이트의 추가 인증이나 접근 제한을 자동으로 우회하지도 않습니다.
 
-## 처음 설치하기 — 순서대로 따라 하세요
+## Windows 11 x64 Preview
+
+1. [Releases](https://github.com/oh-jinsu/mac-bridge/releases)에서 `Mac-Bridge-<버전>-windows-x64.zip`을 받고 **전체 압축을 푼 뒤** `Mac Bridge.exe`를 실행하세요.
+2. **터널 ID·Runtime API 키·작업 폴더**를 입력하고 **저장 → 연결 시작**을 누르세요. 새 설치는 **요청된 PC 작업 항상 허용 + 평소 Chrome 로그인 상태 사용**이 기본입니다.
+3. 평소 Chrome을 쓰려면 앱의 **Chrome 허용 페이지** 버튼을 눌러 `chrome://inspect/#remote-debugging`에서 최초 연결을 허용하세요.
+4. ChatGPT의 [Plugins](https://chatgpt.com/plugins)에서 **Add → Create MCP App → Connection: Tunnel**로 같은 터널을 연결하세요.
+5. 새 대화에서 만든 MCP App을 선택하고 `mac_status로 연결 상태를 확인해 주세요.`라고 요청하세요.
+
+Windows판에는 Python·Node·FFmpeg·Deno·터널 클라이언트가 포함됩니다. **현재 Windows Preview는 Authenticode 코드 서명이 없으므로 Microsoft Defender SmartScreen 경고가 나타날 수 있습니다.** GitHub 릴리스의 체크섬과 파일 출처를 확인하세요. Windows의 자동 업데이트는 아직 구현하지 않았으며 새 버전은 릴리스 ZIP으로 교체합니다.
+
+## macOS 설치 — 순서대로 따라 하세요
 
 ### 1. 내 Mac과 계정을 확인하세요
 
-이 릴리스는 **Apple Silicon(M1 이후 M 시리즈) / macOS 26 이상**용입니다. Mac 왼쪽 위 ** → 이 Mac에 관하여**에서 칩과 macOS 버전을 확인하세요. Intel Mac, Windows, 이전 macOS용 설치 파일은 아직 없습니다.
+이 릴리스는 **Apple Silicon(M1 이후 M 시리즈) / macOS 26 이상**용입니다. Mac 왼쪽 위 ** → 이 Mac에 관하여**에서 칩과 macOS 버전을 확인하세요. Intel Mac과 이전 macOS용 설치 파일은 아직 없습니다.
 
 ChatGPT에서 **개발자 모드의 사용자 지정 MCP 연결**과 **Secure MCP Tunnel**을 사용할 수 있어야 합니다. 계정·요금제·워크스페이스 정책에 따라 제공 여부가 다릅니다. 회사나 학교 계정은 관리자 권한이 필요할 수 있습니다. 기능이 보이지 않으면 앱 재설치보다 먼저 [OpenAI의 연결 조건](https://developers.openai.com/plugins/deploy/connect-chatgpt)을 확인하세요.
 

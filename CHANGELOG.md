@@ -1,5 +1,14 @@
 # Changes
 
+## 0.5.0-beta.10 — Windows x64 Preview
+
+- Windows 11 x64용 독립 실행 앱과 GitHub Actions 빌드·실제 패키지 smoke test를 추가했습니다.
+- Windows에서도 파일/PowerShell 프로세스/Chrome/영상 프레임/프로젝트 컨텍스트를 같은 29개 MCP 도구로 제공합니다.
+- 지정 HWND/PID의 실제 창 캡처와 로컬 승인 대화상자를 Win32 API로 구현했습니다. 임의 데스크톱 입력 도구는 추가하지 않았습니다.
+- 새 Windows 설치는 macOS와 같이 `always`와 평소 Chrome(`personal`)을 기본으로 사용합니다.
+- Node·FFmpeg·Deno·Secure MCP Tunnel 런타임은 SHA-256으로 고정된 Windows x64 바이너리를 번들합니다.
+- Windows Preview는 아직 Authenticode 서명과 자동 업데이트가 없습니다. 릴리스 ZIP·SHA-256으로 배포합니다.
+
 ## 0.5.0-beta.9 — command log visibility
 
 - `mac_start_process` 요청 로그에 프로그램·서브커맨드·일반 플래그·경로 등 안전한 명령 인자를 표시합니다.

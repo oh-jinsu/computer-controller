@@ -20,17 +20,28 @@ from .approvals import approval_mode, set_approval_mode
 from .browser_connection import browser_settings, set_browser_mode
 from .migration import read_settings, valid_tunnel_id, valid_workspace
 from .policy import MacError, clean_env, private_dir, private_write
+from .platform_support import (IS_WINDOWS, app_data_dir, executable_name,
+                               packaged_worker_command, tunnel_command_line)
 
 SERVICE = 'scene-bridge-tunnel'
-DEFAULT_DATA = Path.home() / 'Library/Application Support/Mac Bridge'
-ASSETS = Path(__file__).resolve().parents[1]
-RESOURCES = ASSETS.parent
+DEFAULT_DATA = app_data_dir()
+if IS_WINDOWS and getattr(sys, 'frozen', False):
+    RESOURCES = Path(getattr(sys, '_MEIPASS')).resolve()
+    ASSETS = RESOURCES
+else:
+    ASSETS = Path(__file__).resolve().parents[1]
+    RESOURCES = ASSETS.parent
 BIN = RESOURCES / 'bin'
 
 
 def environment() -> dict[str, str]:
     env = clean_env(Path.home())
-    env['PATH'] = str(BIN) + ':' + str(RESOURCES / 'python/bin') + ':/usr/bin:/bin:/usr/sbin:/sbin'
+    parts = [str(BIN)]
+    if not IS_WINDOWS:
+        parts += [str(RESOURCES / 'python/bin'), '/usr/bin', '/bin', '/usr/sbin', '/sbin']
+    elif env.get('PATH'):
+        parts.append(env['PATH'])
+    env['PATH'] = os.pathsep.join(parts)
     env['PYTHONNOUSERSITE'] = '1'
     env['PYTHONDONTWRITEBYTECODE'] = '1'
     env['PYTHONPATH'] = str(ASSETS)
@@ -103,6 +114,15 @@ def status(data: Path) -> dict:
         workspace=read_settings(data / '.state/mac-settings.json').get('workspace'),
         approval_mode=approval_mode(data), browser_mode=browser_settings(data)['mode'],
         paused=(data / '.state/MAC_PAUSED').exists())
+    controller = data / '.state/controller.json'
+    if controller.is_file() and not controller.is_symlink():
+        try:
+            value = read_settings(controller)
+            pid = value.get('pid')
+            if type(pid) is int and pid > 1 and process_exists(pid):
+                result['controller_pid'] = pid
+        except (MacError, OSError, ValueError):
+            pass
     path = data / '.state/app-heartbeat.json'
     if path.is_file() and not path.is_symlink():
         value = read_settings(path)
@@ -122,7 +142,7 @@ def bundle_doctor() -> dict:
     env = environment()
     for name, args in [('node', ['--version']), ('ffmpeg', ['-version']), ('ffprobe', ['-version']),
                        ('deno', ['--version']), ('tunnel-client', ['--version'])]:
-        result = subprocess.run([str(BIN / name), *args], env=env, capture_output=True, timeout=20)
+        result = subprocess.run([str(BIN / executable_name(name)), *args], env=env, capture_output=True, timeout=20)
         if result.returncode:
             raise MacError('Bundled runtime failed: ' + name)
     from .browser import installed
@@ -133,6 +153,7 @@ def bundle_doctor() -> dict:
 
 def serve(data: Path) -> int:
     initialize(data)
+    controller_file = data / '.state/controller.json'
     settings = read_settings(data / '.state/settings.json')
     tid = valid_tunnel_id(settings.get('tunnel_id'))
     bundle_doctor()
@@ -145,6 +166,14 @@ def serve(data: Path) -> int:
             old_lock = old / '.state/mac-launch.lock'
             if old_lock.is_file():
                 stack.enter_context(exclusive_lock(old_lock))
+        private_write(controller_file, json.dumps({'schema': 1, 'pid': os.getpid(), 'started_at': time.time()}).encode())
+        def remove_controller_file():
+            try:
+                if controller_file.is_file() and json.loads(controller_file.read_text()).get('pid') == os.getpid():
+                    controller_file.unlink()
+            except (OSError, ValueError):
+                pass
+        stack.callback(remove_controller_file)
         for marker in ['UPDATE_DRAIN']:
             target = data / '.state' / marker
             if target.is_symlink():
@@ -157,7 +186,7 @@ def serve(data: Path) -> int:
         env = environment()
         env['CONTROL_PLANE_API_KEY'] = key
         env['CONTROL_PLANE_TUNNEL_ID'] = tid
-        command = shlex.join([sys.executable, str(ASSETS / 'app_entry.py'), 'worker', '--data', str(data)])
+        command = tunnel_command_line(packaged_worker_command(ASSETS, data))
         profile_file = data / '.state/app-profile.json'
         config = read_settings(profile_file) if profile_file.exists() else {}
         if config.get('command') != command or config.get('tunnel_id') != tid:
@@ -165,15 +194,17 @@ def serve(data: Path) -> int:
             for args in [['init', '--sample', 'sample_mcp_stdio_local', '--profile', profile,
                           '--tunnel-id', tid, '--mcp-command', command],
                          ['doctor', '--profile', profile]]:
-                result = subprocess.run([str(BIN / 'tunnel-client'), *args], env=env, capture_output=True, timeout=60)
+                result = subprocess.run([str(BIN / executable_name('tunnel-client')), *args], env=env, capture_output=True, timeout=60,
+                                        creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0) if IS_WINDOWS else 0)
                 if result.returncode:
                     raise MacError('Tunnel profile setup failed; check the tunnel ID and Runtime key permissions.')
             config = {'profile': profile, 'command': command, 'tunnel_id': tid}
             private_write(profile_file, json.dumps(config).encode())
-        child = subprocess.Popen([str(BIN / 'tunnel-client'), 'run', '--profile', config['profile'],
-                                  '--cloudflared.path', str(BIN / 'cloudflared'),
+        child = subprocess.Popen([str(BIN / executable_name('tunnel-client')), 'run', '--profile', config['profile'],
+                                  '--cloudflared.path', str(BIN / executable_name('cloudflared')),
                                   '--health.listen-addr', '127.0.0.1:0', '--log.level', 'warn'],
-                                 env=env, stdin=subprocess.DEVNULL)
+                                 env=env, stdin=subprocess.DEVNULL,
+                                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0) if IS_WINDOWS else 0)
         def stop(_sig, _frame):
             if child.poll() is None:
                 child.terminate()
@@ -190,6 +221,8 @@ def serve(data: Path) -> int:
 
 
 def prepare_update(data: Path) -> dict:
+    if IS_WINDOWS:
+        return {'ready': False, 'reason': 'windows_manual_update'}
     initialize(data)
     marker = data / '.state/UPDATE_DRAIN'
     with update_admission(data):
@@ -230,7 +263,7 @@ def main() -> int:
     args = parser.parse_args()
     data = args.data.expanduser().resolve()
     if args.action == 'worker':
-        os.environ.clear(); os.environ.update(environment())
+        env = environment(); os.environ.clear(); os.environ.update(env)
         from .server import main as worker
         sys.argv = [sys.argv[0], '--root', str(data), '--assets', str(ASSETS)]
         worker()

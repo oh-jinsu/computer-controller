@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import sys
 
 from .policy import MacError, Policy, clean_env, private_dir, private_write
 
@@ -21,13 +22,20 @@ def configure_engine(root: Path, workspace: Path) -> tuple[Path, dict[str, str]]
     config = home / '.claude-server-commander' / 'config.json'
     value = {
         'allowedDirectories': [str(workspace)], 'telemetryEnabled': False,
-        'defaultShell': '/bin/sh', 'fileReadLineLimit': 500, 'fileWriteLineLimit': 4000,
+        'defaultShell': 'cmd.exe' if sys.platform == 'win32' else '/bin/sh',
+        'fileReadLineLimit': 500, 'fileWriteLineLimit': 4000,
         'pendingWelcomeOnboarding': False, 'welcomeOnboardingEligible': False,
-        'blockedCommands': ['sudo', 'su', 'mkfs', 'diskutil', 'fdisk', 'dd', 'shutdown', 'reboot'],
+        'blockedCommands': ['sudo', 'su', 'mkfs', 'diskutil', 'fdisk', 'dd', 'shutdown', 'reboot',
+                            'format', 'diskpart', 'Restart-Computer', 'Stop-Computer'],
     }
     # Dedicated HOME avoids modifying a separately installed Desktop Commander.
     private_write(config, json.dumps(value).encode())
-    return home, clean_env(home)
+    env = clean_env(home)
+    if sys.platform == 'win32':
+        env['USERPROFILE'] = str(home)
+        env['APPDATA'] = str(private_dir(home / 'AppData/Roaming'))
+        env['LOCALAPPDATA'] = str(private_dir(home / 'AppData/Local'))
+    return home, env
 
 
 class DesktopClient:

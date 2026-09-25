@@ -1,4 +1,4 @@
-"""macOS-native approval and exact-window capture; no Accessibility/input injection."""
+"""Native approval and exact-window capture for macOS and Windows; no input injection."""
 from __future__ import annotations
 
 import ctypes as C
@@ -28,8 +28,6 @@ class NativeApproval:
 
     def approve(self, action: str, arguments: dict) -> bool:
         self.policy.require_active()
-        if sys.platform != 'darwin':
-            raise MacError('Native approval is available on macOS only; no automatic approval fallback')
         text = json.dumps(arguments, ensure_ascii=False, indent=2)
         pending = private_dir(self.policy.state / 'pending')
         # At most the latest 20 local request previews; not exposed as an MCP tool.
@@ -41,6 +39,11 @@ class NativeApproval:
         private_write(full, text.encode())
         preview = text if len(text) <= 2400 else text[:2400] + '\n… 전체 요청은 아래 파일에 있습니다.'
         message = f'{action}\n\n{preview}\n\n전체 요청: {full}\n\n터미널 명령은 프로젝트 밖에도 접근할 수 있습니다. 승인한 요청 한 번만 실행합니다.'
+        if sys.platform == 'win32':
+            from .native_windows import approval_dialog
+            return approval_dialog(message)
+        if sys.platform != 'darwin':
+            raise MacError('Native approval is available on macOS and Windows only; no automatic approval fallback')
         try:
             result = subprocess.run(['/usr/bin/osascript', '-e', APPROVAL_SCRIPT, '--', message],
                                     capture_output=True, text=True, timeout=40)
@@ -71,6 +74,9 @@ def quartz():
 
 
 def screen_permission(*, request: bool = False) -> bool:
+    if sys.platform == 'win32':
+        from .native_windows import screen_permission as windows_permission
+        return windows_permission(request=request)
     cg, _ = quartz()
     return bool(cg.CGRequestScreenCaptureAccess() if request else cg.CGPreflightScreenCaptureAccess())
 
@@ -78,6 +84,12 @@ def screen_permission(*, request: bool = False) -> bool:
 def windows(app_name: str) -> list[dict]:
     if not app_name.strip() or len(app_name) > 120:
         raise MacError('Specify an application name, such as Godot; do not enumerate all apps')
+    if sys.platform == 'win32':
+        from .native_windows import windows as windows_native
+        try:
+            return windows_native(app_name)
+        except OSError as exc:
+            raise MacError(str(exc)) from exc
     cg, cf = quartz()
     if not cg.CGPreflightScreenCaptureAccess():
         raise MacError('Screen Recording permission is missing. Use the Mac Bridge app screen-permission menu (or Mac-Screen-Permission.command for source installs), then restart if macOS requests it.')
@@ -133,6 +145,18 @@ def capture_window(policy: Policy, app_name: str, window_id: int, owner_pid: int
     match = next((x for x in windows(app_name) if x['window_id'] == window_id and x['owner_pid'] == owner_pid), None)
     if match is None:
         raise MacError('Selected window closed or changed; list windows again. No full-screen fallback.')
+    if sys.platform == 'win32':
+        from .native_windows import capture_png
+        policy.require_active()
+        try:
+            raw = capture_png(window_id, owner_pid)
+        except OSError as exc:
+            raise MacError(str(exc)) from exc
+        if not any(x['window_id'] == window_id and x['owner_pid'] == owner_pid for x in windows(app_name)):
+            raise MacError('Window identity changed during capture; discarded image')
+        policy.require_active()
+        data, metadata = resize_capture(raw, max_edge)
+        return {**match, **metadata, 'source': 'actual Windows window capture'}, data
     with tempfile.TemporaryDirectory(prefix='mac-window-', dir=private_dir(policy.state / 'capture-tmp')) as folder:
         output = Path(folder) / 'window.png'
         policy.require_active()

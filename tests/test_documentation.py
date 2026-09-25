@@ -89,9 +89,12 @@ class DocumentationTests(unittest.TestCase):
 
     def test_release_filename_matches_current_configuration(self):
         config = json.loads((ROOT / 'packaging/release.json').read_text())
-        expected = f'Mac-Bridge-{config["display_version"]}-macos26-arm64.zip'
-        self.assertIn(expected, (ROOT / 'docs/RELEASE-STATUS.md').read_text())
-        self.assertIn('Mac-Bridge-...-macos26-arm64.zip', (ROOT / 'README.md').read_text())
+        expected_windows = f'Mac-Bridge-{config["display_version"]}-windows-x64.zip'
+        status = (ROOT / 'docs/RELEASE-STATUS.md').read_text()
+        readme = (ROOT / 'README.md').read_text()
+        self.assertIn(expected_windows, status)
+        self.assertIn('Mac-Bridge-...-macos26-arm64.zip', readme)
+        self.assertIn('Mac-Bridge-...-windows-x64.zip', readme)
         self.assertEqual(config['minimum_macos'], '26.0')
         self.assertEqual(config['architecture'], 'arm64')
 
@@ -121,7 +124,9 @@ class DocumentationTests(unittest.TestCase):
     def test_app_data_paths_not_source_relative(self):
         readme = (ROOT / 'docs/INSTALL.md').read_text()
         control = (ROOT / 'mac_bridge/app_control.py').read_text()
-        self.assertIn('Library/Application Support/Mac Bridge', control)
+        platform = (ROOT / 'mac_bridge/platform_support.py').read_text()
+        self.assertIn('Library/Application Support/Mac Bridge', platform)
+        self.assertIn('AppData/Local/Mac Bridge', platform)
         self.assertIn('~/Library/Application Support/Mac Bridge/input', readme)
         self.assertIn('~/Library/Application Support/Mac Bridge/.state/contexts', readme)
         self.assertIn('independent_runtime: true', readme)

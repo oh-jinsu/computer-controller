@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -14,6 +15,28 @@ from .policy import MacError, clean_env, private_dir, private_write
 CHROME = Path('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
 MODES = ('dedicated', 'personal')
 SETTINGS_URL = 'chrome://inspect/#remote-debugging'
+
+
+def chrome_executable() -> Path | None:
+    if sys.platform == 'darwin':
+        return CHROME if CHROME.is_file() else None
+    if sys.platform == 'win32':
+        candidates = []
+        for key in ('PROGRAMFILES', 'PROGRAMFILES(X86)', 'LOCALAPPDATA'):
+            base = os.environ.get(key)
+            if base:
+                candidates.append(Path(base) / 'Google/Chrome/Application/chrome.exe')
+        return next((path for path in candidates if path.is_file()), None)
+    return None
+
+
+def chrome_discovery_file() -> Path | None:
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library/Application Support/Google/Chrome/DevToolsActivePort'
+    if sys.platform == 'win32':
+        base = os.environ.get('LOCALAPPDATA')
+        return Path(base) / 'Google/Chrome/User Data/DevToolsActivePort' if base else None
+    return None
 
 
 def browser_settings(root: Path) -> dict:
@@ -57,19 +80,28 @@ def set_browser_mode(root: Path, mode: str) -> dict:
 
 
 def personal_connection_status() -> dict:
-    discovery = Path.home() / 'Library/Application Support/Google/Chrome/DevToolsActivePort'
-    return {'chrome_installed': sys.platform == 'darwin' and CHROME.is_file(),
-            'discovery_file_present': sys.platform == 'darwin' and discovery.is_file(),
+    chrome = chrome_executable()
+    discovery = chrome_discovery_file()
+    return {'chrome_installed': chrome is not None,
+            'discovery_file_present': bool(discovery and discovery.is_file()),
             'permission_controlled_by_chrome': True,
             'setup_page': SETTINGS_URL}
 
 
 def start_personal_chrome() -> None:
-    if sys.platform != 'darwin' or not CHROME.is_file():
-        raise MacError('Personal Chrome mode currently requires installed Google Chrome on macOS.')
-    # Launch Services reuses ordinary Chrome. Never add debugging/profile/security flags.
-    subprocess.run(['/usr/bin/open', '-g', '-a', 'Google Chrome'],
-                   check=True, capture_output=True, timeout=15)
+    chrome = chrome_executable()
+    if chrome is None:
+        raise MacError('Personal Chrome mode requires installed Google Chrome.')
+    # Reuse ordinary Chrome. Never add debugging/profile/security flags.
+    if sys.platform == 'darwin':
+        subprocess.run(['/usr/bin/open', '-g', '-a', 'Google Chrome'],
+                       check=True, capture_output=True, timeout=15)
+    elif sys.platform == 'win32':
+        creationflags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+        subprocess.Popen([str(chrome)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, creationflags=creationflags)
+    else:
+        raise MacError('Personal Chrome mode is supported on macOS and Windows.')
 
 
 def personal_arguments() -> list[str]:
@@ -88,6 +120,10 @@ def connection_environment(root: Path, config: dict) -> dict[str, str]:
         for part in ('.state', 'browser', 'home'):
             home = private_dir(home / part)
         env = clean_env(home)
+        if sys.platform == 'win32':
+            env['USERPROFILE'] = str(home)
+            env['APPDATA'] = str(private_dir(home / 'AppData/Roaming'))
+            env['LOCALAPPDATA'] = str(private_dir(home / 'AppData/Local'))
     env['PLAYWRIGHT_BROWSERS_PATH'] = str(root / '.runtime/playwright-browsers')
     env['PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD'] = '1'
     return env
@@ -108,7 +144,13 @@ def main() -> int:
         if settings['mode'] != 'personal':
             raise MacError('Settings page applies to personal mode only.')
         start_personal_chrome()
-        subprocess.run(['/usr/bin/open', '-a', 'Google Chrome', SETTINGS_URL], check=True, timeout=15)
+        chrome = chrome_executable()
+        if sys.platform == 'darwin':
+            subprocess.run(['/usr/bin/open', '-a', 'Google Chrome', SETTINGS_URL], check=True, timeout=15)
+        elif sys.platform == 'win32' and chrome is not None:
+            subprocess.Popen([str(chrome), SETTINGS_URL], stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     return 0
 
 

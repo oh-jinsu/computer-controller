@@ -34,6 +34,10 @@ def _runtime_env(data: Path, tunnel_id: str, key: str, bin_dir: Path) -> dict[st
     node = os.environ.get('COMPUTER_CONTROLLER_NODE')
     if node:
         env['COMPUTER_CONTROLLER_NODE'] = node
+    package_root = os.environ.get('COMPUTER_CONTROLLER_PACKAGE_ROOT')
+    if package_root:
+        env['COMPUTER_CONTROLLER_PACKAGE_ROOT'] = package_root
+        env['PYTHONPATH'] = package_root
     return env
 
 

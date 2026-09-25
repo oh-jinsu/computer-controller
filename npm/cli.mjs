@@ -481,6 +481,10 @@ async function startCommand() {
   const paths = runtimePaths();
   console.log(`Starting Computer Controller ${VERSION}...`);
   const pythonExe = requireInstalledRuntime(paths);
+  const existing = JSON.parse(backend(paths, pythonExe, 'status').stdout);
+  if (existing.running) {
+    throw new Error(`Computer Controller is already running${existing.controller_pid ? ` (PID ${existing.controller_pid})` : ''}.`);
+  }
   prepareNodeAssets(paths);
   const logLevelIndex = process.argv.indexOf('--log-level');
   const logLevel = logLevelIndex >= 0 ? process.argv[logLevelIndex + 1] : 'warn';
@@ -519,6 +523,7 @@ function statusCommand() {
 function doctorCommand() {
   const paths = runtimePaths();
   const pythonExe = requireInstalledRuntime(paths);
+  prepareNodeAssets(paths);
   const result = backend(paths, pythonExe, 'doctor');
   printJsonOrHuman(JSON.parse(result.stdout), process.argv.includes('--json'));
 }

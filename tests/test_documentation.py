@@ -1,3 +1,4 @@
+"""Offline onboarding checks. No browser, signing key, network or live tunnel access."""
 from __future__ import annotations
 
 import json

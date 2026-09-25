@@ -12,7 +12,6 @@ if (process.platform !== 'linux') {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'computer-controller-linux-smoke-'));
-const prefix = path.join(tmp, 'prefix');
 const data = path.join(tmp, 'data');
 const workspace = path.join(tmp, 'workspace');
 fs.mkdirSync(workspace, { recursive: true });
@@ -36,35 +35,32 @@ function run(command, args, options = {}) {
 try {
   const tarballName = run('npm', ['pack', '--silent', '--pack-destination', tmp]).split(/\r?\n/).at(-1);
   const tarball = path.join(tmp, tarballName);
-  run('npm', ['install', '-g', '--prefix', prefix, tarball,
-              '--ignore-scripts', '--no-audit', '--no-fund']);
-
-  const cli = path.join(prefix, 'bin', 'computer-controller');
   const env = {
     ...process.env,
     COMPUTER_CONTROLLER_DATA_DIR: data,
     COMPUTER_CONTROLLER_PYTHON: process.env.PYTHON || 'python3',
     CONTROL_PLANE_API_KEY: 'test_runtime_key',
   };
-  assert.equal(run(cli, ['--version'], { env }), JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).version);
+  const cli = args => run('npx', ['-y', `--package=${tarball}`, 'computer-controller', ...args], { env });
+  assert.equal(cli(['--version']), JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).version);
 
-  run(cli, [
+  cli([
     'setup', '--non-interactive',
     '--tunnel-id', 'tunnel_abcdefgh12345678',
     '--workspace', workspace,
     '--approval-mode', 'ask',
     '--browser-mode', 'personal',
     '--no-store-key',
-  ], { env });
+  ]);
 
-  const status = JSON.parse(run(cli, ['status', '--json'], { env }));
+  const status = JSON.parse(cli(['status', '--json']));
   assert.equal(status.configured, true);
   assert.equal(status.approval_mode, 'always');
   assert.equal(status.browser_mode, 'dedicated');
   assert.equal(status.runtime_key_available, true);
   assert.equal(status.headless_platform, true);
 
-  const doctor = JSON.parse(run(cli, ['doctor', '--json'], { env }));
+  const doctor = JSON.parse(cli(['doctor', '--json']));
   assert.equal(doctor.ok, true);
   assert.equal(doctor.node_runtime_ready, true);
 

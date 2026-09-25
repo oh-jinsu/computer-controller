@@ -118,16 +118,75 @@ function venvPython(venv, platform = process.platform) {
     : path.join(venv, 'bin', 'python');
 }
 
+function coreFingerprint() {
+  const hash = crypto.createHash('sha256');
+  const files = [path.join(packageRoot, 'pyproject.toml')];
+  for (const directory of ['mac_bridge', 'scene_bridge']) {
+    const root = path.join(packageRoot, directory);
+    const stack = [root];
+    while (stack.length) {
+      const current = stack.pop();
+      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+        const item = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== '__pycache__') stack.push(item);
+        } else if (entry.name.endsWith('.py') || entry.name.endsWith('.mjs')) {
+          files.push(item);
+        }
+      }
+    }
+  }
+  for (const file of files.sort()) {
+    hash.update(path.relative(packageRoot, file));
+    hash.update('\0');
+    hash.update(fs.readFileSync(file));
+    hash.update('\0');
+  }
+  return hash.digest('hex');
+}
+
+function writePythonRuntimeStamp(paths, target) {
+  fs.writeFileSync(path.join(paths.runtime, 'python-runtime.json'),
+    JSON.stringify({ version: VERSION, fingerprint: coreFingerprint(), python: target }, null, 2),
+    { mode: 0o600 });
+}
+
+function installPythonCore(target, { force = false } = {}) {
+  const args = ['-m', 'pip', 'install', '--disable-pip-version-check', '--no-input',
+    '--no-deps', '--upgrade'];
+  if (force) args.push('--force-reinstall');
+  args.push(packageRoot);
+  run(target, args, { timeout: 600000 });
+}
+
 function ensurePythonRuntime(paths, python) {
   ensureDir(paths.runtime);
   const target = venvPython(paths.venv);
   if (!fs.existsSync(target)) {
     run(python.command, [...python.prefix, '-m', 'venv', paths.venv], { timeout: 120000 });
+    run(target, ['-m', 'pip', 'install', '--disable-pip-version-check', '--no-input',
+      '--upgrade', packageRoot], { timeout: 600000 });
+  } else {
+    installPythonCore(target);
   }
-  run(target, ['-m', 'pip', 'install', '--disable-pip-version-check', '--no-input',
-    '--upgrade', packageRoot], { timeout: 600000 });
-  fs.writeFileSync(path.join(paths.runtime, 'python-runtime.json'),
-    JSON.stringify({ version: VERSION, python: target }, null, 2), { mode: 0o600 });
+  writePythonRuntimeStamp(paths, target);
+  return target;
+}
+
+function refreshPythonRuntimeIfNeeded(paths) {
+  const target = venvPython(paths.venv);
+  if (!fs.existsSync(target)) {
+    throw new Error('Computer Controller CLI runtime is not installed. Run computer-controller setup.');
+  }
+  const stampFile = path.join(paths.runtime, 'python-runtime.json');
+  const stamp = readJson(stampFile) || {};
+  const fingerprint = coreFingerprint();
+  if (stamp.fingerprint !== fingerprint) {
+    console.log('Updating Computer Controller Python core to match the installed npm package...');
+    installPythonCore(target, { force: true });
+    prepareNodeAssets(paths);
+    writePythonRuntimeStamp(paths, target);
+  }
   return target;
 }
 
@@ -410,9 +469,7 @@ async function setupCommand(options = {}) {
 }
 
 function requireInstalledRuntime(paths) {
-  const pythonExe = venvPython(paths.venv);
-  if (!fs.existsSync(pythonExe)) throw new Error('Computer Controller CLI runtime is not installed. Run computer-controller setup.');
-  return pythonExe;
+  return refreshPythonRuntimeIfNeeded(paths);
 }
 
 async function startCommand() {

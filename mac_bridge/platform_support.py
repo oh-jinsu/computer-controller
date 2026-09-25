@@ -40,7 +40,30 @@ def bundled_python_bin(resources: Path) -> Path:
 
 
 def command_line(argv: list[str]) -> str:
-    return subprocess.list2cmdline(argv) if IS_WINDOWS else shlex.join(argv)
+    """Command text intended for the user's configured shell."""
+    if not IS_WINDOWS:
+        return shlex.join(argv)
+    # PowerShell needs the call operator when the executable path is quoted.
+    def quote(value: str) -> str:
+        return "'" + value.replace("'", "''") + "'"
+    return "& " + " ".join(quote(value) for value in argv)
+
+
+def tunnel_command_line(argv: list[str]) -> str:
+    """Command string consumed by tunnel-client's own argv parser.
+
+    Its parser treats backslash as an escape even on Windows, so Windows paths are
+    rendered with forward slashes (accepted by CreateProcess) before quoting.
+    """
+    if not IS_WINDOWS:
+        return shlex.join(argv)
+    parts = []
+    for raw in argv:
+        value = raw.replace("\\", "/")
+        if not value or any(ch.isspace() for ch in value) or any(ch in value for ch in '"\\'):
+            value = '"' + value.replace('"', '\\"') + '"'
+        parts.append(value)
+    return " ".join(parts)
 
 
 def shell_command(workspace: Path, command: str) -> tuple[str, str]:

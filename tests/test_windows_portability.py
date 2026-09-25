@@ -14,7 +14,7 @@ from mac_bridge.activity import process_exists
 from mac_bridge.filelock import locked_path
 from mac_bridge.native_windows import screen_permission
 from mac_bridge.platform_support import (app_data_dir, command_line, default_shell,
-                                         executable_name, shell_command)
+                                         executable_name, shell_command, tunnel_command_line)
 
 
 @unittest.skipUnless(sys.platform == "win32", "Windows-only portability checks")
@@ -31,7 +31,11 @@ class WindowsPortabilityTests(unittest.TestCase):
         self.assertEqual(shell, "powershell.exe")
         self.assertIn("Set-Location -LiteralPath", wrapped)
         self.assertIn("git status --short", wrapped)
-        self.assertEqual(command_line(["tool.exe", "hello world"]), 'tool.exe "hello world"')
+        self.assertEqual(command_line(["tool.exe", "hello world"]), "& 'tool.exe' 'hello world'")
+        tunnel = tunnel_command_line([r"C:\Program Files\Mac Bridge\Mac Bridge.exe", "--worker",
+                                      "--data", r"C:\Users\Tester\AppData\Local\Mac Bridge"])
+        self.assertEqual(tunnel, '"C:/Program Files/Mac Bridge/Mac Bridge.exe" --worker --data '
+                                 '"C:/Users/Tester/AppData/Local/Mac Bridge"')
 
     def test_cross_platform_lock_is_exclusive(self):
         with tempfile.TemporaryDirectory() as tmp:

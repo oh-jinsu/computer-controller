@@ -17,6 +17,7 @@ import threading
 from PIL import Image
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mac_bridge.platform_support import command_line
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -110,8 +111,8 @@ async def run(exe: Path) -> None:
                                     "testsrc2=duration=2:size=320x180:rate=10", "-c:v", "mpeg4",
                                     str(video)], check=True, timeout=30)
                     output_dir = workspace / "frames"
-                    command = subprocess.list2cmdline([str(exe), "--video", str(video),
-                                                      "--output", str(output_dir), "--count", "2"])
+                    command = command_line([str(exe), "--video", str(video),
+                                            "--output", str(output_dir), "--count", "2"])
                     launch = await call("mac_start_process", command=command)
                     video_pid = int(re.search(r"PID (\d+)", text(launch)).group(1))
                     complete = None

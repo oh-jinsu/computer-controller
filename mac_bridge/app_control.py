@@ -20,8 +20,8 @@ from .approvals import approval_mode, set_approval_mode
 from .browser_connection import browser_settings, set_browser_mode
 from .migration import read_settings, valid_tunnel_id, valid_workspace
 from .policy import MacError, clean_env, private_dir, private_write
-from .platform_support import (IS_WINDOWS, app_data_dir, command_line, executable_name,
-                               packaged_worker_command)
+from .platform_support import (IS_WINDOWS, app_data_dir, executable_name,
+                               packaged_worker_command, tunnel_command_line)
 
 SERVICE = 'scene-bridge-tunnel'
 DEFAULT_DATA = app_data_dir()
@@ -186,7 +186,7 @@ def serve(data: Path) -> int:
         env = environment()
         env['CONTROL_PLANE_API_KEY'] = key
         env['CONTROL_PLANE_TUNNEL_ID'] = tid
-        command = command_line(packaged_worker_command(ASSETS, data))
+        command = tunnel_command_line(packaged_worker_command(ASSETS, data))
         profile_file = data / '.state/app-profile.json'
         config = read_settings(profile_file) if profile_file.exists() else {}
         if config.get('command') != command or config.get('tunnel_id') != tid:

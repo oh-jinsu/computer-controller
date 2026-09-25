@@ -11,13 +11,11 @@ from contextlib import ExitStack
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import signal
 import subprocess
 import sys
 import time
-import uuid
 
 from .activity import exclusive_lock
 from .app_control import configure as configure_app, initialize, status as app_status
@@ -113,29 +111,15 @@ def start(data: Path, assets: Path, bin_dir: Path, *, log_level: str = 'warn') -
         sys.executable, '-m', 'mac_bridge.server',
         '--root', str(data), '--assets', str(assets),
     ])
-    profile_file = data / '.state/cli-profile.json'
-    profile_config = read_settings(profile_file) if profile_file.exists() else {}
-    profile = profile_config.get('profile')
     env = _runtime_env(data, tunnel_id, key, bin_dir)
+    # The bundled runtime-cloudflared artifact is intentionally run-only: it
+    # does not expose the full client's init/doctor/admin/profile-management
+    # commands. Configure the one main stdio target directly through the
+    # runtime environment instead of trying to create a full-client profile.
+    env['MCP_COMMAND'] = command
 
     with ExitStack() as stack:
         stack.enter_context(exclusive_lock(data / '.state/app-launch.lock'))
-        if (not isinstance(profile, str) or not PROFILE_RE.fullmatch(profile)
-                or profile_config.get('command') != command
-                or profile_config.get('tunnel_id') != tunnel_id):
-            profile = 'computer-controller-cli-' + uuid.uuid4().hex[:12]
-            for args in [
-                ['init', '--sample', 'sample_mcp_stdio_local', '--profile', profile,
-                 '--tunnel-id', tunnel_id, '--mcp-command', command],
-                ['doctor', '--profile', profile],
-            ]:
-                result = subprocess.run([str(tunnel), *args], env=env, cwd=data,
-                                        capture_output=True, text=True, timeout=90)
-                if result.returncode:
-                    raise MacError('Tunnel profile setup failed; verify the tunnel ID and Runtime API key permissions.')
-            private_write(profile_file, json.dumps({
-                'schema': 1, 'profile': profile, 'command': command, 'tunnel_id': tunnel_id,
-            }).encode())
 
         for marker in ('MAC_PAUSED', 'UPDATE_DRAIN'):
             path = data / '.state' / marker
@@ -146,14 +130,14 @@ def start(data: Path, assets: Path, bin_dir: Path, *, log_level: str = 'warn') -
         controller = data / '.state/cli-controller.json'
         private_write(controller, json.dumps({
             'schema': 1, 'pid': os.getpid(), 'started_at': time.time(),
-            'profile': profile, 'tunnel_id': tunnel_id,
+            'tunnel_id': tunnel_id,
         }).encode())
 
         child = subprocess.Popen([
-            str(tunnel), 'run', '--profile', profile,
-            '--cloudflared.path', str(cloudflared),
+            str(tunnel), 'run',
             '--health.listen-addr', '127.0.0.1:0',
             '--log.level', log_level,
+            '--log.format', 'struct-text',
         ], env=env, cwd=data, stdin=subprocess.DEVNULL)
 
         def stop(_sig=None, _frame=None):

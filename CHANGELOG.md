@@ -1,5 +1,13 @@
 # Changes
 
+## 0.5.0-beta.9 — command log visibility
+
+- `mac_start_process` 요청 로그에 프로그램·서브커맨드·일반 플래그·경로 등 안전한 명령 인자를 표시합니다.
+- API 키·토큰·비밀번호·Authorization 헤더·HTTP 본문·검색 패턴·인라인 코드와 스크립트 내용은 계속 마스킹합니다.
+- ChatGPT 연결 안내를 최신 `Plugins → Add → Create MCP App` UI에 맞췄습니다.
+- 새 설치의 `always` 및 평소 Chrome(`personal`) 기본값을 유지합니다.
+
+
 ## 0.5.0-beta.8 — simplified onboarding defaults
 
 - README 설치를 터널 생성 → Runtime API 키 → 앱 실행 → Create MCP App 순서의 짧은 체크리스트로 정리하고 직접 이동 링크를 추가했습니다.

@@ -41,7 +41,9 @@ Run its command with mac_start_process, appending a shell-quoted user-provided Y
 video URL or local file path and --output pointing INSIDE the selected workspace.
 Use --help for count, start/end and explicit timestamps. This process uses the existing
 ask/always, audit, PID ownership, pause and update-drain path; no second server or job queue.
-Use mac_process_output to read progress/exit status. On event=complete and exit code 0,
+`mac_start_process` waits for this workflow to finish by default and returns the retained JSONL
+progress plus exit status in the same result. If a caller explicitly used wait=start or the wait
+safety ceiling was reached, continue with mac_process_output. On event=complete and exit code 0,
 read manifest_path with mac_read_file, then sheet_path or frame paths with mac_read_file.
 mac_read_file already returns local PNG/JPEG images as actual image blocks. A file path alone
 is not visual verification. Read the image before describing it. Read file names with

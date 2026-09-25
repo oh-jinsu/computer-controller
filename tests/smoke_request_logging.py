@@ -54,8 +54,8 @@ async def run(runtime: Path):
                     await call('mac_write_file', {'path': 'output.txt', 'content': secret})
                     result = await call('mac_start_process', {'command': 'printf ' + secret, 'timeout_ms': 1000})
                     text = ''.join(getattr(x, 'text', '') for x in result.content)
-                    pid = int(re.search(r'Process started with PID (\d+)', text).group(1))
-                    await call('mac_process_output', {'pid': pid})
+                    assert re.search(r'Process started with PID \d+', text), text
+                    assert 'Process completed with exit code 0' in text, text
                     await call('mac_read_file', {'path': str(parent / 'outside.txt')}, error=True)
                     await call('mac_read_file', {'path': 'missing.txt'}, error=True)
                     await call('mac_list_directory', {'depth': secret}, error=True)
@@ -69,8 +69,8 @@ async def run(runtime: Path):
         assert secret not in json.dumps(rows), 'Private content leaked to JSONL'
         starts = [row for row in rows if row['event'] == 'request']
         ends = [row for row in rows if row['event'] == 'response']
-        assert len(starts) == len(ends) == 13, (len(starts), len(ends))
-        assert len({row['trace_id'] for row in starts}) == 13
+        assert len(starts) == len(ends) == 12, (len(starts), len(ends))
+        assert len({row['trace_id'] for row in starts}) == 12
         assert {row['trace_id'] for row in starts} == {row['trace_id'] for row in ends}
         assert all('duration_ms' in row and 'rpc_id' in row for row in ends)
         assert sum(row['status'] == 'error' for row in ends) == 5

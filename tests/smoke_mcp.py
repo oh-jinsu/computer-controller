@@ -70,16 +70,10 @@ async def run():
                     command = status['workflows']['video']['command'] + ' ' + shlex.join([
                         str(video), '--output', str(project / 'frames'), '--timestamps', '0.5', '1.5'])
                     launched = await call('mac_start_process', command=command, timeout_ms=1500)
-                    pid = int(re.search(r'PID (\d+)', text(launched)).group(1))
-                    result = complete_event(text(launched)); exit_confirmed = False
-                    deadline = time.monotonic() + 40
-                    while time.monotonic() < deadline:
-                        output = text(await call('mac_process_output', pid=pid))
-                        result = complete_event(output) or result
-                        if 'exit code 0' in output:
-                            exit_confirmed = True; break
-                        await asyncio.sleep(.25)
-                    assert result and exit_confirmed, output
+                    output = text(launched)
+                    pid = int(re.search(r'PID (\d+)', output).group(1))
+                    result = complete_event(output)
+                    assert result and 'exit code 0' in output, output
                     manifest_result = await call('mac_read_file', path=result['manifest_path'])
                     assert 'requested_seconds' in text(manifest_result)
                     manifest = json.loads(Path(result['manifest_path']).read_text())

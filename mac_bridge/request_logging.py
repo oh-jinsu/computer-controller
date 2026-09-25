@@ -38,9 +38,10 @@ mac_capture_window mac_pause mac_recent_actions browser_status browser_navigate 
 browser_screenshot browser_click browser_type browser_press_key browser_resize browser_tabs
 browser_console_messages browser_network_requests browser_close mac_context_list mac_context_read
 mac_context_save'''.split())
-NUMBERS = frozenset('depth offset length timeout_ms pid window_id owner_pid max_edge count index width height start_seconds end_seconds wait_seconds'.split())
+NUMBERS = frozenset('depth offset length timeout_ms wait_timeout_ms pid window_id owner_pid max_edge count index width height start_seconds end_seconds wait_seconds'.split())
 BOOLEANS = frozenset({'submit', 'include_static'})
-ENUMS = {'action': {'list', 'new', 'select', 'close'}, 'level': {'debug', 'info', 'warning', 'error'}}
+ENUMS = {'action': {'list', 'new', 'select', 'close'}, 'level': {'debug', 'info', 'warning', 'error'},
+         'wait': {'complete', 'start'}}
 TEXT_FIELDS = frozenset({'content', 'text', 'old_string', 'new_string', 'title', 'element', 'name'})
 APP_NAMES = {'Google Chrome', 'Chrome', 'Godot', 'Xcode', 'Mac Bridge', 'Terminal', 'Safari'}
 PHASES = {'approval_requested': 'approval_wait', 'auto_approved': 'auto_approved',
@@ -295,7 +296,12 @@ def summarize_result(result: object, tool: str) -> dict:
         pid = re.match(r'^Process started with PID (\d{1,10})\b', inspected)
         if pid:
             summary['pid'] = int(pid.group(1))
-            summary['process_state'] = 'started'  # Not proof that the shell job completed.
+        match = re.search(r'Process completed with exit code (-?\d{1,4}) \(runtime:', inspected)
+        if match:
+            summary['reported_exit_code'] = int(match.group(1))
+            summary['process_state'] = 'completed'
+        elif pid:
+            summary['process_state'] = 'started'
     if tool == 'mac_process_output':
         match = re.search(r'Process completed with exit code (-?\d{1,4}) \(runtime:', inspected)
         if match:

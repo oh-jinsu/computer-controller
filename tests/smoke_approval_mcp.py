@@ -64,7 +64,9 @@ async def test():
             assert p.read_text() == 'edited\n'
             r = await client.call_tool('mac_start_process', {'command': 'printf APPROVAL_SMOKE_OK; pwd', 'timeout_ms': 1000})
             assert not r.isError, r
-            assert any('APPROVAL_SMOKE_OK' in getattr(c, 'text', '') for c in r.content), r
+            combined = '\n'.join(getattr(c, 'text', '') for c in r.content)
+            assert 'APPROVAL_SMOKE_OK' in combined, r
+            assert 'Process completed with exit code 0' in combined, r
             assert not (root / '.state/pending').exists(), 'Always mode must not create native approval previews.'
             actions = await client.call_tool('mac_recent_actions', {'count': 100})
             assert not actions.isError, actions

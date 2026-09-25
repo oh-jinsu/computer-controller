@@ -131,6 +131,18 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(out['pid'], 456); self.assertEqual(out['process_state'], 'started')
         self.assertNotIn('reported_exit_code', out)
 
+    def test_completed_start_process_reports_exit_code(self):
+        text = ('Process started with PID 456 (shell: /bin/sh)\nInitial output:\nhello\n\n'
+                '✅ Process completed with exit code 7 (runtime: 1.25s)')
+        out = rl.summarize_result(response(text), 'mac_start_process')
+        self.assertEqual(out['pid'], 456)
+        self.assertEqual(out['process_state'], 'completed')
+        self.assertEqual(out['reported_exit_code'], 7)
+
+    def test_wait_arguments_are_visible(self):
+        value = {'wait': 'complete', 'wait_timeout_ms': 600000}
+        self.assertEqual(rl.summarize_arguments(value), value)
+
     def test_exit_code_is_separate_from_tool_success(self):
         out = rl.summarize_result(response('✅ Process completed with exit code 3 (runtime: 1.1s)'), 'mac_process_output')
         self.assertEqual(out['status'], 'ok'); self.assertEqual(out['reported_exit_code'], 3)

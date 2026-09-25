@@ -7,7 +7,7 @@ ChatGPT에서 내 **Mac·Windows PC 또는 Linux/EC2 서버**의 파일·터미�
 1. **Node.js 20+**를 설치하세요.
 2. [OpenAI Tunnels](https://platform.openai.com/settings/organization/tunnels)에서 `tunnel_...` ID를 만드세요.
 3. [Organization API keys](https://platform.openai.com/settings/organization/api-keys)에서 Secret key를 만들고, Restricted key라면 **Tunnels: Read + Use**를 허용하세요.
-4. 터미널에서 `npx -y github:oh-jinsu/computer-controller`를 실행하세요. **첫 실행은 자동으로 setup 후 start**, 다음부터는 바로 start 합니다.
+4. 터미널에서 `npx -y github:oh-jinsu/computer-controller`를 실행하세요. **첫 실행은 자동으로 setup 후 start**, 다음부터는 바로 start 합니다. 실행할 때마다 GitHub `main`의 최신 커밋을 확인해 그 정확한 커밋으로 다시 실행하므로 별도 업데이트 명령이 필요 없습니다. 업데이트 확인이 일시적으로 실패하면 현재 캐시본으로 계속 실행합니다.
 5. ChatGPT에서 **설정 → 보안 및 로그인 → 개발자 모드**를 켜세요.
 6. [Plugins](https://chatgpt.com/plugins)에서 **Add → Create MCP App → Connection: Tunnel**을 선택하고 같은 터널을 연결하세요. **앱 이름은 원하는 이름**으로 정하면 됩니다.
 7. 새 대화에서 만든 MCP App을 선택하고 `status로 연결 상태를 확인해 주세요.`라고 요청하세요.
@@ -19,7 +19,8 @@ ChatGPT에서 내 **Mac·Windows PC 또는 Linux/EC2 서버**의 파일·터미�
 - 상태: `npx -y github:oh-jinsu/computer-controller status`
 - 다시 설정: `npx -y github:oh-jinsu/computer-controller setup`
 - 진단: `npx -y github:oh-jinsu/computer-controller doctor`
-- 자주 쓰거나 자동 시작을 원하면 전역 설치: `npm install -g github:oh-jinsu/computer-controller`
+- npx 방식은 실행할 때마다 최신 GitHub `main`을 자동 확인합니다.
+- 자동 시작을 원하면 전역 설치: `npm install -g github:oh-jinsu/computer-controller` (전역 설치본은 수동 업데이트)
 - 전역 설치 후 자동 시작: `computer-controller service install`
 - macOS/Windows GUI 새 설치는 **승인창 없이 사용 + 평소 Chrome 로그인 상태 사용이 기본값**입니다.
 

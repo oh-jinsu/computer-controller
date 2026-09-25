@@ -48,3 +48,7 @@ GitHub 기본 브랜치에 소스를 병합하는 것, 저장소를 공개하는
 ## Windows Preview 0.5.0-beta.10
 
 Windows 11 x64용 첫 Preview입니다. 파일명은 `Mac-Bridge-0.5.0-beta.10-windows-x64.zip`입니다. GitHub Windows 러너에서 패키지 자체를 실행해 MCP/파일/PowerShell/영상/브라우저 smoke test를 통과한 빌드만 게시합니다. 현재 Windows 바이너리는 Authenticode 미서명이며 SmartScreen 평판/서명 검증은 제공하지 않습니다. SHA-256 파일을 함께 배포합니다.
+
+## 0.5.0-beta.11 — process completion waiting
+
+`mac_start_process`의 기본 동작을 프로세스 종료 대기로 변경한 cross-platform Preview입니다. Windows 파일명은 `Mac-Bridge-0.5.0-beta.11-windows-x64.zip`이며, macOS는 새 빌드 번호 `50011`로 별도 서명·공증합니다. `wait=start`는 의도적으로 장시간 실행되는 서버·REPL 등에만 사용합니다.

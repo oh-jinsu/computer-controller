@@ -1,5 +1,14 @@
 # Changes
 
+## 0.5.0-beta.11 — process completion waiting
+
+- `mac_start_process`는 기본적으로 실행한 프로세스가 끝날 때까지 기다린 뒤 PID·종료 코드·보존된 출력을 같은 응답으로 반환합니다.
+- 개발 서버·Godot·REPL·`tail -f`처럼 의도적으로 계속 살아 있어야 하는 프로세스는 `wait=start`로 즉시 PID를 받을 수 있습니다.
+- 기본 완료 대기는 최대 10분 안전 한도를 가지며, 한도에 도달해도 프로세스를 죽이지 않고 PID와 실행 중 상태를 반환합니다.
+- 요청 로그는 기본 완료 대기에서 `process_state=completed`와 실제 종료 코드를 기록합니다.
+- macOS/Linux MCP smoke와 Windows 패키지 smoke가 별도 `mac_process_output` 폴링 없이 기본 완료 대기를 검증합니다.
+
+
 ## 0.5.0-beta.10 — Windows x64 Preview
 
 - Windows 11 x64용 독립 실행 앱과 GitHub Actions 빌드·실제 패키지 smoke test를 추가했습니다.

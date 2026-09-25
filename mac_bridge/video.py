@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 from contextlib import contextmanager
-import fcntl
 import importlib.util
 import json
 import os
@@ -30,6 +29,8 @@ if __package__ in (None, ''):
 from scene_bridge.core import (Backend, BridgeError, CACHE_BYTES, LOCAL_EXTENSIONS,
                                MAX_DURATION, MAX_FRAMES, Request, make_sheet, schedule)
 from mac_bridge.policy import clean_env
+from mac_bridge.filelock import locked_handle
+from mac_bridge.platform_support import command_line, packaged_video_command
 
 MAX_RUN_SECONDS = 240
 MAX_RUN_BYTES = 48 * 1024 * 1024
@@ -55,7 +56,7 @@ Completed project artifacts persist across server restarts; incomplete staging i
 
 
 def workflow_status() -> dict:
-    return {'command': shlex.join([sys.executable, '-B', str(Path(__file__).resolve())]),
+    return {'command': command_line(packaged_video_command(Path(__file__).resolve())),
             'help': '--help', 'output_default': '.mac-bridge-artifacts/video',
             'result_reader': 'mac_read_file', 'max_frames': MAX_FRAMES,
             'max_video_seconds': MAX_DURATION, 'max_run_seconds': MAX_RUN_SECONDS,
@@ -127,19 +128,19 @@ def output_lock(output: Path):
         if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1:
             raise BridgeError('올바르지 않은 작업 잠금 파일입니다.')
         try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with locked_handle(handle, blocking=False):
+                total = 0
+                runs = 0
+                for directory in output.iterdir():
+                    if not RESULT_NAME.fullmatch(directory.name) or directory.is_symlink() or not directory.is_dir():
+                        continue
+                    runs += 1
+                    total += sum(p.stat().st_size for p in directory.iterdir() if p.is_file() and not p.is_symlink())
+                    if total > CACHE_BYTES - MAX_RUN_BYTES or runs >= 512:
+                        raise BridgeError('영상 결과 보관 한도에 도달했습니다. 필요한 결과를 옮기거나 이전 결과를 정리하세요. 자동 삭제하지 않습니다.')
+                yield output
         except BlockingIOError:
             raise BridgeError('이 출력 폴더에서 영상 처리가 진행 중입니다. 기존 프로세스가 끝난 뒤 다시 실행하세요.') from None
-        total = 0
-        runs = 0
-        for directory in output.iterdir():
-            if not RESULT_NAME.fullmatch(directory.name) or directory.is_symlink() or not directory.is_dir():
-                continue
-            runs += 1
-            total += sum(p.stat().st_size for p in directory.iterdir() if p.is_file() and not p.is_symlink())
-            if total > CACHE_BYTES - MAX_RUN_BYTES or runs >= 512:
-                raise BridgeError('영상 결과 보관 한도에 도달했습니다. 필요한 결과를 옮기거나 이전 결과를 정리하세요. 자동 삭제하지 않습니다.')
-        yield output
 
 
 def extract(source: str, output: Path, *, start_seconds=0, end_seconds=None, count=6,

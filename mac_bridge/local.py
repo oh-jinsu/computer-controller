@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 from contextlib import contextmanager
-import fcntl
 import getpass
 import json
 import os
@@ -20,6 +19,7 @@ from .approvals import MODES, approval_mode, set_approval_mode, validate_mode
 from .migration import migrate_settings, read_settings, valid_tunnel_id, valid_workspace
 from .native import screen_permission
 from .policy import MacError, private_dir, private_write
+from .filelock import locked_handle
 
 ROOT = Path(__file__).resolve().parents[1]
 # Preserve ONLY the Keychain lookup namespace, NOT a dependency on the old folder.
@@ -34,10 +34,10 @@ def launch_lock(root: Path):
         raise MacError('실행 잠금 파일이 심볼릭 링크입니다.')
     with path.open('a') as handle:
         try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with locked_handle(handle, blocking=False):
+                yield
         except BlockingIOError as exc:
             raise MacError('이미 실행 중입니다. 기존 실행 창에서 Ctrl+C를 먼저 누르세요.') from exc
-        yield
 
 
 def choose_folder(prompt: str) -> Path:

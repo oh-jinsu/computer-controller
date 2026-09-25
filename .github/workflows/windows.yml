@@ -1,0 +1,52 @@
+name: Windows app
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+          cache: 'pip'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Python dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pyinstaller
+
+      - name: Unit tests on Windows
+        shell: pwsh
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Build and smoke-test Windows app
+        shell: pwsh
+        run: python packaging/windows/build_windows.py
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-bridge-windows-x64
+          path: |
+            dist/windows/*.zip
+            dist/windows/*.json
+            dist/windows/*.txt
+          if-no-files-found: error
+          retention-days: 14

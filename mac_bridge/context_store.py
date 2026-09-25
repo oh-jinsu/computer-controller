@@ -4,7 +4,6 @@ Compare-and-swap revisions plus a local OS lock protect against concurrent chat 
 from __future__ import annotations
 
 from contextlib import contextmanager
-import fcntl
 import hashlib
 import json
 import os
@@ -15,6 +14,7 @@ import time
 import uuid
 
 from .policy import MacError, Policy, private_dir, private_write
+from .filelock import locked_handle
 
 NAME = re.compile(r'[a-z0-9][a-z0-9_-]{0,63}\Z')
 MAX_CONTENT = 100000
@@ -48,9 +48,9 @@ class ContextStore:
         with os.fdopen(fd, 'r+') as stream:
             if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
                 raise MacError('Invalid context lock.')
-            fcntl.flock(stream, fcntl.LOCK_EX)
-            self.policy.require_active()
-            yield directory
+            with locked_handle(stream, blocking=True):
+                self.policy.require_active()
+                yield directory
 
     @staticmethod
     def _read(path: Path) -> dict:

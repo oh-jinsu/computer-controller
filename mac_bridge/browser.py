@@ -14,7 +14,7 @@ import sys
 from urllib.parse import urlsplit
 
 from .approvals import approval_mode
-from .browser_connection import (browser_settings, connection_environment,
+from .browser_connection import (browser_settings, connection_environment, chrome_executable,
                                  personal_arguments, personal_connection_status,
                                  start_personal_chrome)
 from .policy import MacError, Policy, clean_env, private_dir, private_write
@@ -23,8 +23,6 @@ PLAYWRIGHT_MCP_VERSION = '0.0.82'
 TOOLS = frozenset({'browser_navigate', 'browser_snapshot', 'browser_take_screenshot',
                    'browser_click', 'browser_type', 'browser_press_key', 'browser_resize',
                    'browser_tabs', 'browser_console_messages', 'browser_network_requests'})
-CHROME = Path('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
-
 
 def checked_url(url: str) -> str:
     if not isinstance(url, str) or len(url) > 4096 or any(ord(c) < 33 for c in url):
@@ -68,8 +66,9 @@ def runtime_env(root: Path) -> dict[str, str]:
 
 
 def browser_executable(root: Path, *, data: Path | None = None) -> str:
-    if sys.platform == 'darwin' and CHROME.is_file():
-        return str(CHROME)
+    chrome = chrome_executable()
+    if chrome is not None:
+        return str(chrome)
     node = shutil.which('node')
     if not node:
         raise MacError('Node.js is unavailable.')
@@ -99,7 +98,7 @@ def ensure_browser(root: Path) -> bool:
         if not installed(root):
             raise MacError('Playwright MCP installed version did not match.')
         changed = True
-    if not (sys.platform == 'darwin' and CHROME.is_file()):
+    if chrome_executable() is None:
         try:
             browser_executable(root)
         except MacError:

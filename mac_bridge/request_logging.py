@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 from contextvars import ContextVar
 from datetime import datetime
-import fcntl
 import hashlib
 import itertools
 import json
@@ -26,6 +25,8 @@ import time
 import unicodedata
 from urllib.parse import urlsplit
 import uuid
+
+from .filelock import locked_handle
 
 _CURRENT: ContextVar = ContextVar('mac_bridge_request_log', default=None)
 MAX_BYTES = 2_000_000
@@ -306,10 +307,12 @@ def summarize_result(result: object, tool: str) -> dict:
 def _private_fd(path: Path) -> int:
     fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, 'O_NOFOLLOW', 0), 0o600)
     info = os.fstat(fd)
-    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != os.getuid():
+    owner_bad = hasattr(os, 'getuid') and info.st_uid != os.getuid()
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or owner_bad:
         os.close(fd)
         raise OSError('Unsafe log file')
-    os.fchmod(fd, 0o600)
+    if hasattr(os, 'fchmod'):
+        os.fchmod(fd, 0o600)
     return fd
 
 
@@ -334,21 +337,22 @@ class RequestLog:
         line = (json.dumps(row, ensure_ascii=False, allow_nan=False, separators=(',', ':')) + '\n').encode()
         path = directory / 'requests.jsonl'
         with os.fdopen(_private_fd(directory / '.lock'), 'a') as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            for file in (path, path.with_name(path.name + '.1'), path.with_name(path.name + '.2')):
-                if file.is_symlink():
-                    raise OSError('Unsafe log path')
-                if file.exists():
-                    info = file.stat()
-                    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != os.getuid():
-                        raise OSError('Unsafe log file')
-            if path.exists() and path.stat().st_size + len(line) > self.max_bytes:
-                one, two = path.with_name(path.name + '.1'), path.with_name(path.name + '.2')
-                if one.exists():
-                    os.replace(one, two)
-                os.replace(path, one)
-            with os.fdopen(_private_fd(path), 'ab') as file:
-                file.write(line)
+            with locked_handle(lock, blocking=True):
+                for file in (path, path.with_name(path.name + '.1'), path.with_name(path.name + '.2')):
+                    if file.is_symlink():
+                        raise OSError('Unsafe log path')
+                    if file.exists():
+                        info = file.stat()
+                        owner_bad = hasattr(os, 'getuid') and info.st_uid != os.getuid()
+                        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or owner_bad:
+                            raise OSError('Unsafe log file')
+                if path.exists() and path.stat().st_size + len(line) > self.max_bytes:
+                    one, two = path.with_name(path.name + '.1'), path.with_name(path.name + '.2')
+                    if one.exists():
+                        os.replace(one, two)
+                    os.replace(path, one)
+                with os.fdopen(_private_fd(path), 'ab') as file:
+                    file.write(line)
 
     def emit(self, event: str, call: dict, **details):
         try:

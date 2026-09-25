@@ -5,7 +5,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shlex
+
+from .platform_support import default_shell, shell_command
 import stat
 import time
 import uuid
@@ -44,9 +45,12 @@ def fingerprint(data: object) -> str:
 
 def clean_env(home: Path) -> dict[str, str]:
     # Do NOT inherit tunnel/API credentials, cloud credentials, proxy tokens or NODE_OPTIONS.
-    permitted = ('PATH', 'TMPDIR', 'LANG', 'LC_ALL', 'LC_CTYPE', 'TERM', 'USER', 'LOGNAME')
+    permitted = ['PATH', 'TMPDIR', 'LANG', 'LC_ALL', 'LC_CTYPE', 'TERM', 'USER', 'LOGNAME']
+    if os.name == 'nt':
+        permitted += ['SYSTEMROOT', 'WINDIR', 'COMSPEC', 'LOCALAPPDATA', 'APPDATA', 'USERPROFILE',
+                      'PROGRAMFILES', 'PROGRAMFILES(X86)', 'TEMP', 'TMP', 'PATHEXT']
     result = {k: os.environ[k] for k in permitted if k in os.environ}
-    result.update(HOME=str(home), SHELL='/bin/sh', PUPPETEER_SKIP_DOWNLOAD='true',
+    result.update(HOME=str(home), SHELL=default_shell(), PUPPETEER_SKIP_DOWNLOAD='true',
                   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='true', DO_NOT_TRACK='1',
                   PYTHONDONTWRITEBYTECODE='1', PYTHONNOUSERSITE='1')
     return result
@@ -58,7 +62,8 @@ class Policy:
         self.protected_roots = (self.root,)
         self.state = private_dir(self.root / '.state')
         self.workspace = workspace.expanduser().resolve(strict=True)
-        if not self.workspace.is_dir() or self.workspace == Path('/'):
+        root_path = Path(self.workspace.anchor) if self.workspace.anchor else Path('/')
+        if not self.workspace.is_dir() or self.workspace == root_path:
             raise MacError('Choose a project directory, not the filesystem root')
         if self.workspace == Path.home():
             raise MacError('Choose a project directory, not the entire home directory')
@@ -106,9 +111,8 @@ class Policy:
     def shell(self, command: str) -> str:
         if not command.strip() or len(command) > 8000 or '\x00' in command:
             raise MacError('Command must be 1..8000 characters with no NUL')
-        # Command stays one argument to zsh; never splice it into cd/HOME.
-        return (f'cd {shlex.quote(str(self.workspace))} && '
-                f'HOME={shlex.quote(str(Path.home()))} /bin/zsh -f -c {shlex.quote(command)}')
+        # Keep platform-specific path quoting separate from the user command.
+        return shell_command(self.workspace, command)[0]
 
     def record(self, action: str, arguments: dict, state: str) -> None:
         # Wrapper audit excludes contents/command text. Upstream DC has its own local logs.

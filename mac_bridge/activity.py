@@ -3,12 +3,12 @@ This is local lifecycle coordination, not a remotely writable approval mode.
 """
 from __future__ import annotations
 from contextlib import contextmanager
-import fcntl
 import json
 import os
 from pathlib import Path
 import time
 from .policy import MacError, private_write, private_dir
+from .filelock import locked_handle
 
 DRAIN_SAFE = {'mac_status', 'browser_status', 'mac_process_output', 'mac_list_sessions',
               'mac_stop_process', 'mac_recent_actions', 'browser_close', 'mac_pause'}
@@ -86,10 +86,10 @@ def exclusive_lock(path: Path):
     fd = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
     with os.fdopen(fd, 'a') as handle:
         try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with locked_handle(handle, blocking=False):
+                yield
         except BlockingIOError as exc:
             raise MacError('The previous bridge is still running. Stop it before starting the app.') from exc
-        yield
 
 
 @contextmanager
@@ -98,5 +98,5 @@ def update_admission(root: Path):
     state = private_dir(root / '.state')
     fd = os.open(state / 'update-admission.lock', os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
     with os.fdopen(fd, 'a') as handle:
-        fcntl.flock(handle, fcntl.LOCK_EX)
-        yield
+        with locked_handle(handle, blocking=True):
+            yield

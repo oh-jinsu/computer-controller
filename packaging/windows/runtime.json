@@ -1,0 +1,29 @@
+{
+  "architecture": "x64",
+  "node": {
+    "version": "22.23.2",
+    "url": "https://nodejs.org/dist/v22.23.2/node-v22.23.2-win-x64.zip",
+    "sha256": "1177b4137ba5adaa56354ae40f1080c7450e8ae09cecb47da459d1c52ac99f97",
+    "directory": "node-v22.23.2-win-x64"
+  },
+  "tunnel_client": {
+    "version": "0.0.14",
+    "url": "https://github.com/openai/tunnel-client/releases/download/v0.0.14/tunnel-client-runtime-cloudflared-v0.0.14-windows-amd64.zip",
+    "sha256": "b225e23bdb3dc33b41ac1e7bd3197b5c9d628508880bee643c1682cd69ee7f9c",
+    "license_url": "https://github.com/openai/tunnel-client/releases/download/v0.0.14/tunnel-client-runtime-cloudflared-v0.0.14-windows-amd64-licenses.txt",
+    "license_sha256": "a19b6b9c447d260642564f1547edcfddf6f2a86a19750edd00566ba79e27324b"
+  },
+  "deno": {
+    "version": "2.9.7",
+    "url": "https://github.com/denoland/deno/releases/download/v2.9.7/deno-x86_64-pc-windows-msvc.zip",
+    "sha256": "a0c3101b4158d1dfb7d6a78a7bf0f3de80c96bb423c152beec8beb22786f2238",
+    "license_url": "https://raw.githubusercontent.com/denoland/deno/v2.9.7/LICENSE.md",
+    "license_sha256": "f62497fffecc0852960c8d3e6934b9db86d16396e9b604072e923892cae3a588"
+  },
+  "ffmpeg": {
+    "version": "n8.1-latest",
+    "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-win64-gpl-8.1.zip",
+    "sha256": "24d6065c7e4a0d92d7f93b309fd9b890c4aa00d955cf8cef39eba78ccb3bee9c",
+    "note": "Rolling upstream URL pinned by SHA-256; if upstream replaces it the build fails until this manifest is reviewed."
+  }
+}

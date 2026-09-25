@@ -121,7 +121,9 @@ class DocumentationTests(unittest.TestCase):
     def test_app_data_paths_not_source_relative(self):
         readme = (ROOT / 'docs/INSTALL.md').read_text()
         control = (ROOT / 'mac_bridge/app_control.py').read_text()
-        self.assertIn('Library/Application Support/Mac Bridge', control)
+        platform = (ROOT / 'mac_bridge/platform_support.py').read_text()
+        self.assertIn('Library/Application Support/Mac Bridge', platform)
+        self.assertIn('AppData/Local/Mac Bridge', platform)
         self.assertIn('~/Library/Application Support/Mac Bridge/input', readme)
         self.assertIn('~/Library/Application Support/Mac Bridge/.state/contexts', readme)
         self.assertIn('independent_runtime: true', readme)

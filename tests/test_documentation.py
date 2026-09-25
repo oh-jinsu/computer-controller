@@ -47,9 +47,12 @@ class DocumentationTests(unittest.TestCase):
     def test_readme_has_direct_onboarding_links_and_nonfixed_app_name(self):
         readme = (ROOT / 'README.md').read_text()
         self.assertIn('https://platform.openai.com/settings/organization/tunnels', readme)
-        self.assertIn('https://platform.openai.com/api-keys', readme)
+        self.assertIn('https://platform.openai.com/settings/organization/api-keys', readme)
         self.assertIn('https://chatgpt.com/plugins', readme)
         self.assertIn('Create MCP App', readme)
+        self.assertIn('npm install -g github:oh-jinsu/computer-controller', readme)
+        self.assertIn('computer-controller setup', readme)
+        self.assertIn('computer-controller start', readme)
         self.assertIn('앱 이름은 원하는 이름', readme)
         self.assertIn('docs/images/mac-bridge-settings.png', readme)
         self.assertTrue((ROOT / 'docs/images/mac-bridge-settings.png').is_file())

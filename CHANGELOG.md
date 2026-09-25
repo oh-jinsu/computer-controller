@@ -2,6 +2,7 @@
 
 ## 0.5.0-beta.18 — cross-platform npm CLI and Linux/EC2 host
 
+- README의 기본 설치 경로를 npm CLI로 전환하고, `computer-controller start`가 시작 상태·작업 폴더·종료 방법을 즉시 표시하도록 했습니다.
 - `@oh-jinsu/computer-controller` npm package 소스를 추가했습니다. npm Registry 게시 전에도 `npm install -g github:oh-jinsu/computer-controller`로 공개 GitHub 저장소에서 설치할 수 있습니다.
 - 공통 CLI에 `setup`, `start`, `status`, `doctor`, `browser install`, `service ...`, `update` 명령을 추가했습니다. macOS/Windows/Linux x64·arm64에서 같은 CLI 진입점을 사용합니다.
 - npm 설치는 시스템 Python 3.11+를 재사용하거나, 없으면 SHA-256으로 고정한 `uv` 0.12.19로 전용 Python 3.12를 준비합니다. 그 위에 전용 venv와 Node 어댑터를 만들고, OpenAI tunnel-client 0.0.14의 플랫폼별 runtime-cloudflared ZIP도 SHA-256으로 검증해 설치합니다.

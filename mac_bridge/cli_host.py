@@ -134,12 +134,20 @@ def start(data: Path, assets: Path, bin_dir: Path, *, log_level: str = 'warn') -
             'tunnel_id': tunnel_id,
         }).encode())
 
+        current = status(data)
+        workspace = current.get('workspace') or '(not configured)'
+        print(f'Computer Controller {__version__} is starting the Secure MCP Tunnel...', flush=True)
+        print(f'Workspace: {workspace}', flush=True)
+
         child = subprocess.Popen([
             str(tunnel), 'run',
             '--health.listen-addr', '127.0.0.1:0',
             '--log.level', log_level,
             '--log.format', 'struct-text',
         ], env=env, cwd=data, stdin=subprocess.DEVNULL)
+
+        print('Tunnel process started. Waiting for ChatGPT requests...', flush=True)
+        print('Keep this terminal open. Press Ctrl+C to stop.\n', flush=True)
 
         def stop(_sig=None, _frame=None):
             if child.poll() is None:

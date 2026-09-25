@@ -466,6 +466,7 @@ function requireInstalledRuntime(paths) {
 
 async function startCommand() {
   const paths = runtimePaths();
+  console.log(`Starting Computer Controller ${VERSION}...`);
   const pythonExe = requireInstalledRuntime(paths);
   const logLevelIndex = process.argv.indexOf('--log-level');
   const logLevel = logLevelIndex >= 0 ? process.argv[logLevelIndex + 1] : 'warn';

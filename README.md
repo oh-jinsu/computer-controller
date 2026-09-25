@@ -1,45 +1,37 @@
 # Computer Controller
 
-ChatGPT에서 내 **Mac·Windows PC 또는 Linux/EC2 서버**의 파일·터미널·브라우저·영상 프레임을 다루는 MCP 연결 도구입니다.
+ChatGPT에서 내 **Mac·Windows PC 또는 Linux/EC2 서버**의 파일·터미널·브라우저·영상 프레임을 다루는 MCP 연결 도구입니다. **현재 권장 설치 방식은 npm CLI**입니다.
 
-**지원 환경:** Apple Silicon macOS 26+ · Windows 11 x64(Preview) · Linux x64/arm64 CLI(Preview) · ChatGPT 개발자 모드/Tunnel 사용 가능 계정.
+## 설치 — npm CLI 권장
 
-## 설치
+1. **준비:** Node.js 20+를 설치하고 [OpenAI Tunnels](https://platform.openai.com/settings/organization/tunnels)에서 `tunnel_...` ID를 만드세요. [Organization API keys](https://platform.openai.com/settings/organization/api-keys)에서 Secret key를 만들고, Restricted key라면 **Tunnels: Read + Use**를 허용하세요.
+2. **설치:** `npm install -g github:oh-jinsu/computer-controller`
+3. **최초 설정:** `computer-controller setup`을 실행해 터널 ID, 작업 폴더, 승인 모드, 브라우저 모드와 Runtime API key를 입력하세요.
+4. **시작:** `computer-controller start`를 실행하세요. 시작 상태와 작업 폴더가 표시되고 ChatGPT 요청을 기다립니다. 터미널을 열어 두고 종료할 때는 **Ctrl+C**를 누르세요.
+5. ChatGPT에서 **설정 → 보안 및 로그인 → 개발자 모드**를 켜세요.
+6. [Plugins](https://chatgpt.com/plugins)에서 **Add → Create MCP App → Connection: Tunnel**을 선택하고 같은 터널을 연결하세요. **앱 이름은 원하는 이름**으로 정하면 됩니다.
+7. 새 대화에서 만든 MCP App을 선택하고 `status로 연결 상태를 확인해 주세요.`라고 요청하세요.
 
-1. [OpenAI 터널 설정](https://platform.openai.com/settings/organization/tunnels)에서 **터널을 만들고 ChatGPT 워크스페이스를 연결**한 뒤 `tunnel_...` ID를 복사하세요.
-2. [OpenAI API Keys](https://platform.openai.com/api-keys)에서 **Runtime API 키**를 만드세요. 터널 실행에 **Tunnels Read + Use** 권한이 필요합니다.
-3. [Releases](https://github.com/oh-jinsu/computer-controller/releases)에서 운영체제에 맞는 ZIP을 받으세요: **macOS `Computer-Controller-...-macos26-arm64.zip` / Windows `Computer-Controller-...-windows-x64.zip`**.
-4. 앱을 실행하고 **터널 ID·Runtime API 키·작업 폴더**를 입력한 뒤 **저장 → 연결 시작**을 누르세요. **승인창 없이 사용 + 평소 Chrome 로그인 상태 사용이 기본값**입니다.
-5. macOS는 처음 나오는 **화면 기록 권한**을 허용하세요. Windows는 별도 화면 기록 권한 단계가 없습니다.
-6. ChatGPT에서 **설정 → 보안 및 로그인 → 개발자 모드**를 켜고, [Plugins](https://chatgpt.com/plugins)에서 **Add → Create MCP App → Connection: Tunnel**을 선택해 같은 터널을 연결하세요. **앱 이름은 원하는 이름으로 정하면 됩니다.**
-7. 새 대화에서 **방금 만든 MCP App을 선택**하고 `status로 연결 상태를 확인해 주세요.`라고 요청하세요.
-
-macOS는 **Computer Controller.app → 응용 프로그램**으로 옮겨 실행하고, Windows는 압축을 푼 폴더의 **Computer Controller.exe**를 실행합니다.
-
-## npm CLI — macOS / Windows / Linux / EC2
-
-npm Registry 게시 전에는 공개 GitHub 저장소에서 바로 설치할 수 있습니다.
-
-```sh
-npm install -g github:oh-jinsu/computer-controller
-computer-controller setup
-computer-controller start
-```
-
-Linux/EC2는 `always` 승인 + 전용 headless 브라우저만 사용합니다. 재부팅 자동 시작은 `computer-controller service install`, Chromium은 필요할 때 `computer-controller browser install`을 사용합니다. **CLI 설치에 필요한 외부 런타임은 Node.js 20+뿐**이며, Python 3.11+가 없으면 SHA-256으로 검증한 `uv`를 받아 전용 Python 3.12를 자동으로 준비합니다.
-
-![macOS 설정 화면](docs/images/mac-bridge-settings.png)
+Linux/EC2는 **always 승인 + dedicated headless browser**를 사용합니다. 시스템 Python 3.11+가 없으면 검증된 `uv`로 전용 Python 3.12를 준비합니다.
 
 ## 선택 설정
 
-**요청마다 승인창을 띄우려면:** 설정에서 **요청된 컴퓨터 작업 항상 허용**을 끄세요.
+- 상태 확인: `computer-controller status` / `computer-controller doctor`
+- 자동 시작: `computer-controller service install`
+- Linux/EC2 Chromium: `computer-controller browser install`
+- 업데이트: 실행을 Ctrl+C로 종료한 뒤 `npm install -g github:oh-jinsu/computer-controller` → `computer-controller start`
+- macOS/Windows GUI 새 설치는 **승인창 없이 사용 + 평소 Chrome 로그인 상태 사용이 기본값**입니다.
 
-**평소 Chrome 로그인 사용:** Chrome의 `chrome://inspect/#remote-debugging`에서 최초 연결을 허용하세요.
+## GUI 앱 — 선택 사항
 
-## 사용
+GUI를 원하면 [Releases](https://github.com/oh-jinsu/computer-controller/releases)에서 `Computer-Controller-...-macos26-arm64.zip` 또는 `Computer-Controller-...-windows-x64.zip`을 받으세요. GUI와 npm CLI는 설정을 재사용할 수 있지만 같은 터널을 동시에 두 번 실행할 수는 없습니다.
 
-다음부터는 **앱 실행 → ChatGPT에서 만든 MCP App 선택**만 하시면 됩니다.
+![macOS 설정 화면](docs/images/mac-bridge-settings.png)
 
-현재 배포는 **공개 베타**입니다. Windows판은 아직 Authenticode 서명이 없어 Microsoft Defender SmartScreen 경고가 나타날 수 있습니다. 브라우저 파일 업로드·별도 백그라운드 작업 창은 아직 포함하지 않습니다. macOS 베타는 안정판 자동 업데이트 대상이 아닙니다.
+## 현재 범위
+
+파일 읽기·쓰기·편집·이동·복구 가능한 삭제, 터미널/프로세스, 브라우저, 창 캡처, 작업 컨텍스트를 제공합니다. 영상 확인은 공통 프로세스/파일 도구를 이용한 프레임 추출 워크플로입니다.
+
+현재 배포는 **공개 베타**입니다. 브라우저 파일 업로드와 **별도 백그라운드** 작업 창은 아직 제공하지 않으며, macOS 베타는 **안정판 자동 업데이트 대상이 아닙니다**. Windows GUI는 Authenticode 서명이 없을 수 있고 macOS 공증은 릴리스별 설명을 확인하세요.
 
 [설치·권한·문제 해결](docs/INSTALL.md) · [영상 사용법](docs/VIDEO-WORKFLOW.md) · [개발자 문서](docs/DEVELOPMENT.md) · [배포 상태](docs/RELEASE-STATUS.md) · [외부 구성요소·소스](THIRD-PARTY.md)

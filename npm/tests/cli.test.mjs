@@ -62,3 +62,13 @@ test('npm and Python release versions stay aligned', () => {
   const release = JSON.parse(fs.readFileSync(path.join(root, 'packaging/release.json'), 'utf8'));
   assert.equal(pkg.version, release.display_version);
 });
+
+test('start prints an immediate operator-visible status message', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const cli = fs.readFileSync(path.join(root, 'npm/cli.mjs'), 'utf8');
+  const host = fs.readFileSync(path.join(root, 'mac_bridge/cli_host.py'), 'utf8');
+  assert.match(cli, /Starting Computer Controller/);
+  assert.match(host, /starting the Secure MCP Tunnel/);
+  assert.match(host, /Waiting for ChatGPT requests/);
+  assert.match(host, /Press Ctrl\+C to stop/);
+});

@@ -73,7 +73,10 @@ async def run(exe: Path) -> None:
             params = StdioServerParameters(command=str(exe),
                 args=["--worker", "--data", str(state)], cwd=str(workspace), env=dict(__import__("os").environ))
             async with stdio_client(params) as (reader, writer):
-                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=60)) as client:
+                # A fresh Windows runner can spend well over a minute warming the first
+                # PowerShell child. The product wait ceiling is 10 minutes; keep the smoke
+                # client attached long enough to observe the same completion behavior.
+                async with ClientSession(reader, writer, read_timeout_seconds=timedelta(seconds=180)) as client:
                     await client.initialize()
                     tools = {t.name: t for t in (await client.list_tools()).tools}
                     assert len(tools) == 29, sorted(tools)

@@ -77,3 +77,7 @@ ChatGPT 플러그인 새로고침이 사용하는 `server/discover`를 지원하
 ## 0.5.0-beta.16 — Computer Controller rename
 
 제품 표시 이름을 `Computer Controller`로 변경하고 MCP 도구의 `mac_` 접두사를 제거한 cross-platform Preview입니다. 빌드 번호는 `50016`이며 새 Windows 파일명은 `Computer-Controller-0.5.0-beta.16-windows-x64.zip`, macOS 파일명은 `Computer-Controller-0.5.0-beta.16-macos26-arm64.zip`입니다. 도구 수는 37개로 유지됩니다. GitHub 저장소는 `oh-jinsu/computer-controller`로 변경했습니다. `com.ohjinsu.mac-bridge` bundle identifier와 Python 패키지 이름은 호환성을 위해 유지합니다. 새 설치는 `Computer Controller` 데이터 폴더를 사용하지만 기존 `Mac Bridge` 데이터 폴더가 있으면 자동 이동하지 않고 그대로 재사용합니다.
+
+## 0.5.0-beta.17 — single recoverable delete_file
+
+`delete_file`를 추가한 Preview입니다. 빌드 번호는 `50017`이며 Windows 파일명은 `Computer-Controller-0.5.0-beta.17-windows-x64.zip`, macOS 파일명은 `Computer-Controller-0.5.0-beta.17-macos26-arm64.zip`입니다. 전체 도구 수는 38개입니다. 단일 삭제도 `batch_files`의 `delete`와 같은 복구 가능 삭제 경로를 사용해 내부 보관소로 이동하며, 일반 파일만 허용하고 디렉터리는 거부합니다.

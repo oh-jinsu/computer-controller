@@ -77,7 +77,7 @@ async def run():
                 async with ClientSession(reader, writer, read_timeout_seconds=80) as client:
                     await client.initialize()
                     tools = {t.name: t for t in (await client.list_tools()).tools}
-                    assert len(tools) == 37, sorted(tools)
+                    assert len(tools) == 38, sorted(tools)
                     assert not tools['browser_navigate'].annotations.read_only_hint
                     assert not tools['browser_type'].annotations.read_only_hint
                     assert not tools['context_save'].annotations.read_only_hint

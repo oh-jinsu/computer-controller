@@ -51,7 +51,7 @@ async def test():
             assert status.structured_content['approval_mode'] == 'always'
             assert status.structured_content['approval_mode_persistent'] is True
             tools = {t.name: t for t in (await client.list_tools()).tools}
-            assert len(tools) == 37
+            assert len(tools) == 38
             assert tools['start_process'].annotations.read_only_hint is False
             r = await client.call_tool('write_file', {'path': 'sample.txt', 'content': 'after\n'})
             assert not r.is_error, r
@@ -69,6 +69,12 @@ async def test():
             assert not r.is_error, r
             assert not (project / 'move-me.txt').exists()
             assert (project / 'nested/path/moved.txt').read_text() == 'move marker'
+            (project / 'delete-me.txt').write_text('recoverable marker')
+            r = await client.call_tool('delete_file', {'path': 'delete-me.txt'})
+            assert not r.is_error, r
+            assert not (project / 'delete-me.txt').exists()
+            assert r.structured_content['recoverable_deletes'] == 1
+            assert list((root / '.state/batch-trash').rglob('delete-me.txt'))
             r = await client.call_tool('start_process', {'command': 'printf APPROVAL_SMOKE_OK; pwd', 'timeout_ms': 1000})
             assert not r.is_error, r
             combined = '\n'.join(getattr(c, 'text', '') for c in r.content)
@@ -77,7 +83,7 @@ async def test():
             assert not (root / '.state/pending').exists(), 'Always mode must not create native approval previews.'
             actions = await client.call_tool('recent_actions', {'count': 100})
             assert not actions.is_error, actions
-            assert sum(x['state'] == 'auto_approved' for x in actions.structured_content['actions']) == 5
+            assert sum(x['state'] == 'auto_approved' for x in actions.structured_content['actions']) == 6
             outside = parent / 'outside.txt'
             r = await client.call_tool('write_file', {'path': str(outside), 'content': 'no'})
             assert r.is_error and not outside.exists(), r

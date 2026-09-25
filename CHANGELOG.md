@@ -1,5 +1,11 @@
 # Changes
 
+## 0.5.0-beta.17 — single recoverable delete_file
+
+- `delete_file`를 추가해 선택한 작업 폴더의 기존 일반 파일 하나를 단일 MCP 호출로 삭제할 수 있습니다.
+- 삭제는 `batch_files`의 `delete`와 같은 구현을 재사용하며 영구 `unlink` 대신 내부 복구 보관소로 이동합니다. 디렉터리 삭제는 거부합니다.
+- 기존 ask/always 승인, 경로 보호, 실행 직전 변경 감지, 감사 로그를 그대로 적용합니다. 전체 MCP 도구 수는 38개입니다.
+
 ## 0.5.0-beta.16 — Computer Controller naming
 
 - 제품 표시 이름을 **Computer Controller**로 변경했습니다. macOS 앱은 `Computer Controller.app`, Windows 실행 파일은 `Computer Controller.exe`를 사용합니다.

@@ -60,7 +60,7 @@ async def run():
                 async with ClientSession(reader, writer, read_timeout_seconds=45) as client:
                     await client.initialize()
                     tools = {t.name for t in (await client.list_tools()).tools}
-                    assert len(tools) == 37 and not tools & REMOVED, tools
+                    assert len(tools) == 38 and not tools & REMOVED, tools
                     async def call(name, **args):
                         result = await client.call_tool(name, args)
                         assert not result.is_error, (name, text(result))
@@ -98,7 +98,7 @@ async def run():
                     await client.initialize()
                     recovered = await client.call_tool('read_file', {'path': result['sheet_path']})
                     assert not recovered.is_error and any(x.type == 'image' for x in recovered.content)
-        print(json.dumps({'passed': True, 'tool_count': 37,
+        print(json.dumps({'passed': True, 'tool_count': 38,
             'removed_video_tools': sorted(REMOVED),
             'checks': ['actual common process start/output with zero exit code',
                        'real FFmpeg frame extraction at two explicit timestamps',

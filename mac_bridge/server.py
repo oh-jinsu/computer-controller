@@ -29,7 +29,7 @@ from .policy import MacError, Policy
 from .activity import Activity, process_exists
 from .platform_support import default_shell
 from .process_control import inventory as process_inventory, validate_kill_plan
-from .batch_files import BatchOperation, execute_batch, prepare_batch
+from .batch_files import BatchDelete, BatchOperation, execute_batch, prepare_batch
 
 EXTRA = '''\nComputer Controller: use status before computer operations. File tools are limited to the user-selected
 project directory, but approved terminal commands have the current OS user's access, NOT a sandbox.
@@ -230,7 +230,7 @@ def create_server(root: Path, *, assets: Path | None = None):
                          'terminal_is_sandboxed': False, 'click_keyboard_tools': False,
                          'browser_tools': True, 'project_context_tools': True,
                          'independent_runtime': assets is not None, 'source_checkout_is_runtime': assets is None,
-                         'tool_count': 37, 'workflows': {'video': workflow_status()}})
+                         'tool_count': 38, 'workflows': {'video': workflow_status()}})
 
     @mcp.tool(annotations=read)
     @guarded
@@ -302,6 +302,24 @@ def create_server(root: Path, *, assets: Path | None = None):
                 raise MacError('Source or destination changed before execution. Re-read the paths and retry.')
             return await dc.invoke('move_file', {'source': str(src), 'destination': str(dst)})
         return await mutate_call('파일/디렉터리 이동', {'source': str(src), 'destination': str(dst)}, execute_move)
+
+    @mcp.tool(annotations=change)
+    @guarded
+    async def delete_file(path: Annotated[str, Field(min_length=1, max_length=4096)]):
+        """Recoverably delete one existing regular file inside the selected project.
+
+        Uses the same guarded delete path as batch_files: the file is moved into Computer Controller's
+        internal recovery area instead of being permanently unlinked. Directories are refused.
+        """
+        policy.require_active()
+        plan = await asyncio.to_thread(prepare_batch, policy, [BatchDelete(op='delete', path=path)])
+        shown = {'path': plan.shown['operations'][0]['path'], 'recoverable': True}
+
+        async def execute():
+            report, is_error = await asyncio.to_thread(execute_batch, policy, plan)
+            return response(report, error=is_error)
+
+        return await mutate_call('파일 삭제', shown, execute)
 
     @mcp.tool(annotations=read)
     @guarded

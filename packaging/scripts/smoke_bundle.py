@@ -70,14 +70,14 @@ async def run():
                     discovery = await client.discover()
                     assert '2026-07-28' in discovery.supported_versions, discovery
                     tools = {t.name: t for t in (await client.list_tools()).tools}
-                    assert len(tools) == 37, sorted(tools)
+                    assert len(tools) == 38, sorted(tools)
                     async def call(name, **arguments):
                         result = await client.call_tool(name, arguments)
                         assert not result.is_error, (name, text(result))
                         return result
                     state = data(await call('status'))
                     assert state['independent_runtime'] and not state['source_checkout_is_runtime'] and state['desktop_connected']
-                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (37 tools)')
+                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (38 tools)')
                     await call('write_file', path='editable.py', content='new')
                     assert (project / 'editable.py').read_text() == 'new'
                     (project / 'second.txt').write_text('bundle-search-marker\n')
@@ -105,6 +105,11 @@ async def run():
                     assert (project / 'batch-dir/new.txt').read_text() == 'new-bundle-marker'
                     assert 'EDITED' in (project / 'batch-edit.txt').read_text()
                     checks.append('single-call preflighted batch mutation with recoverable delete and rollback support')
+                    (project / 'single-delete.txt').write_text('single-bundle-delete')
+                    single_delete = await call('delete_file', path='single-delete.txt')
+                    assert data(single_delete)['recoverable_deletes'] == 1 and not (project / 'single-delete.txt').exists()
+                    assert list((mutable / '.state/batch-trash').rglob('single-delete.txt'))
+                    checks.append('single-file recoverable delete through the public MCP tool')
                     checks.append('batched reads, file info, search, directory creation and non-overwriting move')
                     checks.append('development source file read/write allowed; application resources stayed separate')
                     result = await call('start_process', command='pwd')

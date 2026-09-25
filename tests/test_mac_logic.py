@@ -112,9 +112,10 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     def tearDown(self): self.tmp.cleanup()
 
     async def test_tools_and_write_annotations(self):
-        self.assertEqual(len(self.mcp.tools), 37)
+        self.assertEqual(len(self.mcp.tools), 38)
         self.assertFalse(self.mcp.annotations['start_process'].read_only_hint)
         self.assertFalse(self.mcp.annotations['write_file'].read_only_hint)
+        self.assertTrue(self.mcp.annotations['delete_file'].destructive_hint)
         self.assertTrue(self.mcp.annotations['read_file'].read_only_hint)
         self.assertNotIn('mac_resume', self.mcp.tools)
         for name in ('start_extraction', 'get_extraction', 'get_frame', 'list_local_videos', 'bridge_status'):
@@ -169,6 +170,30 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(r.is_error); self.assertEqual(p.read_text(), 'after')
         backups = list((self.root / '.state/file-backups').rglob('a.txt'))
         self.assertEqual(backups[0].read_text(), 'before')
+
+    async def test_delete_file_is_recoverable_and_respects_approval(self):
+        target = self.project / 'delete-me.txt'; target.write_text('recover me')
+        denied = await self.mcp.tools['delete_file']('delete-me.txt')
+        self.assertTrue(denied.is_error)
+        self.assertEqual(target.read_text(), 'recover me')
+        self.approver.approve.assert_called_once()
+
+        self.approver.reset_mock()
+        self.always()
+        deleted = await self.mcp.tools['delete_file']('delete-me.txt')
+        self.assertFalse(deleted.is_error)
+        self.assertFalse(target.exists())
+        self.assertEqual(deleted.structured_content['recoverable_deletes'], 1)
+        staged = list((self.root / '.state/batch-trash').rglob('delete-me.txt'))
+        self.assertEqual(len(staged), 1)
+        self.assertEqual(staged[0].read_text(), 'recover me')
+
+        directory = self.project / 'not-a-file'; directory.mkdir()
+        refused = await self.mcp.tools['delete_file']('not-a-file')
+        self.assertTrue(refused.is_error)
+        self.assertTrue(directory.is_dir())
+        outside = await self.mcp.tools['delete_file']('../outside.txt')
+        self.assertTrue(outside.is_error)
 
     async def test_batch_files_uses_one_approval_and_preserves_denied_state(self):
         from mac_bridge.batch_files import BatchEdit, BatchWrite
@@ -386,7 +411,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_always_keeps_write_annotations_and_no_policy_tool(self):
         self.always()
-        self.assertEqual(len(self.mcp.tools), 37)
+        self.assertEqual(len(self.mcp.tools), 38)
         self.assertFalse(self.mcp.annotations['write_file'].read_only_hint)
         self.assertTrue(self.mcp.annotations['start_process'].destructive_hint)
         self.assertNotIn('mac_set_approval_mode', self.mcp.tools)

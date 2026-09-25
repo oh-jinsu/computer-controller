@@ -30,7 +30,7 @@ jobs:
           npm test
           node npm/cli.mjs --help
           npm pack --dry-run
-      - name: Linux npm install, setup, doctor and MCP catalog smoke
+      - name: Linux npx setup, doctor and MCP catalog smoke
         run: node npm/tests/linux-package-smoke.mjs
       - name: Unit tests (includes real FFmpeg; native macOS mocked)
         run: python -m unittest discover -s tests -p 'test_*.py' -v

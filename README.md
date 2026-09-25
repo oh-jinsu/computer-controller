@@ -1,30 +1,30 @@
-# Computer Controller
 
-ChatGPT에서 내 **Mac·Windows PC 또는 Linux/EC2 서버**의 파일·터미널·브라우저·영상 프레임을 다루는 MCP 연결 도구입니다. **현재 권장 설치 방식은 npm CLI**입니다.
+ChatGPT에서 내 **Mac·Windows PC 또는 Linux/EC2 서버**의 파일·터미널·브라우저·영상 프레임을 다루는 MCP 연결 도구입니다. **현재 권장 실행 방식은 npx 한 줄**입니다.
 
-## 설치 — npm CLI 권장
+## 설치 — npx 한 줄 권장
 
-1. **준비:** Node.js 20+를 설치하고 [OpenAI Tunnels](https://platform.openai.com/settings/organization/tunnels)에서 `tunnel_...` ID를 만드세요. [Organization API keys](https://platform.openai.com/settings/organization/api-keys)에서 Secret key를 만들고, Restricted key라면 **Tunnels: Read + Use**를 허용하세요.
-2. **설치:** `npm install -g github:oh-jinsu/computer-controller`
-3. **최초 설정:** `computer-controller setup`을 실행해 터널 ID, 작업 폴더, 승인 모드, 브라우저 모드와 Runtime API key를 입력하세요.
-4. **시작:** `computer-controller start`를 실행하세요. 시작 상태와 작업 폴더가 표시되고 ChatGPT 요청을 기다립니다. 터미널을 열어 두고 종료할 때는 **Ctrl+C**를 누르세요.
+1. **Node.js 20+**를 설치하세요.
+2. [OpenAI Tunnels](https://platform.openai.com/settings/organization/tunnels)에서 `tunnel_...` ID를 만드세요.
+3. [Organization API keys](https://platform.openai.com/settings/organization/api-keys)에서 Secret key를 만들고, Restricted key라면 **Tunnels: Read + Use**를 허용하세요.
+4. 터미널에서 `npx -y github:oh-jinsu/computer-controller`를 실행하세요. **첫 실행은 자동으로 setup 후 start**, 다음부터는 바로 start 합니다.
 5. ChatGPT에서 **설정 → 보안 및 로그인 → 개발자 모드**를 켜세요.
 6. [Plugins](https://chatgpt.com/plugins)에서 **Add → Create MCP App → Connection: Tunnel**을 선택하고 같은 터널을 연결하세요. **앱 이름은 원하는 이름**으로 정하면 됩니다.
 7. 새 대화에서 만든 MCP App을 선택하고 `status로 연결 상태를 확인해 주세요.`라고 요청하세요.
 
-Linux/EC2는 **always 승인 + dedicated headless browser**를 사용합니다. 시스템 Python 3.11+가 없으면 검증된 `uv`로 전용 Python 3.12를 준비합니다.
+첫 설정에서는 터널 ID, 작업 폴더, 승인 모드, 브라우저 모드와 Runtime API key를 묻습니다. Linux/EC2는 **always 승인 + dedicated headless browser**를 사용하며, 시스템 Python 3.11+가 없으면 검증된 `uv`로 전용 Python 3.12를 준비합니다.
 
 ## 선택 설정
 
-- 상태 확인: `computer-controller status` / `computer-controller doctor`
-- 자동 시작: `computer-controller service install`
-- Linux/EC2 Chromium: `computer-controller browser install`
-- 업데이트: 실행을 Ctrl+C로 종료한 뒤 `npm install -g github:oh-jinsu/computer-controller` → `computer-controller start`
+- 상태: `npx -y github:oh-jinsu/computer-controller status`
+- 다시 설정: `npx -y github:oh-jinsu/computer-controller setup`
+- 진단: `npx -y github:oh-jinsu/computer-controller doctor`
+- 자주 쓰거나 자동 시작을 원하면 전역 설치: `npm install -g github:oh-jinsu/computer-controller`
+- 전역 설치 후 자동 시작: `computer-controller service install`
 - macOS/Windows GUI 새 설치는 **승인창 없이 사용 + 평소 Chrome 로그인 상태 사용이 기본값**입니다.
 
 ## GUI 앱 — 선택 사항
 
-GUI를 원하면 [Releases](https://github.com/oh-jinsu/computer-controller/releases)에서 `Computer-Controller-...-macos26-arm64.zip` 또는 `Computer-Controller-...-windows-x64.zip`을 받으세요. GUI와 npm CLI는 설정을 재사용할 수 있지만 같은 터널을 동시에 두 번 실행할 수는 없습니다.
+GUI를 원하면 [Releases](https://github.com/oh-jinsu/computer-controller/releases)에서 `Computer-Controller-...-macos26-arm64.zip` 또는 `Computer-Controller-...-windows-x64.zip`을 받으세요. GUI와 CLI는 설정을 재사용할 수 있지만 같은 터널을 동시에 두 번 실행할 수는 없습니다.
 
 ![macOS 설정 화면](docs/images/mac-bridge-settings.png)
 

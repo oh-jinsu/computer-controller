@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -57,6 +56,17 @@ function runtimePaths(data = dataDirectory()) {
   const assets = path.join(runtime, 'assets');
   const bin = path.join(runtime, 'bin');
   return { data, runtime, venv, assets, bin };
+}
+
+export function needsSetup(data = dataDirectory(), platform = process.platform) {
+  const paths = runtimePaths(data);
+  const settings = readJson(path.join(data, '.state', 'settings.json')) || {};
+  const workspace = readJson(path.join(data, '.state', 'mac-settings.json')) || {};
+  return !fs.existsSync(venvPython(paths.venv, platform))
+    || typeof settings.tunnel_id !== 'string'
+    || !settings.tunnel_id.startsWith('tunnel_')
+    || typeof workspace.workspace !== 'string'
+    || workspace.workspace.length === 0;
 }
 
 function ensureDir(target) {
@@ -457,7 +467,9 @@ async function setupCommand(options = {}) {
   if (process.platform === 'linux') {
     console.log('Linux uses always approval and a dedicated headless browser profile.');
   }
-  console.log('Setup complete. Run: computer-controller start');
+  console.log(options.autoStart
+    ? 'Setup complete. Starting Computer Controller...'
+    : 'Setup complete. Run: computer-controller start');
 }
 
 function requireInstalledRuntime(paths) {
@@ -468,6 +480,7 @@ async function startCommand() {
   const paths = runtimePaths();
   console.log(`Starting Computer Controller ${VERSION}...`);
   const pythonExe = requireInstalledRuntime(paths);
+  prepareNodeAssets(paths);
   const logLevelIndex = process.argv.indexOf('--log-level');
   const logLevel = logLevelIndex >= 0 ? process.argv[logLevelIndex + 1] : 'warn';
   const child = spawn(pythonExe, ['-m', 'mac_bridge.cli_host', 'start',
@@ -484,201 +497,4 @@ async function startCommand() {
     child.once('exit', value => resolve(value ?? 1));
   });
   process.exitCode = code;
-}
-
-function printJsonOrHuman(value, jsonMode) {
-  if (jsonMode) {
-    console.log(JSON.stringify(value, null, 2));
-    return;
-  }
-  for (const [key, val] of Object.entries(value)) {
-    if (typeof val !== 'object') console.log(`${key}: ${val}`);
-  }
-}
-
-function statusCommand() {
-  const paths = runtimePaths();
-  const pythonExe = requireInstalledRuntime(paths);
-  const result = backend(paths, pythonExe, 'status');
-  printJsonOrHuman(JSON.parse(result.stdout), process.argv.includes('--json'));
-}
-
-function doctorCommand() {
-  const paths = runtimePaths();
-  const pythonExe = requireInstalledRuntime(paths);
-  const result = backend(paths, pythonExe, 'doctor');
-  printJsonOrHuman(JSON.parse(result.stdout), process.argv.includes('--json'));
-}
-
-function findPlaywrightCli() {
-  const candidates = [
-    path.join(packageRoot, 'node_modules', 'playwright', 'cli.js'),
-    path.join(packageRoot, 'node_modules', '@playwright', 'mcp', 'node_modules', 'playwright', 'cli.js'),
-  ];
-  return candidates.find(fs.existsSync) || null;
-}
-
-function browserInstallCommand() {
-  const paths = runtimePaths();
-  requireInstalledRuntime(paths);
-  const cli = findPlaywrightCli();
-  if (!cli) throw new Error('Playwright runtime is missing; reinstall the npm package.');
-  ensureDir(path.join(paths.assets, '.runtime', 'playwright-browsers'));
-  run(process.execPath, [cli, 'install', 'chromium'], {
-    stdio: 'inherit',
-    timeout: 600000,
-    env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: path.join(paths.assets, '.runtime', 'playwright-browsers') },
-  });
-}
-
-function xml(value) {
-  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;').replaceAll("'", '&apos;');
-}
-
-function serviceDefinition() {
-  if (process.platform === 'linux') {
-    const file = path.join(os.homedir(), '.config', 'systemd', 'user', 'computer-controller.service');
-    return {
-      file,
-      content: `[Unit]\nDescription=Computer Controller MCP tunnel\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nExecStart=${process.execPath} ${cliFile} start\nRestart=on-failure\nRestartSec=5\n\n[Install]\nWantedBy=default.target\n`,
-    };
-  }
-  if (process.platform === 'darwin') {
-    const file = path.join(os.homedir(), 'Library', 'LaunchAgents', 'com.ohjinsu.computer-controller.plist');
-    return {
-      file,
-      content: `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>\n<key>Label</key><string>com.ohjinsu.computer-controller</string>\n<key>ProgramArguments</key><array><string>${xml(process.execPath)}</string><string>${xml(cliFile)}</string><string>start</string></array>\n<key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>5</integer>\n</dict></plist>\n`,
-    };
-  }
-  return { file: null, content: null };
-}
-
-function serviceCommand(action) {
-  const paths = runtimePaths();
-  const pythonExe = requireInstalledRuntime(paths);
-  if (action === 'install') {
-    const current = JSON.parse(backend(paths, pythonExe, 'status').stdout);
-    if (current.running) throw new Error('Computer Controller is already running. Stop the GUI/CLI instance before installing a service.');
-  }
-  if (process.platform === 'linux') {
-    const def = serviceDefinition();
-    if (action === 'install') {
-      ensureDir(path.dirname(def.file));
-      fs.writeFileSync(def.file, def.content, { mode: 0o600 });
-      run('systemctl', ['--user', 'daemon-reload']);
-      run('systemctl', ['--user', 'enable', '--now', 'computer-controller.service'], { stdio: 'inherit' });
-      console.log('Installed user systemd service. For EC2 reboot-before-login startup, enable user lingering separately if desired.');
-    } else if (action === 'uninstall') {
-      spawnSync('systemctl', ['--user', 'disable', '--now', 'computer-controller.service'], { stdio: 'inherit' });
-      fs.rmSync(def.file, { force: true });
-      run('systemctl', ['--user', 'daemon-reload']);
-    } else {
-      const verb = action === 'status' ? 'status' : action;
-      const args = ['--user', verb, 'computer-controller.service'];
-      if (action === 'status') args.push('--no-pager');
-      const result = spawnSync('systemctl', args, { stdio: 'inherit' });
-      process.exitCode = result.status ?? 1;
-    }
-    return;
-  }
-  if (process.platform === 'darwin') {
-    const def = serviceDefinition();
-    const domain = `gui/${process.getuid()}`;
-    const label = `${domain}/com.ohjinsu.computer-controller`;
-    if (action === 'install') {
-      ensureDir(path.dirname(def.file));
-      fs.writeFileSync(def.file, def.content, { mode: 0o600 });
-      spawnSync('launchctl', ['bootout', label], { stdio: 'ignore' });
-      run('launchctl', ['bootstrap', domain, def.file]);
-      run('launchctl', ['enable', label]);
-      run('launchctl', ['kickstart', '-k', label]);
-    } else if (action === 'uninstall') {
-      spawnSync('launchctl', ['bootout', label], { stdio: 'ignore' });
-      fs.rmSync(def.file, { force: true });
-    } else if (action === 'start') run('launchctl', ['kickstart', '-k', label], { stdio: 'inherit' });
-    else if (action === 'stop') run('launchctl', ['kill', 'SIGTERM', label], { stdio: 'inherit' });
-    else {
-      const result = spawnSync('launchctl', ['print', label], { stdio: 'inherit' });
-      process.exitCode = result.status ?? 1;
-    }
-    return;
-  }
-  if (process.platform === 'win32') {
-    const task = 'Computer Controller';
-    const command = `"${process.execPath}" "${cliFile}" start`;
-    if (action === 'install') {
-      run('schtasks', ['/Create', '/TN', task, '/SC', 'ONLOGON', '/TR', command, '/F'], { stdio: 'inherit' });
-      run('schtasks', ['/Run', '/TN', task], { stdio: 'inherit' });
-    } else if (action === 'uninstall') {
-      spawnSync('schtasks', ['/End', '/TN', task], { stdio: 'ignore' });
-      run('schtasks', ['/Delete', '/TN', task, '/F'], { stdio: 'inherit' });
-    } else if (action === 'start') run('schtasks', ['/Run', '/TN', task], { stdio: 'inherit' });
-    else if (action === 'stop') run('schtasks', ['/End', '/TN', task], { stdio: 'inherit' });
-    else {
-      const result = spawnSync('schtasks', ['/Query', '/TN', task, '/V', '/FO', 'LIST'], { stdio: 'inherit' });
-      process.exitCode = result.status ?? 1;
-    }
-  }
-}
-
-function usage() {
-  console.log(`Computer Controller ${VERSION}
-
-Usage:
-  computer-controller setup [--tunnel-id ID] [--workspace PATH] [--no-store-key]
-  computer-controller start [--log-level warn|info]
-  computer-controller status [--json]
-  computer-controller doctor [--json]
-  computer-controller browser install
-  computer-controller service install|uninstall|start|stop|status
-  computer-controller update
-  computer-controller --version
-
-macOS/Windows may also use the GUI app. Linux/EC2 uses always approval and a
-dedicated headless browser profile. The same tunnel must not be started twice
-on one computer; the shared app-launch lock prevents GUI/CLI duplication.
-`);
-}
-
-async function updateCommand() {
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = spawnSync(npm, ['install', '-g', `${packageJson.name}@latest`], { stdio: 'inherit' });
-  if (result.error) throw new Error('npm is not available in PATH; update with your Node package manager.');
-  process.exitCode = result.status ?? 1;
-}
-
-export async function main(argv = process.argv.slice(2)) {
-  const command = argv[0];
-  if (!command || command === '--help' || command === '-h' || command === 'help') {
-    usage();
-    return;
-  }
-  if (command === '--version' || command === '-v') {
-    console.log(VERSION);
-    return;
-  }
-  if (command === 'setup') return await setupCommand({ nonInteractive: argv.includes('--non-interactive') });
-  if (command === 'start') return await startCommand();
-  if (command === 'status') return statusCommand();
-  if (command === 'doctor') return doctorCommand();
-  if (command === 'browser' && argv[1] === 'install') return browserInstallCommand();
-  if (command === 'service' && ['install', 'uninstall', 'start', 'stop', 'status'].includes(argv[1])) {
-    return serviceCommand(argv[1]);
-  }
-  if (command === 'update') return await updateCommand();
-  throw new Error('Unknown command. Run computer-controller --help.');
-}
-
-function invokedAsMain() {
-  if (!process.argv[1]) return false;
-  try { return fs.realpathSync(process.argv[1]) === fs.realpathSync(cliFile); }
-  catch { return false; }
-}
-
-if (invokedAsMain()) {
-  main().catch(error => {
-    console.error('Computer Controller:', error.message || String(error));
-    process.exitCode = 1;
-  });
 }

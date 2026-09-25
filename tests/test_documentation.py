@@ -1,4 +1,3 @@
-"""Offline onboarding checks. No browser, signing key, network or live tunnel access."""
 from __future__ import annotations
 
 import json
@@ -50,9 +49,9 @@ class DocumentationTests(unittest.TestCase):
         self.assertIn('https://platform.openai.com/settings/organization/api-keys', readme)
         self.assertIn('https://chatgpt.com/plugins', readme)
         self.assertIn('Create MCP App', readme)
+        self.assertIn('npx -y github:oh-jinsu/computer-controller', readme)
+        self.assertIn('첫 실행은 자동으로 setup 후 start', readme)
         self.assertIn('npm install -g github:oh-jinsu/computer-controller', readme)
-        self.assertIn('computer-controller setup', readme)
-        self.assertIn('computer-controller start', readme)
         self.assertIn('앱 이름은 원하는 이름', readme)
         self.assertIn('docs/images/mac-bridge-settings.png', readme)
         self.assertTrue((ROOT / 'docs/images/mac-bridge-settings.png').is_file())

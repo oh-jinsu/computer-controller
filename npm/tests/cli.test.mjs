@@ -1,11 +1,10 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { dataDirectory, platformKey, pythonCandidates } from '../cli.mjs';
+import { dataDirectory, needsSetup, platformKey, pythonCandidates } from '../cli.mjs';
 
 test('platform manifest covers supported desktop/server targets', () => {
   assert.equal(platformKey('darwin', 'arm64'), 'darwin-arm64');
@@ -45,6 +44,25 @@ test('macOS and Windows keep GUI-compatible state paths', () => {
   }
 });
 
+test('npx quick start detects whether first-run setup is needed', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-quickstart-test-'));
+  try {
+    assert.equal(needsSetup(root, process.platform), true);
+    const state = path.join(root, '.state');
+    fs.mkdirSync(state, { recursive: true });
+    fs.writeFileSync(path.join(state, 'settings.json'), JSON.stringify({ tunnel_id: 'tunnel_0123456789abcdef0123456789abcdef' }));
+    fs.writeFileSync(path.join(state, 'mac-settings.json'), JSON.stringify({ workspace: root }));
+    const python = process.platform === 'win32'
+      ? path.join(state, 'npm-runtime', 'venv', 'Scripts', 'python.exe')
+      : path.join(state, 'npm-runtime', 'venv', 'bin', 'python');
+    fs.mkdirSync(path.dirname(python), { recursive: true });
+    fs.writeFileSync(python, 'placeholder');
+    assert.equal(needsSetup(root, process.platform), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('python discovery order is cross-platform and overrideable', () => {
   assert.deepEqual(pythonCandidates('linux', {}), [
     { command: 'python3', prefix: [] },
@@ -67,7 +85,9 @@ test('start prints an immediate operator-visible status message', () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
   const cli = fs.readFileSync(path.join(root, 'npm/cli.mjs'), 'utf8');
   const host = fs.readFileSync(path.join(root, 'mac_bridge/cli_host.py'), 'utf8');
+  assert.match(cli, /First run detected\. Starting setup/);
   assert.match(cli, /Starting Computer Controller/);
+  assert.match(cli, /npx -y github:oh-jinsu\/computer-controller/);
   assert.match(host, /starting the Secure MCP Tunnel/);
   assert.match(host, /Waiting for ChatGPT requests/);
   assert.match(host, /Press Ctrl\+C to stop/);

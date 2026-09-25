@@ -22,7 +22,7 @@
 
 ## npm CLI — macOS / Windows / Linux / EC2 Preview
 
-npm Registry 게시 전에는 공개 GitHub 저장소를 npx가 직접 실행합니다. **인자 없이 실행하면 첫 실행은 setup 후 바로 start하고, 이후에는 곧바로 start합니다.**
+npm Registry 게시 전에는 공개 GitHub 저장소를 npx가 직접 실행합니다. **인자 없이 실행하면 첫 실행은 setup 후 바로 start하고, 이후에는 곧바로 start합니다.** 시작할 때마다 GitHub `main`의 최신 커밋 SHA를 확인한 뒤 그 정확한 커밋으로 재실행합니다. 확인이 실패하면 현재 npx 캐시본으로 계속 실행하므로 일시적인 GitHub/API 장애가 실행 자체를 막지는 않습니다.
 
 ```sh
 npx -y github:oh-jinsu/computer-controller

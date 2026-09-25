@@ -56,6 +56,9 @@ async def run():
             (mutable / '.state').mkdir(parents=True); (mutable / 'input').mkdir(); project.mkdir(parents=True)
             (mutable / '.state/mac-settings.json').write_text(json.dumps({'workspace': str(project)}))
             (mutable / '.state/approval-settings.json').write_text('{"schema":1,"mode":"always"}')
+            # The product default is personal Chrome. This packaging smoke must stay
+            # disposable and must never attach to the developer's real browser/profile.
+            (mutable / '.state/browser-settings.json').write_text('{"schema":2,"mode":"dedicated","headless":true}')
             (project / 'editable.py').write_text('old')
             subprocess.run([str(RESOURCES / 'bin/ffmpeg'), '-v', 'error', '-f', 'lavfi', '-i',
                             'testsrc2=duration=2:size=320x180:rate=10', '-c:v', 'mpeg4',

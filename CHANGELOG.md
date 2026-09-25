@@ -4,7 +4,7 @@
 
 - `@oh-jinsu/computer-controller` npm package 소스를 추가했습니다. npm Registry 게시 전에도 `npm install -g github:oh-jinsu/computer-controller`로 공개 GitHub 저장소에서 설치할 수 있습니다.
 - 공통 CLI에 `setup`, `start`, `status`, `doctor`, `browser install`, `service ...`, `update` 명령을 추가했습니다. macOS/Windows/Linux x64·arm64에서 같은 CLI 진입점을 사용합니다.
-- npm 설치는 전용 Python venv와 Node 어댑터를 만들고, OpenAI tunnel-client 0.0.14의 플랫폼별 runtime-cloudflared ZIP을 SHA-256으로 검증한 뒤 설치합니다.
+- npm 설치는 시스템 Python 3.11+를 재사용하거나, 없으면 SHA-256으로 고정한 `uv` 0.12.19로 전용 Python 3.12를 준비합니다. 그 위에 전용 venv와 Node 어댑터를 만들고, OpenAI tunnel-client 0.0.14의 플랫폼별 runtime-cloudflared ZIP도 SHA-256으로 검증해 설치합니다.
 - Linux/EC2는 XDG 데이터 경로, bash/sh 명령 실행, `always` 승인, 전용 headless 브라우저, 0600 Runtime API 키 저장을 사용합니다. systemd 사용자 서비스 설치를 지원하며 `sudo`를 자동 실행하지 않습니다.
 - macOS/Windows CLI는 기존 GUI 데이터 디렉터리와 실행 잠금을 공유해 같은 컴퓨터에서 GUI/CLI 중복 실행을 거부합니다. npm Registry 자체에는 아직 게시하지 않았습니다.
 

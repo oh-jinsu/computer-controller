@@ -26,7 +26,7 @@ computer-controller setup
 computer-controller start
 ```
 
-Linux/EC2는 `always` 승인 + 전용 headless 브라우저만 사용합니다. 재부팅 자동 시작은 `computer-controller service install`, Chromium은 필요할 때 `computer-controller browser install`을 사용합니다. 현재 CLI는 Node.js 20+와 Python 3.11+가 필요합니다.
+Linux/EC2는 `always` 승인 + 전용 headless 브라우저만 사용합니다. 재부팅 자동 시작은 `computer-controller service install`, Chromium은 필요할 때 `computer-controller browser install`을 사용합니다. **CLI 설치에 필요한 외부 런타임은 Node.js 20+뿐**이며, Python 3.11+가 없으면 SHA-256으로 검증한 `uv`를 받아 전용 Python 3.12를 자동으로 준비합니다.
 
 ![macOS 설정 화면](docs/images/mac-bridge-settings.png)
 

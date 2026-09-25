@@ -1,5 +1,28 @@
 {
   "tunnel_client_version": "0.0.14",
+  "uv_version": "0.12.19",
+  "uv": {
+    "darwin-arm64": {
+      "url": "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-aarch64-apple-darwin.tar.gz",
+      "sha256": "a9a8df1eedeb192f2e47e40e2faabfb387db4b850209118786d42f89dde3e0ba"
+    },
+    "darwin-x64": {
+      "url": "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-x86_64-apple-darwin.tar.gz",
+      "sha256": "cb5fa57bafe68fc0fb94b17f06bee0b0b9a7feb94ccbd110445afa0696e39273"
+    },
+    "linux-x64": {
+      "url": "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "23bf5552d220e0842b65c862097b2ebaeba0064b74eda5e565e77fd25969d8c8"
+    },
+    "linux-arm64": {
+      "url": "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "0804e9b164c64b6914182d5920c08551958a095986f10a3731056df701126436"
+    },
+    "win32-x64": {
+      "url": "https://github.com/astral-sh/uv/releases/download/0.12.19/uv-x86_64-pc-windows-msvc.zip",
+      "sha256": "6dbb02d79e419522f1c500f0adb1cddcff0cda7d59b0d66ea7f5e3b4a1b2f5f0"
+    }
+  },
   "platforms": {
     "darwin-arm64": {
       "url": "https://github.com/openai/tunnel-client/releases/download/v0.0.14/tunnel-client-runtime-cloudflared-v0.0.14-darwin-arm64.zip",

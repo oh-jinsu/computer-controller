@@ -30,7 +30,7 @@ computer-controller setup
 computer-controller start
 ```
 
-현재 CLI에는 **Node.js 20+와 Python 3.11+**가 필요합니다. `setup`은 전용 Python venv, Desktop Commander/Playwright 어댑터, 플랫폼별 OpenAI `tunnel-client` + `cloudflared`를 사용자 데이터 폴더에 준비하고 다운로드한 터널 ZIP의 SHA-256을 고정값과 비교합니다. macOS/Windows에서는 GUI 앱과 같은 설정 폴더를 재사용할 수 있지만, 같은 컴퓨터에서 GUI와 CLI를 동시에 같은 연결로 시작할 수 없도록 공통 실행 잠금을 사용합니다.
+현재 CLI의 외부 필수 런타임은 **Node.js 20+**입니다. 시스템에 Python 3.11+가 있으면 재사용하고, 없으면 `setup`이 SHA-256으로 검증한 `uv`를 받아 전용 Python 3.12를 자동으로 설치합니다. 이어서 전용 Python venv, Desktop Commander/Playwright 어댑터, 플랫폼별 OpenAI `tunnel-client` + `cloudflared`를 사용자 데이터 폴더에 준비하고 다운로드한 런타임의 SHA-256을 고정값과 비교합니다. macOS/Windows에서는 GUI 앱과 같은 설정 폴더를 재사용할 수 있지만, 같은 컴퓨터에서 GUI와 CLI를 동시에 같은 연결로 시작할 수 없도록 공통 실행 잠금을 사용합니다.
 
 Linux/EC2는 네이티브 승인창이 없으므로 **`always` 승인 모드로 고정**되고, 개인 Chrome 연결 대신 **전용 headless 브라우저**만 사용합니다. Chromium이 필요하면 `computer-controller browser install`을 실행하세요. FFmpeg/ffprobe/Deno는 선택 기능이며 없으면 파일·터미널·프로세스 기능은 계속 사용할 수 있지만 해당 영상 기능은 제한됩니다.
 

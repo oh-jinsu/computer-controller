@@ -25,9 +25,6 @@ from .migration import read_settings, valid_tunnel_id
 from .platform_support import IS_LINUX, executable_name, tunnel_command_line
 from .policy import MacError, clean_env, private_write
 
-PROFILE_RE = re.compile(r'computer-controller-cli-[a-f0-9]{12}\Z')
-
-
 def _runtime_env(data: Path, tunnel_id: str, key: str, bin_dir: Path) -> dict[str, str]:
     env = clean_env(data)
     existing = env.get('PATH', '')

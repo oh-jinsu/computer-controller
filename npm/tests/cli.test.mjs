@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { dataDirectory, installedNodeModules, needsSetup, platformKey, pythonCandidates } from '../cli.mjs';
+import { dataDirectory, githubPackageAt, installedNodeModules, isNpxExecution, maybeRunLatestNpx, needsSetup, platformKey, pythonCandidates } from '../cli.mjs';
 
 test('platform manifest covers supported desktop/server targets', () => {
   assert.equal(platformKey('darwin', 'arm64'), 'darwin-arm64');
@@ -75,6 +75,55 @@ test('npx hoisted dependency layout is discovered', () => {
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('npx auto-update re-executes an exact latest commit', async () => {
+  const sha = '0123456789abcdef0123456789abcdef01234567';
+  const calls = [];
+  const result = await maybeRunLatestNpx(['status'], {
+    root: path.join('/tmp', '_npx', 'abc', 'node_modules', '@oh-jinsu', 'computer-controller'),
+    env: { TEST_VALUE: '1' },
+    platform: 'linux',
+    log: () => {},
+    warn: () => {},
+    fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ sha }) }),
+    spawnImpl: (command, args, options) => {
+      calls.push({ command, args, options });
+      return { status: 0 };
+    },
+  });
+  assert.equal(result.handled, true);
+  assert.equal(result.sha, sha);
+  assert.equal(calls[0].command, 'npx');
+  assert.deepEqual(calls[0].args, ['-y', `--package=${githubPackageAt(sha)}`, 'computer-controller', 'status']);
+  assert.equal(calls[0].options.env.COMPUTER_CONTROLLER_RESOLVED_SHA, sha);
+});
+
+test('npx auto-update falls back to cached package when GitHub is unavailable', async () => {
+  const warnings = [];
+  const result = await maybeRunLatestNpx([], {
+    root: path.join('/tmp', '_npx', 'abc', 'node_modules', '@oh-jinsu', 'computer-controller'),
+    env: {},
+    log: () => {},
+    warn: message => warnings.push(message),
+    fetchImpl: async () => { throw new Error('offline'); },
+    spawnImpl: () => { throw new Error('must not spawn'); },
+  });
+  assert.equal(result.handled, false);
+  assert.equal(result.reason, 'update-check-failed');
+  assert.match(warnings[0], /cached package/);
+});
+
+test('resolved npx child skips recursive update check', async () => {
+  const sha = '0123456789abcdef0123456789abcdef01234567';
+  assert.equal(isNpxExecution(path.join('/tmp', '_npx', 'abc', 'node_modules', 'pkg')), true);
+  const result = await maybeRunLatestNpx([], {
+    root: path.join('/tmp', '_npx', 'abc', 'node_modules', 'pkg'),
+    env: { COMPUTER_CONTROLLER_RESOLVED_SHA: sha },
+    fetchImpl: async () => { throw new Error('must not fetch'); },
+  });
+  assert.equal(result.handled, false);
+  assert.equal(result.reason, 'not-needed');
 });
 
 test('npx quick start detects whether first-run setup is needed', () => {

@@ -64,10 +64,14 @@ class WindowsPortabilityTests(unittest.TestCase):
             "packaging/windows/build_windows.py",
             "packaging/windows/smoke_windows.py",
             "packaging/windows/entry.py",
+            "packaging/windows/hooks/hook-mcp.py",
             "mac_bridge/windows_app.py",
             "mac_bridge/native_windows.py",
         ):
             self.assertTrue((root / name).is_file(), name)
+        builder = (root / "packaging/windows/build_windows.py").read_text(encoding="utf-8")
+        self.assertIn("--additional-hooks-dir", builder)
+        self.assertNotIn('"--collect-all", "mcp"', builder)
 
 
 if __name__ == "__main__":

@@ -44,3 +44,7 @@ GitHub 기본 브랜치에 소스를 병합하는 것, 저장소를 공개하는
 ## 로컬 교체용 0.5.0-beta.9
 
 안전한 명령 인자 로그와 최신 `Plugins → Add → Create MCP App` 안내를 포함한 실행본입니다. 파일명은 `Mac-Bridge-0.5.0-beta.9-macos26-arm64.zip`입니다. 현재 목적은 기존 설치의 로컬 교체이며, 공개 beta.9 릴리스 여부는 별도입니다.
+
+## Windows Preview 0.5.0-beta.10
+
+Windows 11 x64용 첫 Preview입니다. 파일명은 `Mac-Bridge-0.5.0-beta.10-windows-x64.zip`입니다. GitHub Windows 러너에서 패키지 자체를 실행해 MCP/파일/PowerShell/영상/브라우저 smoke test를 통과한 빌드만 게시합니다. 현재 Windows 바이너리는 Authenticode 미서명이며 SmartScreen 평판/서명 검증은 제공하지 않습니다. SHA-256 파일을 함께 배포합니다.

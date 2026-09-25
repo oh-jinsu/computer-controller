@@ -89,9 +89,12 @@ class DocumentationTests(unittest.TestCase):
 
     def test_release_filename_matches_current_configuration(self):
         config = json.loads((ROOT / 'packaging/release.json').read_text())
-        expected = f'Mac-Bridge-{config["display_version"]}-macos26-arm64.zip'
-        self.assertIn(expected, (ROOT / 'docs/RELEASE-STATUS.md').read_text())
-        self.assertIn('Mac-Bridge-...-macos26-arm64.zip', (ROOT / 'README.md').read_text())
+        expected_windows = f'Mac-Bridge-{config["display_version"]}-windows-x64.zip'
+        status = (ROOT / 'docs/RELEASE-STATUS.md').read_text()
+        readme = (ROOT / 'README.md').read_text()
+        self.assertIn(expected_windows, status)
+        self.assertIn('Mac-Bridge-...-macos26-arm64.zip', readme)
+        self.assertIn('Mac-Bridge-...-windows-x64.zip', readme)
         self.assertEqual(config['minimum_macos'], '26.0')
         self.assertEqual(config['architecture'], 'arm64')
 

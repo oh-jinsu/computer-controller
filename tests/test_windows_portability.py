@@ -1,6 +1,7 @@
 """Windows-only portability checks. Real packaged MCP/browser/video tests run separately."""
 from __future__ import annotations
 
+import base64
 import json
 import os
 from pathlib import Path
@@ -26,11 +27,15 @@ class WindowsPortabilityTests(unittest.TestCase):
     def test_windows_executable_and_shell_helpers(self):
         self.assertEqual(executable_name("node"), "node.exe")
         self.assertEqual(executable_name("ffmpeg.exe"), "ffmpeg.exe")
-        self.assertEqual(default_shell(), "powershell.exe")
+        self.assertEqual(default_shell(), "cmd.exe")
         wrapped, shell = shell_command(Path(r"C:\Users\Tester\dev\game"), "git status --short")
-        self.assertEqual(shell, "powershell.exe")
-        self.assertIn("Set-Location -LiteralPath", wrapped)
-        self.assertIn("git status --short", wrapped)
+        self.assertEqual(shell, "cmd.exe")
+        self.assertTrue(wrapped.startswith("powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand "))
+        encoded = wrapped.rsplit(" ", 1)[1]
+        script = base64.b64decode(encoded).decode("utf-16le")
+        self.assertIn("Set-Location -LiteralPath", script)
+        self.assertIn(r"C:\Users\Tester\dev\game", script)
+        self.assertIn("git status --short", script)
         self.assertEqual(command_line(["tool.exe", "hello world"]), "& 'tool.exe' 'hello world'")
         tunnel = tunnel_command_line([r"C:\Program Files\Mac Bridge\Mac Bridge.exe", "--worker",
                                       "--data", r"C:\Users\Tester\AppData\Local\Mac Bridge"])

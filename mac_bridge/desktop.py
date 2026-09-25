@@ -22,7 +22,7 @@ def configure_engine(root: Path, workspace: Path) -> tuple[Path, dict[str, str]]
     config = home / '.claude-server-commander' / 'config.json'
     value = {
         'allowedDirectories': [str(workspace)], 'telemetryEnabled': False,
-        'defaultShell': 'powershell.exe' if sys.platform == 'win32' else '/bin/sh',
+        'defaultShell': 'cmd.exe' if sys.platform == 'win32' else '/bin/sh',
         'fileReadLineLimit': 500, 'fileWriteLineLimit': 4000,
         'pendingWelcomeOnboarding': False, 'welcomeOnboardingEligible': False,
         'blockedCommands': ['sudo', 'su', 'mkfs', 'diskutil', 'fdisk', 'dd', 'shutdown', 'reboot',

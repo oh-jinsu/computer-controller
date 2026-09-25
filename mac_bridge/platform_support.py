@@ -1,6 +1,7 @@
 """Small OS abstractions shared by the macOS and Windows packages."""
 from __future__ import annotations
 
+import base64
 import os
 from pathlib import Path
 import shlex
@@ -28,7 +29,9 @@ def app_data_dir() -> Path:
 
 
 def default_shell() -> str:
-    return "powershell.exe" if IS_WINDOWS else "/bin/sh"
+    # Desktop Commander manages cmd.exe reliably as a one-shot process. The
+    # user's command itself is still executed by non-interactive PowerShell.
+    return "cmd.exe" if IS_WINDOWS else "/bin/sh"
 
 
 def path_separator() -> str:
@@ -69,10 +72,14 @@ def tunnel_command_line(argv: list[str]) -> str:
 def shell_command(workspace: Path, command: str) -> tuple[str, str]:
     """Return (wrapped command, shell executable) without interpolating untrusted paths unsafely."""
     if IS_WINDOWS:
-        # PowerShell single-quoted strings escape a literal apostrophe by doubling it.
+        # Keep cmd.exe as Desktop Commander's lifecycle shell, but preserve
+        # PowerShell semantics for user commands. EncodedCommand avoids cmd.exe
+        # quoting problems for spaces, Unicode and embedded quotes/semicolons.
         target = str(workspace).replace("'", "''")
-        wrapped = f"Set-Location -LiteralPath '{target}'; {command}"
-        return wrapped, "powershell.exe"
+        script = f"Set-Location -LiteralPath '{target}'; {command}"
+        encoded = base64.b64encode(script.encode('utf-16le')).decode('ascii')
+        wrapped = f"powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand {encoded}"
+        return wrapped, "cmd.exe"
     wrapped = (f"cd {shlex.quote(str(workspace))} && "
                f"HOME={shlex.quote(str(Path.home()))} /bin/zsh -f -c {shlex.quote(command)}")
     return wrapped, "/bin/sh"

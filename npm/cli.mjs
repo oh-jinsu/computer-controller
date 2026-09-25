@@ -118,45 +118,20 @@ function venvPython(venv, platform = process.platform) {
     : path.join(venv, 'bin', 'python');
 }
 
-function coreFingerprint() {
-  const hash = crypto.createHash('sha256');
-  const files = [path.join(packageRoot, 'pyproject.toml')];
-  for (const directory of ['mac_bridge', 'scene_bridge']) {
-    const root = path.join(packageRoot, directory);
-    const stack = [root];
-    while (stack.length) {
-      const current = stack.pop();
-      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-        const item = path.join(current, entry.name);
-        if (entry.isDirectory()) {
-          if (entry.name !== '__pycache__') stack.push(item);
-        } else if (entry.name.endsWith('.py') || entry.name.endsWith('.mjs')) {
-          files.push(item);
-        }
-      }
-    }
-  }
-  for (const file of files.sort()) {
-    hash.update(path.relative(packageRoot, file));
-    hash.update('\0');
-    hash.update(fs.readFileSync(file));
-    hash.update('\0');
-  }
-  return hash.digest('hex');
+function dependencyFingerprint() {
+  return crypto.createHash('sha256')
+    .update(fs.readFileSync(path.join(packageRoot, 'pyproject.toml')))
+    .digest('hex');
 }
 
 function writePythonRuntimeStamp(paths, target) {
   fs.writeFileSync(path.join(paths.runtime, 'python-runtime.json'),
-    JSON.stringify({ version: VERSION, fingerprint: coreFingerprint(), python: target }, null, 2),
+    JSON.stringify({
+      version: VERSION,
+      dependency_fingerprint: dependencyFingerprint(),
+      python: target,
+    }, null, 2),
     { mode: 0o600 });
-}
-
-function installPythonCore(target, { force = false } = {}) {
-  const args = ['-m', 'pip', 'install', '--disable-pip-version-check', '--no-input',
-    '--no-deps', '--upgrade'];
-  if (force) args.push('--force-reinstall');
-  args.push(packageRoot);
-  run(target, args, { timeout: 600000 });
 }
 
 function ensurePythonRuntime(paths, python) {
@@ -164,11 +139,9 @@ function ensurePythonRuntime(paths, python) {
   const target = venvPython(paths.venv);
   if (!fs.existsSync(target)) {
     run(python.command, [...python.prefix, '-m', 'venv', paths.venv], { timeout: 120000 });
-    run(target, ['-m', 'pip', 'install', '--disable-pip-version-check', '--no-input',
-      '--upgrade', packageRoot], { timeout: 600000 });
-  } else {
-    installPythonCore(target);
   }
+  run(target, ['-m', 'pip', 'install', '--disable-pip-version-check', '--no-input',
+    '--upgrade', packageRoot], { timeout: 600000 });
   writePythonRuntimeStamp(paths, target);
   return target;
 }
@@ -180,11 +153,19 @@ function refreshPythonRuntimeIfNeeded(paths) {
   }
   const stampFile = path.join(paths.runtime, 'python-runtime.json');
   const stamp = readJson(stampFile) || {};
-  const fingerprint = coreFingerprint();
-  if (stamp.fingerprint !== fingerprint) {
-    console.log('Updating Computer Controller Python core to match the installed npm package...');
-    installPythonCore(target, { force: true });
-    prepareNodeAssets(paths);
+  const wanted = dependencyFingerprint();
+
+  // Older beta18 stamps predate dependency_fingerprint. The dependency set did
+  // not change within beta18, so adopt the stamp without a network/pip refresh.
+  if (!stamp.dependency_fingerprint && stamp.version === VERSION) {
+    writePythonRuntimeStamp(paths, target);
+    return target;
+  }
+
+  if (stamp.dependency_fingerprint !== wanted) {
+    console.log('Updating Computer Controller Python dependencies...');
+    run(target, ['-m', 'pip', 'install', '--disable-pip-version-check', '--no-input',
+      '--upgrade', packageRoot], { timeout: 600000 });
     writePythonRuntimeStamp(paths, target);
   }
   return target;
@@ -390,6 +371,16 @@ async function promptSecret(label) {
   });
 }
 
+function currentPythonEnv() {
+  const inherited = process.env.PYTHONPATH || '';
+  return {
+    ...process.env,
+    PYTHONPATH: [packageRoot, inherited].filter(Boolean).join(path.delimiter),
+    COMPUTER_CONTROLLER_PACKAGE_ROOT: packageRoot,
+    COMPUTER_CONTROLLER_NODE: process.execPath,
+  };
+}
+
 function backend(paths, pythonExe, action, { input, stdio, extra = [] } = {}) {
   const args = ['-m', 'mac_bridge.cli_host', action, '--data', paths.data];
   if (['doctor', 'start'].includes(action)) args.push('--assets', paths.assets, '--bin', paths.bin);
@@ -398,6 +389,7 @@ function backend(paths, pythonExe, action, { input, stdio, extra = [] } = {}) {
     input,
     stdio: stdio || ['pipe', 'pipe', 'pipe'],
     timeout: action === 'start' ? undefined : 120000,
+    env: currentPythonEnv(),
   });
 }
 
@@ -481,7 +473,7 @@ async function startCommand() {
     '--data', paths.data, '--assets', paths.assets, '--bin', paths.bin,
     '--log-level', logLevel || 'warn'], {
       stdio: 'inherit', windowsHide: true,
-      env: { ...process.env, COMPUTER_CONTROLLER_NODE: process.execPath },
+      env: currentPythonEnv(),
     });
   const relay = signal => { if (!child.killed) child.kill(signal); };
   process.once('SIGINT', () => relay('SIGINT'));

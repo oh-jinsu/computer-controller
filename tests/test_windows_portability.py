@@ -10,6 +10,7 @@ import unittest
 from unittest import mock
 
 from mac_bridge import app_control
+from mac_bridge.activity import process_exists
 from mac_bridge.filelock import locked_path
 from mac_bridge.native_windows import screen_permission
 from mac_bridge.platform_support import (app_data_dir, command_line, default_shell,
@@ -43,6 +44,10 @@ class WindowsPortabilityTests(unittest.TestCase):
     def test_windows_capture_does_not_require_tcc(self):
         self.assertTrue(screen_permission())
         self.assertTrue(screen_permission(request=True))
+
+    def test_windows_process_existence_check(self):
+        self.assertTrue(process_exists(os.getpid()))
+        self.assertFalse(process_exists(0))
 
     def test_packaged_app_uses_platform_data_root(self):
         self.assertEqual(app_control.DEFAULT_DATA, app_data_dir())

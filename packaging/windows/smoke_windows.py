@@ -92,8 +92,16 @@ async def run(exe: Path) -> None:
                     assert (workspace / "sample.txt").read_text() == "after"
                     launch = await call("mac_start_process", command="Get-Location")
                     pid = int(re.search(r"PID (\d+)", text(launch)).group(1))
-                    output = text(await call("mac_process_output", pid=pid))
-                    assert str(workspace).casefold() in (text(launch) + output).casefold()
+                    combined = text(launch)
+                    output = ""
+                    for _ in range(30):
+                        output = text(await call("mac_process_output", pid=pid))
+                        combined += "\n" + output
+                        if "exit code" in output:
+                            break
+                        await asyncio.sleep(.2)
+                    assert "exit code 0" in output, combined
+                    assert str(workspace).casefold() in combined.casefold(), combined
                     checks.append("Windows PowerShell process + file write")
 
                     ffmpeg = exe.parent / "_internal/bin/ffmpeg.exe"

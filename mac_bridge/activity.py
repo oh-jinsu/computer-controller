@@ -15,6 +15,23 @@ DRAIN_SAFE = {'mac_status', 'browser_status', 'mac_process_output', 'mac_list_se
 
 
 def process_exists(pid: int) -> bool:
+    if type(pid) is not int or pid <= 0:
+        return False
+    if os.name == 'nt':
+        import ctypes
+        from ctypes import wintypes
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if handle:
+            kernel32.CloseHandle(handle)
+            return True
+        # ERROR_ACCESS_DENIED means the process exists but cannot be queried.
+        return ctypes.get_last_error() == 5
     try:
         os.kill(pid, 0)
         return True

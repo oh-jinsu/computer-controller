@@ -70,16 +70,28 @@ async def run():
                     discovery = await client.discover()
                     assert '2026-07-28' in discovery.supported_versions, discovery
                     tools = {t.name: t for t in (await client.list_tools()).tools}
-                    assert len(tools) == 31, sorted(tools)
+                    assert len(tools) == 36, sorted(tools)
                     async def call(name, **arguments):
                         result = await client.call_tool(name, arguments)
                         assert not result.is_error, (name, text(result))
                         return result
                     state = data(await call('mac_status'))
                     assert state['independent_runtime'] and not state['source_checkout_is_runtime'] and state['desktop_connected']
-                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (31 tools)')
+                    checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (36 tools)')
                     await call('mac_write_file', path='editable.py', content='new')
                     assert (project / 'editable.py').read_text() == 'new'
+                    (project / 'second.txt').write_text('bundle-search-marker\n')
+                    multiple = await call('mac_read_multiple_files', paths=['editable.py', 'second.txt'])
+                    assert 'new' in text(multiple) and 'bundle-search-marker' in text(multiple)
+                    info = await call('mac_file_info', path='second.txt')
+                    assert 'size:' in text(info)
+                    searched = await call('mac_search', pattern='bundle-search-marker', search_type='content', max_results=20)
+                    assert 'second.txt' in text(searched)
+                    await call('mac_create_directory', path='nested/path')
+                    (project / 'move-me.txt').write_text('move-bundle-marker')
+                    await call('mac_move_file', source='move-me.txt', destination='nested/path/moved.txt')
+                    assert (project / 'nested/path/moved.txt').read_text() == 'move-bundle-marker'
+                    checks.append('batched reads, file info, search, directory creation and non-overwriting move')
                     checks.append('development source file read/write allowed; application resources stayed separate')
                     result = await call('mac_start_process', command='pwd')
                     pid = int(re.search(r'PID (\d+)', text(result)).group(1))

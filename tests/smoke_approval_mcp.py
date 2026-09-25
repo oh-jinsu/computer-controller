@@ -51,7 +51,7 @@ async def test():
             assert status.structured_content['approval_mode'] == 'always'
             assert status.structured_content['approval_mode_persistent'] is True
             tools = {t.name: t for t in (await client.list_tools()).tools}
-            assert len(tools) == 31
+            assert len(tools) == 36
             assert tools['mac_start_process'].annotations.read_only_hint is False
             r = await client.call_tool('mac_write_file', {'path': 'sample.txt', 'content': 'after\n'})
             assert not r.is_error, r
@@ -61,6 +61,14 @@ async def test():
             r = await client.call_tool('mac_edit_file', {'path': 'sample.txt', 'old_string': 'after', 'new_string': 'edited'})
             assert not r.is_error, r
             assert p.read_text() == 'edited\n'
+            r = await client.call_tool('mac_create_directory', {'path': 'nested/path'})
+            assert not r.is_error, r
+            assert (project / 'nested/path').is_dir()
+            (project / 'move-me.txt').write_text('move marker')
+            r = await client.call_tool('mac_move_file', {'source': 'move-me.txt', 'destination': 'nested/path/moved.txt'})
+            assert not r.is_error, r
+            assert not (project / 'move-me.txt').exists()
+            assert (project / 'nested/path/moved.txt').read_text() == 'move marker'
             r = await client.call_tool('mac_start_process', {'command': 'printf APPROVAL_SMOKE_OK; pwd', 'timeout_ms': 1000})
             assert not r.is_error, r
             combined = '\n'.join(getattr(c, 'text', '') for c in r.content)
@@ -69,7 +77,7 @@ async def test():
             assert not (root / '.state/pending').exists(), 'Always mode must not create native approval previews.'
             actions = await client.call_tool('mac_recent_actions', {'count': 100})
             assert not actions.is_error, actions
-            assert sum(x['state'] == 'auto_approved' for x in actions.structured_content['actions']) == 3
+            assert sum(x['state'] == 'auto_approved' for x in actions.structured_content['actions']) == 5
             outside = parent / 'outside.txt'
             r = await client.call_tool('mac_write_file', {'path': str(outside), 'content': 'no'})
             assert r.is_error and not outside.exists(), r

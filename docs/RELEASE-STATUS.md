@@ -62,3 +62,8 @@ ChatGPT 플러그인 새로고침이 사용하는 `server/discover`를 지원하
 ## 0.5.0-beta.13 — process inventory and cleanup
 
 프로젝트 개발 중 남는 Godot·Node·Python·서버 계열 프로세스를 확인하고 정리할 수 있도록 `mac_list_processes`와 `mac_kill_process`를 추가한 Preview입니다. 빌드 번호는 `50013`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.13-windows-x64.zip`입니다. 전체 도구 수는 31개입니다. 종료 도구는 목록에서 방금 관찰한 동일 프로세스의 `kill_token`을 요구하고, Mac Bridge 자체 및 선택한 프로젝트와 무관한 프로세스는 거부합니다.
+
+
+## 0.5.0-beta.14 — file batch, move, info and search tools
+
+개발 작업의 MCP 왕복을 줄이기 위해 `mac_read_multiple_files`, `mac_create_directory`, `mac_move_file`, `mac_file_info`, `mac_search`를 추가한 Preview입니다. 빌드 번호는 `50014`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.14-windows-x64.zip`입니다. 전체 도구 수는 36개입니다. 모든 파일/검색 도구는 선택한 작업 폴더 및 기존 비밀 경로 제한을 유지하고, 생성/이동은 저장된 승인 모드를 따릅니다.

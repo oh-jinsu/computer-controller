@@ -32,17 +32,17 @@ _CURRENT: ContextVar = ContextVar('mac_bridge_request_log', default=None)
 MAX_BYTES = 2_000_000
 SLOW_AFTER = 5
 SLOW_EVERY = 15
-TOOLS = frozenset('''mac_status mac_list_directory mac_read_file mac_write_file mac_edit_file mac_start_process
+TOOLS = frozenset('''mac_status mac_list_directory mac_read_file mac_read_multiple_files mac_create_directory mac_move_file mac_file_info mac_search mac_write_file mac_edit_file mac_start_process
 mac_process_output mac_send_input mac_stop_process mac_list_sessions mac_list_processes mac_kill_process mac_list_windows
 mac_capture_window mac_pause mac_recent_actions browser_status browser_navigate browser_snapshot
 browser_screenshot browser_click browser_type browser_press_key browser_resize browser_tabs
 browser_console_messages browser_network_requests browser_close mac_context_list mac_context_read
 mac_context_save'''.split())
-NUMBERS = frozenset('depth offset length timeout_ms wait_timeout_ms pid window_id owner_pid max_edge count limit index width height start_seconds end_seconds wait_seconds'.split())
-BOOLEANS = frozenset({'submit', 'include_static'})
+NUMBERS = frozenset('depth offset length timeout_ms wait_timeout_ms pid window_id owner_pid max_edge count limit max_results context_lines index width height start_seconds end_seconds wait_seconds'.split())
+BOOLEANS = frozenset({'submit', 'include_static', 'ignore_case', 'include_hidden', 'literal'})
 ENUMS = {'action': {'list', 'new', 'select', 'close'}, 'level': {'debug', 'info', 'warning', 'error'},
-         'wait': {'complete', 'start'}}
-TEXT_FIELDS = frozenset({'content', 'text', 'old_string', 'new_string', 'title', 'element', 'name', 'query'})
+         'wait': {'complete', 'start'}, 'search_type': {'files', 'content'}}
+TEXT_FIELDS = frozenset({'content', 'text', 'old_string', 'new_string', 'title', 'element', 'name', 'query', 'pattern', 'file_pattern'})
 APP_NAMES = {'Google Chrome', 'Chrome', 'Godot', 'Xcode', 'Mac Bridge', 'Terminal', 'Safari'}
 PHASES = {'approval_requested': 'approval_wait', 'auto_approved': 'auto_approved',
           'denied_or_timed_out': 'approval_denied', 'approval_mode_changed': 'approval_changed'}
@@ -222,7 +222,16 @@ def summarize_arguments(arguments: object, workspace: Path | None = None) -> dic
         elif key == 'url' and isinstance(value, str):
             result['site'] = url_summary(value)
         elif key == 'source' and isinstance(value, str):
-            result[key] = ('local:' + path_summary(value[6:], workspace) if value.startswith('local:') else url_summary(value))
+            if value.startswith('local:'):
+                result[key] = 'local:' + path_summary(value[6:], workspace)
+            elif re.match(r'(?i)^https?://', value):
+                result[key] = url_summary(value)
+            else:
+                result[key] = path_summary(value, workspace)
+        elif key == 'destination' and isinstance(value, str):
+            result[key] = path_summary(value, workspace)
+        elif key == 'paths' and isinstance(value, list):
+            result['paths_count'] = len(value)
         elif key == 'command' and isinstance(value, str):
             result['command'] = command_summary(value, workspace)
             result['command_chars'] = len(value)

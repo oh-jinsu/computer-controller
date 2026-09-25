@@ -12,9 +12,10 @@ import sys
 from .policy import MacError, Policy, clean_env, private_dir, private_write
 
 DC_VERSION = '0.2.51'
-REQUIRED = {'list_directory', 'read_file', 'write_file', 'edit_block', 'start_process',
-            'read_process_output', 'interact_with_process', 'force_terminate', 'list_sessions',
-            'list_processes', 'kill_process'}
+REQUIRED = {'list_directory', 'read_file', 'read_multiple_files', 'write_file', 'edit_block',
+            'create_directory', 'move_file', 'get_file_info', 'start_search', 'get_more_search_results',
+            'stop_search', 'start_process', 'read_process_output', 'interact_with_process',
+            'force_terminate', 'list_sessions', 'list_processes', 'kill_process'}
 
 
 def configure_engine(root: Path, workspace: Path) -> tuple[Path, dict[str, str]]:

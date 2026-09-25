@@ -38,6 +38,12 @@ class FakeDC:
         if name == 'edit_block':
             path = Path(args['file_path'])
             path.write_text(path.read_text().replace(args['old_string'], args['new_string'], 1))
+        if name == 'create_directory': Path(args['path']).mkdir(parents=True, exist_ok=True)
+        if name == 'move_file': Path(args['source']).rename(args['destination'])
+        if name == 'start_search':
+            return Data(content=[Data(type='text', text='Started file search session: search_test_1\nStatus: RUNNING')])
+        if name == 'get_more_search_results':
+            return Data(content=[Data(type='text', text='Search session: search_test_1\nStatus: COMPLETED\nResults:\n📁 sample.py')])
         if name == 'start_process':
             self.pids.add(321)
             return Data(content=[Data(type='text',
@@ -106,7 +112,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     def tearDown(self): self.tmp.cleanup()
 
     async def test_tools_and_write_annotations(self):
-        self.assertEqual(len(self.mcp.tools), 31)
+        self.assertEqual(len(self.mcp.tools), 36)
         self.assertFalse(self.mcp.annotations['mac_start_process'].read_only_hint)
         self.assertFalse(self.mcp.annotations['mac_write_file'].read_only_hint)
         self.assertTrue(self.mcp.annotations['mac_read_file'].read_only_hint)
@@ -163,6 +169,43 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(r.is_error); self.assertEqual(p.read_text(), 'after')
         backups = list((self.root / '.state/file-backups').rglob('a.txt'))
         self.assertEqual(backups[0].read_text(), 'before')
+
+    async def test_multi_read_file_info_and_search_use_project_guardrails(self):
+        (self.project / 'a.txt').write_text('alpha')
+        (self.project / 'b.txt').write_text('beta')
+        r = await self.mcp.tools['mac_read_multiple_files'](['a.txt', 'b.txt'])
+        self.assertFalse(r.is_error)
+        self.assertEqual(self.dc.calls[-1][0], 'read_multiple_files')
+        self.assertEqual(len(self.dc.calls[-1][1]['paths']), 2)
+
+        r = await self.mcp.tools['mac_file_info']('a.txt')
+        self.assertFalse(r.is_error)
+        self.assertEqual(self.dc.calls[-1][0], 'get_file_info')
+
+        r = await self.mcp.tools['mac_search']('sample', '.', 'files')
+        self.assertFalse(r.is_error)
+        self.assertEqual([name for name, _ in self.dc.calls[-3:]],
+                         ['start_search', 'get_more_search_results', 'stop_search'])
+
+        denied = await self.mcp.tools['mac_read_multiple_files'](['../outside.txt'])
+        self.assertTrue(denied.is_error)
+
+    async def test_create_directory_and_move_respect_approval_and_no_overwrite(self):
+        self.always()
+        made = await self.mcp.tools['mac_create_directory']('nested/path')
+        self.assertFalse(made.is_error)
+        self.assertTrue((self.project / 'nested/path').is_dir())
+
+        source = self.project / 'move-me.txt'; source.write_text('hello')
+        moved = await self.mcp.tools['mac_move_file']('move-me.txt', 'nested/moved.txt')
+        self.assertFalse(moved.is_error)
+        self.assertFalse(source.exists())
+        self.assertEqual((self.project / 'nested/moved.txt').read_text(), 'hello')
+
+        source.write_text('again')
+        denied = await self.mcp.tools['mac_move_file']('move-me.txt', 'nested/moved.txt')
+        self.assertTrue(denied.is_error)
+        self.assertTrue(source.exists())
 
     async def test_external_edit_during_approval_preserved(self):
         p = self.project / 'a.txt'; p.write_text('before')
@@ -321,7 +364,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_always_keeps_write_annotations_and_no_policy_tool(self):
         self.always()
-        self.assertEqual(len(self.mcp.tools), 31)
+        self.assertEqual(len(self.mcp.tools), 36)
         self.assertFalse(self.mcp.annotations['mac_write_file'].read_only_hint)
         self.assertTrue(self.mcp.annotations['mac_start_process'].destructive_hint)
         self.assertNotIn('mac_set_approval_mode', self.mcp.tools)

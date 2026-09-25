@@ -1,5 +1,12 @@
 # Changes
 
+## 0.5.0-beta.14 — file batch, move, info and search tools
+
+- `mac_read_multiple_files`를 추가해 관련 파일 최대 20개를 한 번에 읽을 수 있습니다. 프로젝트/비밀 경로 제한은 기존 `mac_read_file`과 동일하고 총 입력 크기는 8 MiB로 제한합니다.
+- `mac_create_directory`, `mac_move_file`, `mac_file_info`를 추가했습니다. 디렉터리 생성/이동은 기존 ask/always 승인 정책을 따르며 이동은 덮어쓰기를 거부합니다.
+- `mac_search`를 추가해 선택한 프로젝트에서 파일명 또는 내용 검색을 한 번의 도구 호출로 수행합니다. 내부 Desktop Commander 검색 세션은 자동으로 조회·정리됩니다.
+- 번들 Desktop Commander 어댑터에 `read_multiple_files`, `create_directory`, `move_file`, `get_file_info`, 검색 세션 도구를 포함하고 전체 MCP 도구 수를 36개로 늘렸습니다.
+
 ## 0.5.0-beta.13 — process inventory and cleanup
 
 - `mac_list_processes`를 추가해 현재 사용자 프로세스를 CPU/메모리/명령 요약과 함께 확인하고, 프로젝트/브리지 관련 프로세스를 먼저 표시합니다.

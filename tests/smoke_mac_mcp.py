@@ -25,6 +25,7 @@ async def test():
         root, project = parent / 'bridge', parent / 'project'
         root.mkdir(); project.mkdir()
         (project / 'sample.txt').write_text('MAC_BRIDGE_TEST_ONLY\n')
+        (project / 'second.txt').write_text('SECOND_FILE_MARKER\nsearchable phrase\n')
         (root / '.runtime').symlink_to(ROOT / '.runtime', target_is_directory=True)
         (root / 'mac_bridge').symlink_to(ROOT / 'mac_bridge', target_is_directory=True)
         private_write(root / '.state' / 'mac-settings.json', json.dumps({'workspace': str(project)}).encode())
@@ -37,7 +38,7 @@ async def test():
                 discovery = await client.discover()
                 assert '2026-07-28' in discovery.supported_versions, discovery
                 tools = {t.name: t for t in (await client.list_tools()).tools}
-                assert len(tools) == 31, sorted(tools)
+                assert len(tools) == 36, sorted(tools)
                 for name in ['start_extraction', 'get_extraction', 'get_frame', 'list_local_videos', 'bridge_status']:
                     assert name not in tools, name
                 assert tools['mac_write_file'].annotations.read_only_hint is False
@@ -49,6 +50,15 @@ async def test():
                 result = await client.call_tool('mac_read_file', {'path': 'sample.txt'})
                 assert not result.is_error, result
                 assert any('MAC_BRIDGE_TEST_ONLY' in getattr(c, 'text', '') for c in result.content)
+                multiple = await client.call_tool('mac_read_multiple_files', {'paths': ['sample.txt', 'second.txt']})
+                assert not multiple.is_error, multiple
+                multiple_text = '\n'.join(getattr(c, 'text', '') for c in multiple.content)
+                assert 'MAC_BRIDGE_TEST_ONLY' in multiple_text and 'SECOND_FILE_MARKER' in multiple_text
+                info = await client.call_tool('mac_file_info', {'path': 'second.txt'})
+                assert not info.is_error and 'size:' in '\n'.join(getattr(c, 'text', '') for c in info.content)
+                searched = await client.call_tool('mac_search', {'pattern': 'searchable phrase', 'search_type': 'content', 'max_results': 20})
+                assert not searched.is_error, searched
+                assert 'second.txt' in '\n'.join(getattr(c, 'text', '') for c in searched.content)
                 launched = await client.call_tool('mac_start_process',
                     {'command': 'sleep 30', 'wait': 'start'})
                 assert not launched.is_error, launched
@@ -89,7 +99,7 @@ async def test():
             assert not result.is_error, result
             assert any('MAC_BRIDGE_ENGINE_SMOKE' in getattr(c, 'text', '') for c in result.content), result
             assert len(dc.pids) == 1, 'Could not identify the engine-created process PID'
-    print('Mac MCP 검사 통과: 실제 SDK server/discover(2026-07-28), 31개 공통 도구, DC 읽기/쓰기/편집/명령, 프로세스 목록/트리 종료, 경로 거부, PID 제한, 일시 중지, 일시 중지 중 영상 명령도 거부.')
+    print('Mac MCP 검사 통과: 실제 SDK server/discover(2026-07-28), 36개 공통 도구, DC 읽기/쓰기/편집/명령, 프로세스 목록/트리 종료, 경로 거부, PID 제한, 일시 중지, 일시 중지 중 영상 명령도 거부.')
     print('창 캡처·네이티브 승인 UI·ChatGPT 터널은 이 검사로 검증하지 않습니다.')
 
 

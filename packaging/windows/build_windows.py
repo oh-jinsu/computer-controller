@@ -99,7 +99,7 @@ def prepare_assets() -> None:
     tunnel_cfg = CONFIG["tunnel_client"]
     tunnel_zip = download(tunnel_cfg["url"], tunnel_cfg["sha256"], "tunnel.zip")
     tunnel_root = extract(tunnel_zip, WORK / "tunnel")
-    copy_found(tunnel_root, "tunnel-client.exe", BIN / "tunnel-client.exe")
+    copy_found(tunnel_root, "tunnel-client-runtime-cloudflared.exe", BIN / "tunnel-client.exe")
     copy_found(tunnel_root, "cloudflared.exe", BIN / "cloudflared.exe")
     license_file = download(tunnel_cfg["license_url"], tunnel_cfg["license_sha256"], "tunnel-licenses.txt")
     shutil.copy2(license_file, LICENSES / "Tunnel-Client-LICENSES.txt")

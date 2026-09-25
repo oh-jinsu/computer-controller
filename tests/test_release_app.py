@@ -70,13 +70,17 @@ class ReleaseAppTests(unittest.TestCase):
         self.assertFalse(status(self.data)['configured'])
 
     def test_configure_key_not_serialized(self):
-        with mock.patch('keyring.set_password') as save, mock.patch('mac_bridge.browser_connection.sys.platform', 'darwin'):
+        with mock.patch('keyring.set_password') as save, \
+             mock.patch('mac_bridge.browser_connection.sys.platform', 'darwin'), \
+             mock.patch('mac_bridge.credentials.IS_LINUX', False):
             configure(self.data, {'tunnel_id': 'tunnel_release12345678', 'workspace': str(self.workspace), 'runtime_key': 'test-key', 'approval_mode': 'always', 'browser_mode': 'personal'})
         save.assert_called_once()
         self.assertNotIn('test-key', ''.join(p.read_text() for p in (self.data / '.state').glob('*.json')))
 
     def test_empty_key_reuses_keychain_and_new_install_defaults_always(self):
-        with mock.patch('keyring.set_password') as save, mock.patch('mac_bridge.browser_connection.sys.platform', 'darwin'):
+        with mock.patch('keyring.set_password') as save, \
+             mock.patch('mac_bridge.browser_connection.sys.platform', 'darwin'), \
+             mock.patch('mac_bridge.credentials.IS_LINUX', False):
             configure(self.data, {'tunnel_id': 'tunnel_release12345678', 'workspace': str(self.workspace), 'runtime_key': ''})
         save.assert_not_called()
         self.assertEqual(status(self.data)['approval_mode'], 'always')

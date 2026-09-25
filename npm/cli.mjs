@@ -73,7 +73,7 @@ export function isNpxExecution(root = packageRoot) {
 
 export function githubPackageAt(sha) {
   if (!/^[0-9a-f]{40}$/.test(sha || '')) throw new Error('Invalid GitHub commit SHA.');
-  return `github:${GITHUB_REPOSITORY}#${sha}`;
+  return `https://codeload.github.com/${GITHUB_REPOSITORY}/tar.gz/${sha}`;
 }
 
 export async function maybeRunLatestNpx(argv, options = {}) {

@@ -1,5 +1,4 @@
 name: Computer Controller tests
-name: Computer Controller tests
 
 on:
   push:
@@ -31,7 +30,6 @@ jobs:
           npm test
           node npm/cli.mjs --help
           npm pack --dry-run
-          node npm/tests/linux-package-smoke.mjs
       - name: Linux npm install, setup, doctor and MCP catalog smoke
         run: node npm/tests/linux-package-smoke.mjs
       - name: Unit tests (includes real FFmpeg; native macOS mocked)

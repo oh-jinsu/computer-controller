@@ -91,11 +91,13 @@ async def run(exe: Path) -> None:
 
                     await call("mac_write_file", path="sample.txt", content="after")
                     assert (workspace / "sample.txt").read_text() == "after"
-                    launch = await call("mac_start_process", command="Get-Location")
+                    # Use a PowerShell automatic variable so this lifecycle check does not
+                    # trigger first-run module analysis on a fresh Windows runner.
+                    launch = await call("mac_start_process", command="$PWD.Path")
                     pid = int(re.search(r"PID (\d+)", text(launch)).group(1))
                     combined = text(launch)
                     output = ""
-                    for _ in range(30):
+                    for _ in range(90):
                         output = text(await call("mac_process_output", pid=pid))
                         combined += "\n" + output
                         if "exit code" in output:

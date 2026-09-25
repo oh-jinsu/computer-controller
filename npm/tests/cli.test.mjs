@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { dataDirectory, needsSetup, platformKey, pythonCandidates } from '../cli.mjs';
+import { dataDirectory, installedNodeModules, needsSetup, platformKey, pythonCandidates } from '../cli.mjs';
 
 test('platform manifest covers supported desktop/server targets', () => {
   assert.equal(platformKey('darwin', 'arm64'), 'darwin-arm64');
@@ -33,6 +33,21 @@ test('linux data path follows XDG and reuses legacy directory when present', () 
   }
 });
 
+test('configured legacy data wins over an empty new-name directory', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-data-preference-'));
+  try {
+    const base = path.join(root, 'Library', 'Application Support');
+    const current = path.join(base, 'Computer Controller');
+    const legacy = path.join(base, 'Mac Bridge');
+    fs.mkdirSync(current, { recursive: true });
+    fs.mkdirSync(path.join(legacy, '.state'), { recursive: true });
+    fs.writeFileSync(path.join(legacy, '.state', 'settings.json'), '{"tunnel_id":"tunnel_0123456789abcdef0123456789abcdef"}');
+    assert.equal(dataDirectory({ platform: 'darwin', env: {}, home: root }), legacy);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('macOS and Windows keep GUI-compatible state paths', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-cli-test-'));
   try {
@@ -40,6 +55,23 @@ test('macOS and Windows keep GUI-compatible state paths', () => {
                  path.join(root, 'Library', 'Application Support', 'Computer Controller'));
     assert.equal(dataDirectory({ platform: 'win32', env: { LOCALAPPDATA: path.join(root, 'local') }, home: root }),
                  path.join(root, 'local', 'Computer Controller'));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('npx hoisted dependency layout is discovered', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-npx-layout-'));
+  try {
+    const packageRoot = path.join(root, 'node_modules', '@oh-jinsu', 'computer-controller');
+    const nodeModules = path.join(root, 'node_modules');
+    fs.mkdirSync(packageRoot, { recursive: true });
+    for (const rel of ['@wonderwhy-er/desktop-commander/package.json', '@playwright/mcp/package.json']) {
+      const target = path.join(nodeModules, rel);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, '{}');
+    }
+    assert.equal(installedNodeModules(packageRoot), nodeModules);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

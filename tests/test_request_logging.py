@@ -68,16 +68,37 @@ class SummaryTests(unittest.TestCase):
             self.assertNotIn('hello@example.com', out)
             self.assertNotIn('SECRET', out)
 
-    def test_commands_never_log_scripts_or_arguments(self):
-        for command in ['curl -H "Authorization: Bearer SECRET" https://a', 'python -c "print(SECRET)"',
-                        'TOKEN=SECRET git status', 'echo SECRET', 'bash -c SECRET', 'SECRET --foo']:
-            self.assertNotIn('SECRET', rl.command_summary(command))
-        self.assertEqual(rl.command_summary('git status --short'), 'git status [arguments hidden]')
-        self.assertEqual(rl.command_summary('pwd'), 'pwd')
+    def test_commands_show_safe_arguments_and_hide_sensitive_values(self):
+        workspace = Path('/Users/test/dev')
+        self.assertEqual(rl.command_summary('git status --short', workspace), 'git status --short')
+        self.assertEqual(rl.command_summary('cd /Users/test/dev/game && git log -2 --oneline', workspace),
+                         'cd ./game && git log -2 --oneline')
+        self.assertEqual(rl.command_summary('python -m unittest discover -s tests -p "test_*.py" -q', workspace),
+                         "python -m unittest discover -s tests -p 'test_*.py' -q")
+        self.assertEqual(rl.command_summary('pwd', workspace), 'pwd')
+        cases = {
+            'curl -H "Authorization: Bearer SECRETSECRET" https://example.com/private?q=SECRET':
+                'curl -H [redacted] https://example.com',
+            'python -c "print(SECRET)"': 'python -c [script hidden]',
+            'TOKEN=SECRET gh release view v1 --repo org/repo --json url':
+                'TOKEN=[redacted] gh release view v1 --repo org/repo --json url',
+            'echo SECRET': 'echo [content hidden]',
+            'grep SECRET -n README.md': 'grep [pattern hidden] -n README.md',
+            'gh pr create --title "Feature title" --body "SECRET BODY"':
+                'gh pr create --title [text 13 chars] --body [content hidden]',
+        }
+        for command, expected in cases.items():
+            with self.subTest(command=command):
+                actual = rl.command_summary(command, workspace)
+                self.assertEqual(actual, expected)
+                self.assertNotIn('SECRET', actual)
 
-    def test_shell_substitution_and_multiline_not_parsed(self):
-        for command in ['echo $(cat PRIVATE)', 'echo `cat PRIVATE`', "python - <<'PY'\nPRIVATE\nPY"]:
-            self.assertEqual(rl.command_summary(command), '[script; arguments hidden]')
+    def test_shell_expansion_and_multiline_are_not_exposed(self):
+        self.assertEqual(rl.command_summary('echo $(cat PRIVATE)'), 'echo [content hidden]')
+        self.assertEqual(rl.command_summary('echo `cat PRIVATE`'), 'echo [content hidden]')
+        multiline = rl.command_summary("python - <<'PY'\nPRIVATE\nPY")
+        self.assertIn('[script hidden]', multiline)
+        self.assertNotIn('PRIVATE', multiline)
 
     def test_target_only_discloses_observed_reference(self):
         self.assertEqual(rl.summarize_arguments({'target': 'f7e4'}), {'target': 'f7e4'})

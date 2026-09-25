@@ -11,7 +11,7 @@ ChatGPT에서 내 Mac의 파일·터미널·Chrome·스크린샷·영상 프레�
 3. [Releases](https://github.com/oh-jinsu/mac-bridge/releases)에서 최신 **`Mac-Bridge-...-macos26-arm64.zip`**을 받고, 압축을 풀어 **Mac Bridge.app → 응용 프로그램**으로 옮겨 실행하세요.
 4. **MB → 설정…**에서 **터널 ID·Runtime API 키·작업 폴더**를 입력하고 **저장 → 연결 시작**을 누르세요. **승인창 없이 사용 + 평소 Chrome 로그인 상태 사용이 기본값**입니다.
 5. 처음 나오는 macOS **화면 기록 권한**을 허용하세요.
-6. ChatGPT에서 **설정 → 보안 및 로그인 → 개발자 모드**를 켜고, [Plugins](https://chatgpt.com/plugins)에서 **+ → Create MCP App → Connection: Tunnel**을 선택해 같은 터널을 연결하세요. **앱 이름은 원하는 이름으로 정하면 됩니다.**
+6. ChatGPT에서 **설정 → 보안 및 로그인 → 개발자 모드**를 켜고, [Plugins](https://chatgpt.com/plugins)에서 **Add → Create MCP App → Connection: Tunnel**을 선택해 같은 터널을 연결하세요. **앱 이름은 원하는 이름으로 정하면 됩니다.**
 7. 새 대화에서 **방금 만든 MCP App을 선택**하고 `mac_status로 연결 상태를 확인해 주세요.`라고 요청하세요.
 
 ![Mac Bridge 설정 화면](docs/images/mac-bridge-settings.png)

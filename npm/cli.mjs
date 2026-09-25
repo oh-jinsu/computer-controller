@@ -31,6 +31,8 @@ export function dataDirectory({
     const base = path.join(home, 'Library', 'Application Support');
     const current = path.join(base, 'Computer Controller');
     const legacy = path.join(base, 'Mac Bridge');
+    if (fs.existsSync(path.join(current, '.state', 'settings.json'))) return current;
+    if (fs.existsSync(path.join(legacy, '.state', 'settings.json'))) return legacy;
     if (fs.existsSync(current)) return current;
     if (fs.existsSync(legacy)) return legacy;
     return current;
@@ -39,6 +41,8 @@ export function dataDirectory({
     const base = env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
     const current = path.join(base, 'Computer Controller');
     const legacy = path.join(base, 'Mac Bridge');
+    if (fs.existsSync(path.join(current, '.state', 'settings.json'))) return current;
+    if (fs.existsSync(path.join(legacy, '.state', 'settings.json'))) return legacy;
     if (fs.existsSync(current)) return current;
     if (fs.existsSync(legacy)) return legacy;
     return current;
@@ -46,6 +50,8 @@ export function dataDirectory({
   const base = env.XDG_DATA_HOME || path.join(home, '.local', 'share');
   const current = path.join(base, 'computer-controller');
   const legacy = path.join(base, 'mac-bridge');
+  if (fs.existsSync(path.join(current, '.state', 'settings.json'))) return current;
+  if (fs.existsSync(path.join(legacy, '.state', 'settings.json'))) return legacy;
   if (fs.existsSync(current)) return current;
   if (fs.existsSync(legacy)) return legacy;
   return current;
@@ -188,13 +194,21 @@ function safeReplaceLink(target, link) {
   fs.symlinkSync(target, link, process.platform === 'win32' ? 'junction' : 'dir');
 }
 
-function prepareNodeAssets(paths) {
-  const nodeModules = path.join(packageRoot, 'node_modules');
-  const desktop = path.join(nodeModules, '@wonderwhy-er', 'desktop-commander', 'package.json');
-  const browser = path.join(nodeModules, '@playwright', 'mcp', 'package.json');
-  if (!fs.existsSync(desktop) || !fs.existsSync(browser)) {
-    throw new Error('npm dependencies are missing. Reinstall @oh-jinsu/computer-controller with npm.');
+export function installedNodeModules(root = packageRoot) {
+  const candidates = [
+    path.join(root, 'node_modules'),
+    path.resolve(root, '..', '..'),
+  ];
+  for (const nodeModules of candidates) {
+    const desktop = path.join(nodeModules, '@wonderwhy-er', 'desktop-commander', 'package.json');
+    const browser = path.join(nodeModules, '@playwright', 'mcp', 'package.json');
+    if (fs.existsSync(desktop) && fs.existsSync(browser)) return nodeModules;
   }
+  throw new Error('npm dependencies are missing. Re-run the npx command or reinstall Computer Controller with npm.');
+}
+
+function prepareNodeAssets(paths) {
+  const nodeModules = installedNodeModules();
   ensureDir(path.join(paths.assets, 'mac_bridge'));
   fs.copyFileSync(path.join(packageRoot, 'mac_bridge', 'dc_entry.mjs'),
                   path.join(paths.assets, 'mac_bridge', 'dc_entry.mjs'));

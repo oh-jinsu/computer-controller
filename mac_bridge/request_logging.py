@@ -41,12 +41,18 @@ NUMBERS = frozenset('depth offset length timeout_ms pid window_id owner_pid max_
 BOOLEANS = frozenset({'submit', 'include_static'})
 ENUMS = {'action': {'list', 'new', 'select', 'close'}, 'level': {'debug', 'info', 'warning', 'error'}}
 TEXT_FIELDS = frozenset({'content', 'text', 'old_string', 'new_string', 'title', 'element', 'name'})
-PROGRAMS = frozenset('git python python3 node npm npx uv bash zsh sh pwd ls cat sed grep find rg printf echo curl open xcrun swift swiftc godot ffmpeg ffprobe deno make cmake pytest'.split())
-SUBCOMMANDS = {'git': {'status', 'diff', 'log', 'show', 'rev-parse', 'branch', 'fetch', 'pull', 'push', 'add', 'commit', 'worktree'},
-               'npm': {'test', 'run', 'install', 'ci'}, 'uv': {'run', 'sync', 'pip'}}
 APP_NAMES = {'Google Chrome', 'Chrome', 'Godot', 'Xcode', 'Mac Bridge', 'Terminal', 'Safari'}
 PHASES = {'approval_requested': 'approval_wait', 'auto_approved': 'auto_approved',
           'denied_or_timed_out': 'approval_denied', 'approval_mode_changed': 'approval_changed'}
+SHELL_OPERATORS = {'&&', '||', '|', ';'}
+SECRET_VALUE_FLAGS = frozenset({'--token', '--password', '--passwd', '--api-key', '--apikey', '--secret',
+                                '--authorization', '--cookie', '--cookie-jar', '-H', '--header', '-u', '--user'})
+PAYLOAD_VALUE_FLAGS = frozenset({'-d', '--data', '--data-raw', '--data-binary', '--data-urlencode',
+                                 '-F', '--form', '--form-string', '--body', '--notes', '--message'})
+SCRIPT_PROGRAMS = frozenset({'python', 'python3', 'node', 'bash', 'zsh', 'sh'})
+SCRIPT_FLAGS = frozenset({'-c', '-e', '--eval', '--execute'})
+CONTENT_PROGRAMS = frozenset({'echo', 'printf'})
+PATTERN_PROGRAMS = frozenset({'grep', 'rg', 'sed'})
 
 
 def clean_text(value: str, limit: int = 200) -> str:
@@ -54,7 +60,8 @@ def clean_text(value: str, limit: int = 200) -> str:
     value = ''.join(c if not unicodedata.category(c).startswith('C') else '?' for c in value)
     value = re.sub(r'(?i)(?:sk-(?:proj-|admin-)?|gh[pousr]_)[A-Za-z0-9_-]{8,}', '[credential]', value)
     value = re.sub(r'[^\s/]+@[^\s/]+', '[email]', value)
-    value = re.sub(r'(?i)(token|password|secret|api[_-]?key)(?:=|:)[^/\s]+', r'\1=[redacted]', value)
+    value = re.sub(r'(?i)(token|password|passwd|secret|api[_-]?key|authorization|cookie)(?:=|:)[^/\s]+', r'\1=[redacted]', value)
+    value = re.sub(r'(?i)\bBearer\s+[A-Za-z0-9._~+/-]{6,}', 'Bearer [redacted]', value)
     return value[:limit] + ('…' if len(value) > limit else '')
 
 
@@ -85,27 +92,115 @@ def url_summary(value: str) -> str:
         return '[invalid URL]'
 
 
-def command_summary(value: str) -> str:
-    # Never log free-form args, scripts, environment assignments or shell expansions.
-    if len(value) > 8000 or '\n' in value or any(s in value for s in ('<<', '$(', '`')):
-        return '[script; arguments hidden]'
+def command_summary(value: str, workspace: Path | None = None) -> str:
+    """Return a useful LOCAL command preview while masking likely secret/content values.
+
+    Program names, flags, subcommands and ordinary paths stay visible. Credentials,
+    request bodies, inline code and obvious free-form content are never emitted.
+    This is intentionally a preview, not a byte-for-byte shell transcript.
+    """
+    if len(value) > 8000:
+        return '[command too long]'
+    if '\n' in value or '<<' in value:
+        # Heredocs/multiline scripts can contain arbitrary source or private text.
+        first = value.splitlines()[0].split('<<', 1)[0].strip()
+        try:
+            words = shlex.split(first)
+        except ValueError:
+            return '[script hidden]'
+        if not words:
+            return '[script hidden]'
+        program = Path(words[0]).name
+        prefix = [program]
+        for token in words[1:]:
+            if token.startswith('-'):
+                prefix.append(clean_text(token, 80))
+        return shlex.join(prefix + ['[script hidden]'])
     try:
         words = shlex.split(value)
     except ValueError:
-        return '[shell; arguments hidden]'
-    while words and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', words[0]):
-        words.pop(0)
+        return '[shell parse failed]'
     if not words:
         return '[shell]'
-    program = Path(words[0]).name
-    if program not in PROGRAMS:
-        return '[program; arguments hidden]'
-    result = program
-    if len(words) > 1 and words[1] in SUBCOMMANDS.get(program, set()):
-        result += ' ' + words[1]
-    if len(words) > 1:
-        result += ' [arguments hidden]'
-    return result
+
+    shown: list[str] = []
+    program: str | None = None
+    hide_next: str | None = None
+    pattern_seen = False
+    content_hidden = False
+
+    def ordinary(token: str) -> str:
+        if re.match(r'(?i)^https?://', token):
+            return url_summary(token)
+        if ('/' in token or token.startswith(('.', '~'))) and not token.startswith('-'):
+            return path_summary(token, workspace)
+        if any(mark in token for mark in ('$(', '`')):
+            return '[shell expansion hidden]'
+        # Quoted prose/body-like operands are represented by length, not content.
+        if any(c.isspace() for c in token):
+            return f'[text {len(token)} chars]'
+        return clean_text(token, 120)
+
+    for token in words:
+        if token in SHELL_OPERATORS:
+            shown.append(token)
+            program = None
+            pattern_seen = False
+            content_hidden = False
+            hide_next = None
+            continue
+        if hide_next is not None:
+            shown.append(hide_next)
+            hide_next = None
+            continue
+        if program is None and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', token):
+            name = token.split('=', 1)[0]
+            shown.append(name + '=[redacted]')
+            continue
+        if program is None:
+            program = Path(token).name
+            shown.append(clean_text(program, 80))
+            continue
+
+        lowered = token.casefold()
+        if any(lowered.startswith(flag + '=') for flag in SECRET_VALUE_FLAGS):
+            shown.append(token.split('=', 1)[0] + '=[redacted]')
+            continue
+        if any(lowered.startswith(flag + '=') for flag in PAYLOAD_VALUE_FLAGS):
+            shown.append(token.split('=', 1)[0] + '=[content hidden]')
+            continue
+        if token in SECRET_VALUE_FLAGS:
+            shown.append(token)
+            hide_next = '[redacted]'
+            continue
+        if token in PAYLOAD_VALUE_FLAGS:
+            shown.append(token)
+            hide_next = '[content hidden]'
+            continue
+        if program in SCRIPT_PROGRAMS and token in SCRIPT_FLAGS:
+            shown.append(token)
+            hide_next = '[script hidden]'
+            continue
+        if program in CONTENT_PROGRAMS and not token.startswith('-'):
+            if not content_hidden:
+                shown.append('[content hidden]')
+                content_hidden = True
+            continue
+        if program in PATTERN_PROGRAMS and not pattern_seen and not token.startswith('-'):
+            shown.append('[pattern hidden]')
+            pattern_seen = True
+            continue
+        shown.append(ordinary(token))
+
+    def render(token: str) -> str:
+        if token in SHELL_OPERATORS or (token.startswith('[') and token.endswith(']')):
+            return token
+        if re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*=\[redacted\]', token):
+            return token
+        return shlex.quote(token)
+
+    result = ' '.join(render(token) for token in shown)
+    return result[:600] + ('…' if len(result) > 600 else '')
 
 
 def summarize_arguments(arguments: object, workspace: Path | None = None) -> dict:
@@ -127,7 +222,7 @@ def summarize_arguments(arguments: object, workspace: Path | None = None) -> dic
         elif key == 'source' and isinstance(value, str):
             result[key] = ('local:' + path_summary(value[6:], workspace) if value.startswith('local:') else url_summary(value))
         elif key == 'command' and isinstance(value, str):
-            result['command'] = command_summary(value)
+            result['command'] = command_summary(value, workspace)
             result['command_chars'] = len(value)
         elif key in TEXT_FIELDS and isinstance(value, str):
             result[key + '_chars'] = len(value)

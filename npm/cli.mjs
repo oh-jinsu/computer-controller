@@ -86,7 +86,7 @@ export async function maybeRunLatestNpx(argv, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const spawnImpl = options.spawnImpl || spawnSync;
   const platform = options.platform || process.platform;
-  const log = options.log || (message => console.log(message));
+  const log = options.log || (message => console.error(message));
   const warn = options.warn || (message => console.warn(message));
   let sha;
   try {

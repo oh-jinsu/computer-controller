@@ -1,3 +1,4 @@
+# Computer Controller
 
 ChatGPT에서 내 **Mac·Windows PC 또는 Linux/EC2 서버**의 파일·터미널·브라우저·영상 프레임을 다루는 MCP 연결 도구입니다. **현재 권장 실행 방식은 npx 한 줄**입니다.
 

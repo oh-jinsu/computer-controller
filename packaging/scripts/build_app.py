@@ -46,7 +46,7 @@ def rpaths(path: Path):
 class Builder:
     def __init__(self, source_runtime: Path, output: Path, identity: str):
         self.runtime = source_runtime.resolve()
-        self.app = output / 'Mac Bridge.app'
+        self.app = output / 'Computer Controller.app'
         if self.app.exists():
             raise RuntimeError('Output app already exists. Choose a fresh output directory; never overwrite a running app.')
         self.resources = self.app / 'Contents/Resources'
@@ -228,7 +228,7 @@ if __name__ == '__main__':
              ROOT / 'packaging/macos/ScreenPermissionPolicy.swift',
              ROOT / 'packaging/macos/MacBridge.swift', '-o', macos / 'MacBridge'])
         plist = {'CFBundleExecutable': 'MacBridge', 'CFBundleIdentifier': 'com.ohjinsu.mac-bridge',
-            'CFBundleName': 'Mac Bridge', 'CFBundleDisplayName': 'Mac Bridge', 'CFBundlePackageType': 'APPL',
+            'CFBundleName': 'Computer Controller', 'CFBundleDisplayName': 'Computer Controller', 'CFBundlePackageType': 'APPL',
             'CFBundleVersion': str(RELEASE['build_number']), 'CFBundleShortVersionString': RELEASE['display_version'],
             'LSMinimumSystemVersion': RELEASE['minimum_macos'], 'LSUIElement': True, 'NSHighResolutionCapable': True,
             'SUFeedURL': RELEASE['update_feed_url'],

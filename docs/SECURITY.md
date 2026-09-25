@@ -16,7 +16,7 @@ File paths are restricted to the chosen development workspace. Direct reads/edit
 
 Approved shell commands can act outside the selected folder and use networking. These checks and the upstream engine's blocked-command list are NOT a security sandbox. Malicious project scripts, shell startup files, and tools can exercise the user's access after authorization by either mode. Always mode makes authenticated remote access more consequential: it is not a grant to perform unrequested destructive or external actions. For a stronger boundary use a separate OS account/VM/container with deliberate resource access.
 
-The pause operation prevents new Mac operations and attempts to terminate sessions this bridge started. It is not a rollback or a guarantee that detached descendants stop. Video tools and the tunnel remain available while paused. The source launcher can resume on a local restart; the beta.2 app preserves MAC_PAUSED and does not yet provide a local resume UI. A normal app stop is MB → 연결 중지 and is different from mac_pause. App termination/connection stop can interrupt owned processes; use it after work completes.
+The pause operation prevents new Mac operations and attempts to terminate sessions this bridge started. It is not a rollback or a guarantee that detached descendants stop. Video tools and the tunnel remain available while paused. The source launcher can resume on a local restart; the beta.2 app preserves MAC_PAUSED and does not yet provide a local resume UI. A normal app stop is MB → 연결 중지 and is different from pause. App termination/connection stop can interrupt owned processes; use it after work completes.
 
 ## Images and video
 
@@ -43,7 +43,7 @@ See [BROWSER-CONTEXT.md](BROWSER-CONTEXT.md) for dedicated/personal modes, URL, 
 
 ## 0.5 app distribution addendum
 
-The packaged server receives immutable assets separately from mutable application data. File tools protect both data and the running application bundle; they do not block the editable development checkout solely because it contains Mac Bridge source. Terminal commands remain unsandboxed when the owner authorizes them.
+The packaged server receives immutable assets separately from mutable application data. File tools protect both data and the running application bundle; they do not block the editable development checkout solely because it contains Computer Controller source. Terminal commands remain unsandboxed when the owner authorizes them.
 
 The app embeds Sparkle 2.10.0 with a public Ed25519 key, requires signed appcasts and checks archives before extraction. Its private update key is retained in Keychain. A cancelled signing request is a release blocker, not a reason to export secrets or disable signature checks. Beta.2 uses a fixed public HTTPS stable release feed and validates versioned asset URLs for this repository. No user GitHub login, token lookup or bundled GitHub CLI is used. Draft/prerelease assets are not automatically served by the stable feed; a private or unavailable feed leaves updates unavailable rather than asking for credentials.
 

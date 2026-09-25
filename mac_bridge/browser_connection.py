@@ -130,7 +130,7 @@ def connection_environment(root: Path, config: dict) -> dict[str, str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Select the Mac Bridge browser locally')
+    parser = argparse.ArgumentParser(description='Select the Computer Controller browser locally')
     parser.add_argument('--mode', choices=MODES)
     parser.add_argument('--open-settings', action='store_true')
     args = parser.parse_args()

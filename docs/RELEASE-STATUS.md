@@ -51,7 +51,7 @@ Windows 11 x64용 첫 Preview입니다. 파일명은 `Mac-Bridge-0.5.0-beta.10-w
 
 ## 0.5.0-beta.11 — process completion waiting
 
-`mac_start_process`의 기본 동작을 프로세스 종료 대기로 변경한 cross-platform Preview입니다. Windows 파일명은 `Mac-Bridge-0.5.0-beta.11-windows-x64.zip`이며, macOS는 새 빌드 번호 `50011`로 별도 서명·공증합니다. `wait=start`는 의도적으로 장시간 실행되는 서버·REPL 등에만 사용합니다.
+`start_process`의 기본 동작을 프로세스 종료 대기로 변경한 cross-platform Preview입니다. Windows 파일명은 `Mac-Bridge-0.5.0-beta.11-windows-x64.zip`이며, macOS는 새 빌드 번호 `50011`로 별도 서명·공증합니다. `wait=start`는 의도적으로 장시간 실행되는 서버·REPL 등에만 사용합니다.
 
 
 ## 0.5.0-beta.12 — MCP 2026-07-28 discovery
@@ -61,14 +61,19 @@ ChatGPT 플러그인 새로고침이 사용하는 `server/discover`를 지원하
 
 ## 0.5.0-beta.13 — process inventory and cleanup
 
-프로젝트 개발 중 남는 Godot·Node·Python·서버 계열 프로세스를 확인하고 정리할 수 있도록 `mac_list_processes`와 `mac_kill_process`를 추가한 Preview입니다. 빌드 번호는 `50013`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.13-windows-x64.zip`입니다. 전체 도구 수는 31개입니다. 종료 도구는 목록에서 방금 관찰한 동일 프로세스의 `kill_token`을 요구하고, Mac Bridge 자체 및 선택한 프로젝트와 무관한 프로세스는 거부합니다.
+프로젝트 개발 중 남는 Godot·Node·Python·서버 계열 프로세스를 확인하고 정리할 수 있도록 `list_processes`와 `kill_process`를 추가한 Preview입니다. 빌드 번호는 `50013`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.13-windows-x64.zip`입니다. 전체 도구 수는 31개입니다. 종료 도구는 목록에서 방금 관찰한 동일 프로세스의 `kill_token`을 요구하고, Mac Bridge 자체 및 선택한 프로젝트와 무관한 프로세스는 거부합니다.
 
 
 ## 0.5.0-beta.14 — file batch, move, info and search tools
 
-개발 작업의 MCP 왕복을 줄이기 위해 `mac_read_multiple_files`, `mac_create_directory`, `mac_move_file`, `mac_file_info`, `mac_search`를 추가한 Preview입니다. 빌드 번호는 `50014`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.14-windows-x64.zip`입니다. 전체 도구 수는 36개입니다. 모든 파일/검색 도구는 선택한 작업 폴더 및 기존 비밀 경로 제한을 유지하고, 생성/이동은 저장된 승인 모드를 따릅니다.
+개발 작업의 MCP 왕복을 줄이기 위해 `read_multiple_files`, `create_directory`, `move_file`, `file_info`, `search`를 추가한 Preview입니다. 빌드 번호는 `50014`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.14-windows-x64.zip`입니다. 전체 도구 수는 36개입니다. 모든 파일/검색 도구는 선택한 작업 폴더 및 기존 비밀 경로 제한을 유지하고, 생성/이동은 저장된 승인 모드를 따릅니다.
 
 
 ## 0.5.0-beta.15 — transactional batch file mutations
 
-여러 파일 변경의 ChatGPT↔MCP 왕복을 줄이기 위해 `mac_batch_files`를 추가한 Preview입니다. 빌드 번호는 `50015`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.15-windows-x64.zip`입니다. 전체 도구 수는 37개입니다. `write`·`edit`·`move`·`mkdir`·`delete`를 최대 50개까지 한 번에 preflight하고 승인 한 번으로 실행하며, 기존 파일 백업·경로 재검증·실패 시 역순 rollback을 수행합니다. `delete`는 일반 파일만 내부 복구 보관소로 이동하므로 영구 삭제하지 않습니다.
+여러 파일 변경의 ChatGPT↔MCP 왕복을 줄이기 위해 `batch_files`를 추가한 Preview입니다. 빌드 번호는 `50015`이며 Windows 파일명 규칙은 `Mac-Bridge-0.5.0-beta.15-windows-x64.zip`입니다. 전체 도구 수는 37개입니다. `write`·`edit`·`move`·`mkdir`·`delete`를 최대 50개까지 한 번에 preflight하고 승인 한 번으로 실행하며, 기존 파일 백업·경로 재검증·실패 시 역순 rollback을 수행합니다. `delete`는 일반 파일만 내부 복구 보관소로 이동하므로 영구 삭제하지 않습니다.
+
+
+## 0.5.0-beta.16 — Computer Controller rename
+
+제품 표시 이름을 `Computer Controller`로 변경하고 MCP 도구의 `mac_` 접두사를 제거한 cross-platform Preview입니다. 빌드 번호는 `50016`이며 새 Windows 파일명은 `Computer-Controller-0.5.0-beta.16-windows-x64.zip`, macOS 파일명은 `Computer-Controller-0.5.0-beta.16-macos26-arm64.zip`입니다. 도구 수는 37개로 유지됩니다. 기존 GitHub 저장소 경로와 `com.ohjinsu.mac-bridge` bundle identifier, Python 패키지 이름은 호환성을 위해 유지합니다. 새 설치는 `Computer Controller` 데이터 폴더를 사용하지만 기존 `Mac Bridge` 데이터 폴더가 있으면 자동 이동하지 않고 그대로 재사용합니다.

@@ -6,8 +6,8 @@
 
 ```text
 ~/dev/mac-bridge                         개발 소스
-응용 프로그램/Mac Bridge.app              독립 실행본
-~/Library/Application Support/Mac Bridge  앱의 설정·미디어·작업 기록
+응용 프로그램/Computer Controller.app              독립 실행본
+~/Library/Application Support/Computer Controller  앱의 설정·미디어·작업 기록
 ```
 
 앱은 소스 체크아웃이나 그 `.venv`를 import하지 않습니다. 소스 변경은 새 앱 빌드·검증·배포 전까지 실행 중인 앱에 반영되지 않습니다. 반면 아래의 **소스 실행 방식은 해당 체크아웃을 직접 사용**합니다. 소스 서버를 실행하면서 같은 체크아웃을 수정하면 완전히 분리된 개발이 아니므로 작업 사본이나 독립 앱을 사용하세요.

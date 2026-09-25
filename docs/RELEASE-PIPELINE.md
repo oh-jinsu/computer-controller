@@ -1,6 +1,6 @@
 # 한 번에 배포하기 — 개발자용
 
-앱 사용자는 `Mac Bridge.app`만 실행합니다. 아래 명령은 배포자가 새 버전을 만들 때만 사용합니다.
+앱 사용자는 `Computer Controller.app`만 실행합니다. 아래 명령은 배포자가 새 버전을 만들 때만 사용합니다.
 
 ## 평소 사용하는 명령
 
@@ -61,7 +61,7 @@ bash Mac-Release.command --prepare-only # Apple 공증/서명까지, GitHub 쓰�
 이전에 공증을 받은 **동일한 버전·빌드·키·업데이트 경로·Python/JS 엔진 소스**인 앱은 명시적으로 지정해 재사용할 수 있습니다. 인증서 팀과 공증 확인서를 다시 검증하고, 전체 통합 검사를 거친 뒤 서명 ZIP을 만듭니다. 이 옵션은 공증 우회가 아니며 새 공증 제출을 하지 않습니다.
 
 ```sh
-bash Mac-Release.command --draft --adopt-notarized "/실제/공증된/Mac Bridge.app"
+bash Mac-Release.command --draft --adopt-notarized "/실제/공증된/Computer Controller.app"
 ```
 
 이미 새 빌드/다른 접수가 시작된 실행 기록에 공증본을 끼워 넣는 것은 거부합니다. 기존 앱이 변경된 소스와 맞지 않으면 새 버전을 빌드해야 합니다. 출처 JSON의 `source_commit`은 릴리스 도구를 실행한 커밋이며, 재사용한 앱에는 별도의 새 기능을 주입하지 않습니다.

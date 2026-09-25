@@ -32,18 +32,18 @@ _CURRENT: ContextVar = ContextVar('mac_bridge_request_log', default=None)
 MAX_BYTES = 2_000_000
 SLOW_AFTER = 5
 SLOW_EVERY = 15
-TOOLS = frozenset('''mac_status mac_list_directory mac_read_file mac_read_multiple_files mac_create_directory mac_move_file mac_file_info mac_search mac_batch_files mac_write_file mac_edit_file mac_start_process
-mac_process_output mac_send_input mac_stop_process mac_list_sessions mac_list_processes mac_kill_process mac_list_windows
-mac_capture_window mac_pause mac_recent_actions browser_status browser_navigate browser_snapshot
+TOOLS = frozenset('''status list_directory read_file read_multiple_files create_directory move_file file_info search batch_files write_file edit_file start_process
+process_output send_input stop_process list_sessions list_processes kill_process list_windows
+capture_window pause recent_actions browser_status browser_navigate browser_snapshot
 browser_screenshot browser_click browser_type browser_press_key browser_resize browser_tabs
-browser_console_messages browser_network_requests browser_close mac_context_list mac_context_read
-mac_context_save'''.split())
+browser_console_messages browser_network_requests browser_close context_list context_read
+context_save'''.split())
 NUMBERS = frozenset('depth offset length timeout_ms wait_timeout_ms pid window_id owner_pid max_edge count limit max_results context_lines index width height start_seconds end_seconds wait_seconds'.split())
 BOOLEANS = frozenset({'submit', 'include_static', 'ignore_case', 'include_hidden', 'literal'})
 ENUMS = {'action': {'list', 'new', 'select', 'close'}, 'level': {'debug', 'info', 'warning', 'error'},
          'wait': {'complete', 'start'}, 'search_type': {'files', 'content'}}
 TEXT_FIELDS = frozenset({'content', 'text', 'old_string', 'new_string', 'title', 'element', 'name', 'query', 'pattern', 'file_pattern'})
-APP_NAMES = {'Google Chrome', 'Chrome', 'Godot', 'Xcode', 'Mac Bridge', 'Terminal', 'Safari'}
+APP_NAMES = {'Google Chrome', 'Chrome', 'Godot', 'Xcode', 'Computer Controller', 'Mac Bridge', 'Terminal', 'Safari'}
 PHASES = {'approval_requested': 'approval_wait', 'auto_approved': 'auto_approved',
           'denied_or_timed_out': 'approval_denied', 'approval_mode_changed': 'approval_changed'}
 SHELL_OPERATORS = {'&&', '||', '|', ';'}
@@ -298,12 +298,12 @@ def summarize_result(result: object, tool: str) -> dict:
                 summary[key] = structured[key]
         if isinstance(structured.get('state'), str) and structured['state'] in {'queued', 'running', 'complete', 'failed'}:
             summary['job_state'] = structured['state']
-        if tool in {'bridge_status', 'mac_status'} and isinstance(structured.get('version'), str) and re.fullmatch(r'[0-9.a-z-]{1,32}', structured['version']):
+        if tool in {'bridge_status', 'status'} and isinstance(structured.get('version'), str) and re.fullmatch(r'[0-9.a-z-]{1,32}', structured['version']):
             summary['version'] = structured['version']
         for key in ('windows', 'videos', 'contexts', 'actions', 'frames'):
             if isinstance(structured.get(key), list):
                 summary[key + '_count'] = len(structured[key])
-    if tool == 'mac_start_process':
+    if tool == 'start_process':
         pid = re.match(r'^Process started with PID (\d{1,10})\b', inspected)
         if pid:
             summary['pid'] = int(pid.group(1))
@@ -313,7 +313,7 @@ def summarize_result(result: object, tool: str) -> dict:
             summary['process_state'] = 'completed'
         elif pid:
             summary['process_state'] = 'started'
-    if tool == 'mac_process_output':
+    if tool == 'process_output':
         match = re.search(r'Process completed with exit code (-?\d{1,4}) \(runtime:', inspected)
         if match:
             summary['reported_exit_code'] = int(match.group(1))
@@ -394,7 +394,7 @@ class RequestLog:
             if not self.warned:
                 self.warned = True
                 try:
-                    (self.stream if self.stream is not None else sys.stderr).write('Mac Bridge: request log unavailable; tool execution is unchanged.\n')
+                    (self.stream if self.stream is not None else sys.stderr).write('Computer Controller: request log unavailable; tool execution is unchanged.\n')
                 except Exception:
                     pass
 

@@ -1,4 +1,4 @@
-"""Windows desktop launcher for the packaged Mac Bridge runtime."""
+"""Windows desktop launcher for the packaged Computer Controller runtime."""
 from __future__ import annotations
 
 import argparse
@@ -113,7 +113,7 @@ class WindowsApp:
         self.filedialog = filedialog
         self.messagebox = messagebox
         self.root = tk.Tk()
-        self.root.title(f"Mac Bridge {__version__}")
+        self.root.title(f"Computer Controller {__version__}")
         self.root.geometry("680x540")
         self.root.minsize(620, 500)
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
@@ -135,7 +135,7 @@ class WindowsApp:
 
         frame = ttk.Frame(self.root, padding=18)
         frame.pack(fill="both", expand=True)
-        ttk.Label(frame, text="Mac Bridge · Windows", font=("Segoe UI", 16, "bold")).grid(
+        ttk.Label(frame, text="Computer Controller · Windows", font=("Segoe UI", 16, "bold")).grid(
             row=0, column=0, columnspan=3, sticky="w", pady=(0, 10))
         ttk.Label(frame, textvariable=self.status_text).grid(
             row=1, column=0, columnspan=3, sticky="w", pady=(0, 14))
@@ -214,7 +214,7 @@ class WindowsApp:
     def save(self) -> bool:
         state = self.current()
         if state.get("running"):
-            self.messagebox.showerror("Mac Bridge", "연결 중에는 설정을 바꾸지 않습니다. 먼저 연결을 중지하세요.")
+            self.messagebox.showerror("Computer Controller", "연결 중에는 설정을 바꾸지 않습니다. 먼저 연결을 중지하세요.")
             return False
         values = {
             "tunnel_id": self.tunnel.get().strip(),

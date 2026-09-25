@@ -246,7 +246,7 @@ def prepare_update(data: Path) -> dict:
     version = str(info['CFBundleVersion'])
     if not version.isdigit():
         raise MacError('Invalid bundle build number.')
-    backup = private_dir(data / 'previous') / ('Mac Bridge-' + version + '.app')
+    backup = private_dir(data / 'previous') / ('Computer Controller-' + version + '.app')
     if not backup.exists():
         stage = backup.with_name('.staging-' + uuid.uuid4().hex + '.app')
         subprocess.run(['/usr/bin/ditto', str(app), str(stage)], check=True, timeout=180)

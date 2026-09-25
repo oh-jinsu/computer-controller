@@ -1,4 +1,4 @@
-// Test-only Sparkle host. Never compiled into Mac Bridge.app.
+// Test-only Sparkle host. Never compiled into Computer Controller.app.
 // A unique fixture bundle + loopback feed prevent touching the installed app,
 // its settings, browser or tunnel. All Sparkle signature checks stay enabled.
 #import <Cocoa/Cocoa.h>

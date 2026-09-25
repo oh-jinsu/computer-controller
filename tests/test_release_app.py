@@ -56,7 +56,7 @@ class ReleaseAppTests(unittest.TestCase):
 
     def test_build_output_protected_without_blocking_source(self):
         policy = Policy(self.data, self.workspace)
-        bundle = self.source / 'dist/Mac Bridge.app'
+        bundle = self.source / 'dist/Computer Controller.app'
         policy.protected_roots += (bundle,)
         with self.assertRaises(MacError): policy.path(str(bundle / 'Contents/Resources/engine/server.py'))
         self.assertEqual(policy.path(str(self.source / 'README.md')), self.source / 'README.md')
@@ -99,7 +99,7 @@ class ReleaseAppTests(unittest.TestCase):
     def test_activity_drains_new_work_but_allows_cleanup(self):
         activity = Activity(self.data)
         private_write(activity.drain, b'1')
-        with self.assertRaises(MacError): activity.enter('mac_start_process')
+        with self.assertRaises(MacError): activity.enter('start_process')
         self.assertEqual(activity.count, 0)
         activity.enter('browser_close'); activity.leave()
         self.assertEqual(activity.count, 0)

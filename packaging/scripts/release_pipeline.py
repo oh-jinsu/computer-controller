@@ -26,7 +26,7 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
-APP_NAME = 'Mac Bridge.app'
+APP_NAME = 'Computer Controller.app'
 BUNDLE_ID = 'com.ohjinsu.mac-bridge'
 EX_TEMPFAIL = 75
 
@@ -126,7 +126,7 @@ def distribution_source(app: Path) -> Path:
 
 def app_info(app: Path, config: dict) -> dict:
     if app.is_symlink() or app.name != APP_NAME or not app.is_dir():
-        raise ReleaseError('Select a physical Mac Bridge.app bundle.')
+        raise ReleaseError('Select a physical Computer Controller.app bundle.')
     info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
     expected = {'CFBundleIdentifier': BUNDLE_ID,
                 'CFBundleShortVersionString': config['display_version'],
@@ -144,7 +144,7 @@ def app_info(app: Path, config: dict) -> dict:
 
 def xcode_archive_info(info: dict, identity_name: str, team: str) -> dict:
     return {'ArchiveVersion': 2, 'CreationDate': datetime.now(timezone.utc).replace(tzinfo=None),
-            'Name': 'Mac Bridge', 'SchemeName': 'Mac Bridge',
+            'Name': 'Computer Controller', 'SchemeName': 'Computer Controller',
             'ApplicationProperties': {'ApplicationPath': 'Applications/' + APP_NAME,
                 'Architectures': ['arm64'], 'CFBundleIdentifier': info['CFBundleIdentifier'],
                 'CFBundleShortVersionString': info['CFBundleShortVersionString'],
@@ -365,7 +365,7 @@ class Pipeline:
             return old
         if 'notary' not in self.state:
             base = self.folder / 'notary'
-            archive = base / 'Mac Bridge.xcarchive'
+            archive = base / 'Computer Controller.xcarchive'
             app = archive / 'Products/Applications' / APP_NAME
             if archive.exists():
                 raise ReleaseError('Untracked notarization archive exists. Inspect rather than overwrite or resubmit.')
@@ -437,7 +437,7 @@ class Pipeline:
         args = [sys.executable, ROOT / 'packaging/scripts/prepare_release.py', app, '--output', attempt]
         previous = self.state.get('package_attempt')
         if previous:
-            existing = Path(previous) / ('Mac-Bridge-' + self.config['display_version'] + '-macos26-arm64.zip')
+            existing = Path(previous) / ('Computer-Controller-' + self.config['display_version'] + '-macos26-arm64.zip')
             if existing.is_file():
                 args += ['--archive', existing]  # Helper compares all contents against approved app.
         self.state['package_attempt'] = str(attempt)
@@ -451,7 +451,7 @@ class Pipeline:
             'signature_and_gatekeeper_verified': True, 'bundled_smoke_passed': True}
         (attempt / 'BUILD-PROVENANCE.json').write_text(json.dumps(receipt, indent=2) + '\n')
         # Notes are a GitHub description, not linked by the signed appcast; no private paths/logs.
-        (attempt / 'RELEASE-NOTES.md').write_text('# Mac Bridge ' + self.config['display_version'] + '\n\n'
+        (attempt / 'RELEASE-NOTES.md').write_text('# Computer Controller ' + self.config['display_version'] + '\n\n'
             'Apple Silicon · macOS 26 이상. 독립 앱 번들(실행 환경 포함).\n\n'
             'Developer ID 서명, Apple 공증 확인서 및 Gatekeeper 검증 완료.\n'
             '앱 ZIP과 appcast.xml은 Sparkle 서명으로 검증됩니다.\n\n'
@@ -507,7 +507,7 @@ class Pipeline:
             if 'release not found' not in text.lower() and 'http 404' not in text.lower():
                 raise ReleaseError('Unable to query GitHub; do not interpret auth/network errors as an absent release.')
             self.runner.run(['gh', 'release', 'create', tag, '--repo', repo, '--target', commit, '--draft',
-                '--title', 'Mac Bridge ' + self.config['display_version'], '--notes-file', folder / 'RELEASE-NOTES.md',
+                '--title', 'Computer Controller ' + self.config['display_version'], '--notes-file', folder / 'RELEASE-NOTES.md',
                 *(['--prerelease'] if self.config['preview'] else [])], 'draft-create')
             release = self.runner.json(cmd, 'draft-query')
         else:

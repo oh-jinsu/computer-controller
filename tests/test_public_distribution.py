@@ -63,7 +63,7 @@ class SigningPreparationTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name).resolve()
-        self.app = self.root / 'Mac Bridge.app'
+        self.app = self.root / 'Computer Controller.app'
         (self.app / 'Contents/MacOS').mkdir(parents=True)
         (self.app / 'Contents/MacOS/MacBridge').write_bytes(b'\xcf\xfa\xed\xfe' + b'fixture')
         self.identity = {'sha1': 'A' * 40, 'name': 'Developer ID Application: Unit Test (TESTTEAM12)'}

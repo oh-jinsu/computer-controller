@@ -18,6 +18,7 @@ from .request_logging import command_summary
 
 
 PROTECTED_COMMAND_MARKERS = (
+    'Computer Controller.app/Contents/',
     'Mac Bridge.app/Contents/',
     'mac_bridge/dc_entry.mjs',
     'mac_bridge.server',
@@ -248,7 +249,7 @@ def validate_kill(workspace: Path, bridge_pids: set[int], pid: int, token: str,
     if not row['killable']:
         raise ValueError('Only bridge-owned or selected-project processes can be terminated by this tool.')
     if not token or token != row['kill_token']:
-        raise ValueError('Process identity changed or was not freshly observed. Run mac_list_processes again.')
+        raise ValueError('Process identity changed or was not freshly observed. Run list_processes again.')
     row.pop('protected', None)
     return row
 
@@ -270,7 +271,7 @@ def validate_kill_plan(workspace: Path, bridge_pids: set[int], pid: int, token: 
     if not root['killable']:
         raise ValueError('Only bridge-owned or selected-project processes can be terminated by this tool.')
     if not token or token != root['kill_token']:
-        raise ValueError('Process identity changed or was not freshly observed. Run mac_list_processes again.')
+        raise ValueError('Process identity changed or was not freshly observed. Run list_processes again.')
 
     children: dict[int, list[int]] = {}
     for row in rows:

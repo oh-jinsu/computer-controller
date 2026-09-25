@@ -39,7 +39,7 @@ def valid_workspace(root: Path, value: object) -> Path:
         raise MacError('프로젝트 폴더를 선택하세요.')
     workspace = Path(value).expanduser().resolve(strict=True)
     if workspace == root.resolve() or workspace.is_relative_to(root.resolve()):
-        raise MacError('Mac Bridge 자체가 아닌 작업 프로젝트 폴더를 선택하세요.')
+        raise MacError('Computer Controller 자체가 아닌 작업 프로젝트 폴더를 선택하세요.')
     # Home/root stays blocked. A development directory containing this repo is OK:
     # Policy.path separately denies access to bridge code and state.
     Policy(root, workspace)

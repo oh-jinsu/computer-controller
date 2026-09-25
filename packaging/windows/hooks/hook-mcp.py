@@ -1,6 +1,6 @@
 """PyInstaller hook for the MCP SDK without its optional CLI frontend.
 
-Mac Bridge uses the SDK/server/client packages, not mcp.cli. Excluding mcp.cli keeps
+Computer Controller uses the SDK/server/client packages, not mcp.cli. Excluding mcp.cli keeps
 Typer/Python-dotenv out of the Windows runtime and avoids importing optional CLI code
 while PyInstaller discovers submodules.
 """

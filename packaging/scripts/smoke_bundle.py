@@ -75,25 +75,25 @@ async def run():
                         result = await client.call_tool(name, arguments)
                         assert not result.is_error, (name, text(result))
                         return result
-                    state = data(await call('mac_status'))
+                    state = data(await call('status'))
                     assert state['independent_runtime'] and not state['source_checkout_is_runtime'] and state['desktop_connected']
                     checks.append('actual bundled MCP server/discover 2026-07-28 and Desktop Commander connection (37 tools)')
-                    await call('mac_write_file', path='editable.py', content='new')
+                    await call('write_file', path='editable.py', content='new')
                     assert (project / 'editable.py').read_text() == 'new'
                     (project / 'second.txt').write_text('bundle-search-marker\n')
-                    multiple = await call('mac_read_multiple_files', paths=['editable.py', 'second.txt'])
+                    multiple = await call('read_multiple_files', paths=['editable.py', 'second.txt'])
                     assert 'new' in text(multiple) and 'bundle-search-marker' in text(multiple)
-                    info = await call('mac_file_info', path='second.txt')
+                    info = await call('file_info', path='second.txt')
                     assert 'size:' in text(info)
-                    searched = await call('mac_search', pattern='bundle-search-marker', search_type='content', max_results=20)
+                    searched = await call('search', pattern='bundle-search-marker', search_type='content', max_results=20)
                     assert 'second.txt' in text(searched)
-                    await call('mac_create_directory', path='nested/path')
+                    await call('create_directory', path='nested/path')
                     (project / 'move-me.txt').write_text('move-bundle-marker')
-                    await call('mac_move_file', source='move-me.txt', destination='nested/path/moved.txt')
+                    await call('move_file', source='move-me.txt', destination='nested/path/moved.txt')
                     assert (project / 'nested/path/moved.txt').read_text() == 'move-bundle-marker'
                     (project / 'batch-edit.txt').write_text('before TOKEN after')
                     (project / 'batch-delete.txt').write_text('delete-bundle-marker')
-                    batch = await call('mac_batch_files', operations=[
+                    batch = await call('batch_files', operations=[
                         {'op': 'mkdir', 'path': 'batch-dir'},
                         {'op': 'write', 'path': 'batch-dir/new.txt', 'content': 'new-bundle-marker'},
                         {'op': 'edit', 'path': 'batch-edit.txt', 'old_string': 'TOKEN', 'new_string': 'EDITED'},
@@ -107,17 +107,17 @@ async def run():
                     checks.append('single-call preflighted batch mutation with recoverable delete and rollback support')
                     checks.append('batched reads, file info, search, directory creation and non-overwriting move')
                     checks.append('development source file read/write allowed; application resources stayed separate')
-                    result = await call('mac_start_process', command='pwd')
+                    result = await call('start_process', command='pwd')
                     pid = int(re.search(r'PID (\d+)', text(result)).group(1))
-                    output = text(await call('mac_process_output', pid=pid))
+                    output = text(await call('process_output', pid=pid))
                     assert str(project) in text(result) + output
                     checks.append('actual local terminal command from bundled engine')
-                    sleeper = await call('mac_start_process', command='sleep 30', wait='start')
+                    sleeper = await call('start_process', command='sleep 30', wait='start')
                     sleeper_pid = int(re.search(r'PID (\d+)', text(sleeper)).group(1))
-                    processes = await call('mac_list_processes', limit=200)
+                    processes = await call('list_processes', limit=200)
                     sleeper_row = next(row for row in data(processes)['processes'] if row['pid'] == sleeper_pid)
                     assert sleeper_row['killable'] and sleeper_row['kill_token']
-                    killed = await call('mac_kill_process', pid=sleeper_pid, kill_token=sleeper_row['kill_token'])
+                    killed = await call('kill_process', pid=sleeper_pid, kill_token=sleeper_row['kill_token'])
                     killed_data = data(killed)
                     assert sleeper_pid in killed_data['termination_signalled'] and killed_data['descendants_first']
                     checks.append('process inventory and observed-token descendant-first cleanup')
@@ -126,21 +126,21 @@ async def run():
                     baseline = {p.relative_to(APP) for p in APP.rglob('*.pyc')}
                     command = shlex.join([str(RESOURCES / 'python/bin/python3'), '-c',
                         "import sys,json,hashlib,plistlib;assert sys.dont_write_bytecode;print('SIGNED_APP_BYTECODE_GUARD_OK')"])
-                    check = await call('mac_start_process', command=command)
+                    check = await call('start_process', command=command)
                     check_pid = int(re.search(r'PID (\d+)', text(check)).group(1))
-                    check_output = text(await call('mac_process_output', pid=check_pid))
+                    check_output = text(await call('process_output', pid=check_pid))
                     assert 'SIGNED_APP_BYTECODE_GUARD_OK' in text(check) + check_output
                     assert {p.relative_to(APP) for p in APP.rglob('*.pyc')} == baseline
                     checks.append('normal bundled Python shell command preserved signed bundle: no bytecode writes')
 
                     command = state['workflows']['video']['command'] + ' ' + shlex.join([
                         str(project / 'test.mp4'), '--output', str(project / 'frames'), '--count', '3'])
-                    launch = await call('mac_start_process', command=command)
+                    launch = await call('start_process', command=command)
                     video_pid = int(re.search(r'PID (\d+)', text(launch)).group(1))
                     completed = None
                     exit_ok = False
                     for _ in range(80):
-                        output = text(await call('mac_process_output', pid=video_pid))
+                        output = text(await call('process_output', pid=video_pid))
                         for line in output.splitlines():
                             try: row = json.loads(line)
                             except ValueError: continue
@@ -152,12 +152,12 @@ async def run():
                     manifest = json.loads(Path(completed['manifest_path']).read_text())
                     assert len(manifest['frames']) == 3
                     for path in [completed['sheet_path'], completed['frame_paths'][0]]:
-                        ready = await call('mac_read_file', path=path)
+                        ready = await call('read_file', path=path)
                         image = next(block for block in ready.content if block.type == 'image')
                         im = Image.open(BytesIO(base64.b64decode(image.data))); im.load()
                         assert im.width > 0
                     assert not ({'start_extraction', 'get_extraction', 'get_frame', 'bridge_status', 'list_local_videos'} & tools.keys())
-                    checks.append('bundled video CLI through common process tools; real FFmpeg sheet/frame via mac_read_file')
+                    checks.append('bundled video CLI through common process tools; real FFmpeg sheet/frame via read_file')
                     if '--core-only' not in sys.argv:
                         await call('browser_navigate', url=f'http://127.0.0.1:{server.server_port}/')
                         snapshot = text(await call('browser_snapshot'))
@@ -173,11 +173,11 @@ async def run():
                         checks.append('actual bundled Playwright: disposable headless Chrome, snapshot, input, click and JPEG')
                         await call('browser_close')
                     (mutable / '.state/UPDATE_DRAIN').write_text('local update test only')
-                    denied = await client.call_tool('mac_start_process', {'command': 'echo should-not-run'})
+                    denied = await client.call_tool('start_process', {'command': 'echo should-not-run'})
                     assert denied.is_error and 'update' in text(denied).lower()
-                    denied_video = await client.call_tool('mac_start_process', {'command': command})
+                    denied_video = await client.call_tool('start_process', {'command': command})
                     assert denied_video.is_error
-                    assert not (await client.call_tool('mac_status', {})).is_error
+                    assert not (await client.call_tool('status', {})).is_error
                     checks.append('update drain refuses common processes including video workflows; status/cleanup remain available')
                     await asyncio.sleep(0.7)
                     heartbeat = json.loads((mutable / '.state/app-heartbeat.json').read_text())

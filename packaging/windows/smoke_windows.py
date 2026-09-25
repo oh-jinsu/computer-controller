@@ -85,17 +85,17 @@ async def run(exe: Path) -> None:
                         assert not result.is_error, (name, text(result))
                         return result
 
-                    status = data(await call("mac_status"))
+                    status = data(await call("status"))
                     assert status["platform"] == "win32"
                     assert status["independent_runtime"] and status["desktop_connected"]
                     assert status["approval_mode"] == "always"
                     checks.append("packaged MCP + Desktop Commander")
 
-                    await call("mac_write_file", path="sample.txt", content="after")
+                    await call("write_file", path="sample.txt", content="after")
                     assert (workspace / "sample.txt").read_text() == "after"
                     # Use a PowerShell automatic variable so this lifecycle check does not
                     # trigger first-run module analysis on a fresh Windows runner.
-                    launch = await call("mac_start_process", command="$PWD.Path")
+                    launch = await call("start_process", command="$PWD.Path")
                     combined = text(launch)
                     pid = int(re.search(r"PID (\d+)", combined).group(1))
                     assert pid > 0
@@ -111,7 +111,7 @@ async def run(exe: Path) -> None:
                     output_dir = workspace / "frames"
                     command = command_line([str(exe), "--video", str(video),
                                             "--output", str(output_dir), "--count", "2"])
-                    launch = await call("mac_start_process", command=command)
+                    launch = await call("start_process", command=command)
                     final_output = text(launch)
                     video_pid = int(re.search(r"PID (\d+)", final_output).group(1))
                     assert video_pid > 0
@@ -124,7 +124,7 @@ async def run(exe: Path) -> None:
                         if isinstance(row, dict) and row.get("event") == "complete":
                             complete = row
                     assert complete and "exit code 0" in final_output, final_output
-                    image_result = await call("mac_read_file", path=complete["sheet_path"])
+                    image_result = await call("read_file", path=complete["sheet_path"])
                     image_block = next(block for block in image_result.content if block.type == "image")
                     image = Image.open(BytesIO(base64.b64decode(image_block.data)))
                     image.load()
@@ -157,7 +157,7 @@ def main() -> int:
     if sys.platform != "win32":
         raise SystemExit("Windows smoke must run on Windows")
     if len(sys.argv) != 2:
-        raise SystemExit("usage: smoke_windows.py <Mac Bridge.exe>")
+        raise SystemExit("usage: smoke_windows.py <Computer Controller.exe>")
     asyncio.run(run(Path(sys.argv[1]).resolve(strict=True)))
     return 0
 

@@ -7,10 +7,10 @@
 요청이 들어오면 `REQ`, 끝나면 `RES OK` 또는 `RES ERROR`가 나옵니다. 두 줄의 대괄호 ID가 같으면 같은 요청입니다. 다음은 형식을 설명하는 예시입니다.
 
 ```text
-16:46:51.341 [aac8a718-3] REQ mac_read_file {"arguments":{"path":"sample.txt"}}
-16:46:51.360 [aac8a718-3] RES OK mac_read_file {"duration_ms":19.0,"text_chars":97,"images":0}
-16:46:51.407 [aac8a718-7] REQ mac_read_file {"arguments":{"path":"[outside workspace]/outside.txt"}}
-16:46:51.407 [aac8a718-7] RES ERROR mac_read_file {"duration_ms":0.3,"error_code":"outside_workspace"}
+16:46:51.341 [aac8a718-3] REQ read_file {"arguments":{"path":"sample.txt"}}
+16:46:51.360 [aac8a718-3] RES OK read_file {"duration_ms":19.0,"text_chars":97,"images":0}
+16:46:51.407 [aac8a718-7] REQ read_file {"arguments":{"path":"[outside workspace]/outside.txt"}}
+16:46:51.407 [aac8a718-7] RES ERROR read_file {"duration_ms":0.3,"error_code":"outside_workspace"}
 ```
 
 | 표시 | 의미 |
@@ -24,9 +24,9 @@
 
 `duration_ms`는 서버가 해당 도구 호출을 처리한 시간입니다. 모델의 생각 시간, ChatGPT와 터널의 왕복 시간까지 포함한 전체 작업 시간이 아닙니다.
 
-`mac_start_process`는 기본 `wait=complete`에서 프로세스 종료까지 기다리므로 정상 종료를 관측하면 같은 `RES`에 `process_state=completed`와 `reported_exit_code`를 기록합니다. `wait=start`를 썼거나 안전 대기 한도에 도달해 아직 실행 중이면 `process_state=started`로 남고, 이후 `mac_process_output`에서 종료 코드를 확인할 수 있습니다. `RES OK`는 MCP 도구 호출 자체의 정상 응답을 뜻하며 셸 종료 코드 0을 대신하지 않습니다. 종료 코드는 엔진 응답에서 읽은 값이며 독립적인 OS 검증은 아닙니다.
+`start_process`는 기본 `wait=complete`에서 프로세스 종료까지 기다리므로 정상 종료를 관측하면 같은 `RES`에 `process_state=completed`와 `reported_exit_code`를 기록합니다. `wait=start`를 썼거나 안전 대기 한도에 도달해 아직 실행 중이면 `process_state=started`로 남고, 이후 `process_output`에서 종료 코드를 확인할 수 있습니다. `RES OK`는 MCP 도구 호출 자체의 정상 응답을 뜻하며 셸 종료 코드 0을 대신하지 않습니다. 종료 코드는 엔진 응답에서 읽은 값이며 독립적인 OS 검증은 아닙니다.
 
-영상 확인은 일반 프로세스로 기록됩니다. 기본 대기에서는 `mac_start_process` 응답에 `started/progress/complete/error/cancelled` 진행 이벤트와 종료 코드가 포함되며, 분리 실행한 경우에는 `mac_process_output`으로 이어서 확인합니다. 이미지 데이터 자체는 기록하지 않습니다. 이 로그는 MCP 도구 실행 기록이며, ChatGPT 대화 원문·모델 추론 과정·모든 HTTP 패킷을 기록하는 기능이 아닙니다. 터널 내부의 command/workflow ID가 MCP 요청에 전달되지 않으면 임의로 연결했다고 표시하지 않습니다.
+영상 확인은 일반 프로세스로 기록됩니다. 기본 대기에서는 `start_process` 응답에 `started/progress/complete/error/cancelled` 진행 이벤트와 종료 코드가 포함되며, 분리 실행한 경우에는 `process_output`으로 이어서 확인합니다. 이미지 데이터 자체는 기록하지 않습니다. 이 로그는 MCP 도구 실행 기록이며, ChatGPT 대화 원문·모델 추론 과정·모든 HTTP 패킷을 기록하는 기능이 아닙니다. 터널 내부의 command/workflow ID가 MCP 요청에 전달되지 않으면 임의로 연결했다고 표시하지 않습니다.
 
 ## 기록하지 않는 것
 
@@ -45,7 +45,7 @@ SDK가 입력 검증 오류에 잘못된 입력값을 다시 출력하는 경우
 별도로 구조화된 JSONL을 저장합니다.
 
 - 소스 실행: `<실행 루트>/.state/request-logs/requests.jsonl`
-- 독립 앱: `~/Library/Application Support/Mac Bridge/.state/request-logs/requests.jsonl`
+- 독립 앱: `~/Library/Application Support/Computer Controller/.state/request-logs/requests.jsonl`
 
 현재 파일 약 2 MB와 이전 파일 두 개를 순환 보관합니다. 파일은 소유자 전용 권한(600), 폴더는 700이며 Git에 포함되지 않습니다. 여러 프로세스의 파일 기록/순환은 파일 잠금으로 직렬화합니다. 심볼릭 링크·하드링크 로그 파일은 따라 쓰지 않습니다. 디스크가 가득 차거나 기록에 실패해도 도구를 재실행하거나 성공한 작업을 실패로 바꾸지 않습니다. 기록을 못 했다는 고정 경고만 남깁니다.
 

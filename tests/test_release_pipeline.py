@@ -131,7 +131,7 @@ class PipelineTests(unittest.TestCase):
         result = rp.xcode_archive_info(info, 'Developer ID Application: Test (ABCDEFGHIJ)', 'ABCDEFGHIJ')
         self.assertEqual(result['ArchiveVersion'], 2)
         self.assertEqual(result['ApplicationProperties']['Team'], 'ABCDEFGHIJ')
-        self.assertEqual(result['ApplicationProperties']['ApplicationPath'], 'Applications/Mac Bridge.app')
+        self.assertEqual(result['ApplicationProperties']['ApplicationPath'], 'Applications/Computer Controller.app')
 
     def test_export_processing_is_not_a_rejection(self):
         self.assertEqual(rp.export_state(65, 'Archive "X" is processing and not ready for distribution.'), 'processing')

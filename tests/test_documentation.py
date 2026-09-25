@@ -82,19 +82,19 @@ class DocumentationTests(unittest.TestCase):
         swift = (ROOT / 'packaging/macos/MacBridge.swift').read_text()
         for label in ['연결 시작', '연결 중지', '설정…', '화면 기록 권한…', '업데이트 확인…',
                       '이전 실행본 보기', '로그 보기', '기존 설정 가져오기…',
-                      '요청된 Mac 작업 항상 허용', '평소 Chrome 로그인 상태 사용',
+                      '요청된 컴퓨터 작업 항상 허용', '평소 Chrome 로그인 상태 사용',
                       '서명된 업데이트 자동 확인·다운로드']:
             self.assertIn(label, swift, label)
             self.assertIn(label, readme, label)
 
     def test_release_filename_matches_current_configuration(self):
         config = json.loads((ROOT / 'packaging/release.json').read_text())
-        expected_windows = f'Mac-Bridge-{config["display_version"]}-windows-x64.zip'
+        expected_windows = f'Computer-Controller-{config["display_version"]}-windows-x64.zip'
         status = (ROOT / 'docs/RELEASE-STATUS.md').read_text()
         readme = (ROOT / 'README.md').read_text()
         self.assertIn(expected_windows, status)
-        self.assertIn('Mac-Bridge-...-macos26-arm64.zip', readme)
-        self.assertIn('Mac-Bridge-...-windows-x64.zip', readme)
+        self.assertIn('Computer-Controller-...-macos26-arm64.zip', readme)
+        self.assertIn('Computer-Controller-...-windows-x64.zip', readme)
         self.assertEqual(config['minimum_macos'], '26.0')
         self.assertEqual(config['architecture'], 'arm64')
 
@@ -125,10 +125,10 @@ class DocumentationTests(unittest.TestCase):
         readme = (ROOT / 'docs/INSTALL.md').read_text()
         control = (ROOT / 'mac_bridge/app_control.py').read_text()
         platform = (ROOT / 'mac_bridge/platform_support.py').read_text()
-        self.assertIn('Library/Application Support/Mac Bridge', platform)
-        self.assertIn('AppData/Local/Mac Bridge', platform)
-        self.assertIn('~/Library/Application Support/Mac Bridge/input', readme)
-        self.assertIn('~/Library/Application Support/Mac Bridge/.state/contexts', readme)
+        self.assertIn('current = base / "Computer Controller"', platform)
+        self.assertIn('legacy = base / "Mac Bridge"', platform)
+        self.assertIn('~/Library/Application Support/Computer Controller', readme)
+        self.assertIn('~/Library/Application Support/Mac Bridge', readme)
         self.assertIn('independent_runtime: true', readme)
         self.assertIn('source_checkout_is_runtime: false', readme)
 

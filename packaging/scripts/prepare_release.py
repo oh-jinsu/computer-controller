@@ -75,8 +75,8 @@ def main():
     if args.upload_draft and args.publish:
         parser.error('Choose draft OR publish.')
     app = args.app.resolve(strict=True)
-    if app.name != 'Mac Bridge.app':
-        raise SystemExit('Select the built Mac Bridge.app.')
+    if app.name != 'Computer Controller.app':
+        raise SystemExit('Select the built Computer Controller.app.')
     info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
     if info.get('SUPublicEDKey') != CONFIG['sparkle_public_key'] or not info.get('SURequireSignedFeed'):
         raise SystemExit('The app must require the expected signed feed and update key.')
@@ -97,7 +97,7 @@ def main():
         if public_repo['isPrivate']:
             raise SystemExit('Repository is still private. Publication never changes repository visibility.')
     version = info['CFBundleShortVersionString']; tag = 'v' + version
-    name = 'Mac-Bridge-' + version + '-macos26-arm64.zip'
+    name = 'Computer-Controller-' + version + '-macos26-arm64.zip'
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=True)
     archive = output / name
     if archive.exists():
@@ -123,13 +123,13 @@ def main():
     checksums = output / 'SHA256SUMS.txt'
     checksums.write_text(''.join(f'{hashlib.file_digest(p.open('rb'), 'sha256').hexdigest()}  {p.name}\n' for p in [archive, feed]))
     notes = output / 'RELEASE-NOTES.md'
-    notes.write_text(f'''# Mac Bridge {version}
+    notes.write_text(f'''# Computer Controller {version}
 
 Independent application bundle: Python, Node, FFmpeg/ffprobe, Deno,
 Desktop Commander, Playwright, tunnel-client and cloudflared included.
 No GitHub CLI or GitHub login is required on the receiving Mac.
 Development source is not the running application. Runtime state is stored in
-~/Library/Application Support/Mac Bridge, outside the app bundle.
+~/Library/Application Support/Computer Controller, outside the app bundle.
 
 Sparkle checks signed feeds and Ed25519-signed archives. Updates defer replacement
 while the app has active work and preserve a previous app copy. The app uses the
@@ -158,7 +158,7 @@ contexts and backups remain in the old folder (not automatically copied/deleted)
             raise SystemExit('Unnotarized previews are restricted to private draft releases.')
         commit = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
         cmd = ['gh', 'release', 'create', tag, '--repo', repository, '--target', commit,
-               '--title', f'Mac Bridge {version}', '--notes-file', str(notes)]
+               '--title', f'Computer Controller {version}', '--notes-file', str(notes)]
         if args.upload_draft:
             cmd += ['--draft', '--prerelease']
         elif args.publish:

@@ -1,4 +1,4 @@
-"""Real Sparkle install/relaunch on a DISPOSABLE app; never updates Mac Bridge.
+"""Real Sparkle install/relaunch on a DISPOSABLE app; never updates Computer Controller.
 
 Uses the already configured release key through sign_update (no export). This
 is a framework integration test, NOT a test of the production private-GitHub
@@ -74,8 +74,8 @@ def main():
     args = parser.parse_args()
     config = json.loads((ROOT / 'packaging/release.json').read_text())
     directory = Path(tempfile.mkdtemp(prefix='mac-bridge-sparkle-smoke-')).resolve()
-    fixture = directory / 'installed/Mac Bridge Update Fixture.app'
-    updated = directory / 'new/Mac Bridge Update Fixture.app'
+    fixture = directory / 'installed/Computer Controller Update Fixture.app'
+    updated = directory / 'new/Computer Controller Update Fixture.app'
     webroot = directory / 'web'; webroot.mkdir()
     evidence = directory / 'events.jsonl'
     transport = {'corrupt_archive': False, 'requests': []}
@@ -105,7 +105,7 @@ def main():
              '-F', fixture / 'Contents/Frameworks', '-Wl,-rpath,@executable_path/../Frameworks',
              ROOT / 'packaging/tests/SparkleSmoke.m', '-o', fixture / 'Contents/MacOS/Smoke'], capture_output=True)
         info = {'CFBundleExecutable': 'Smoke', 'CFBundleIdentifier': 'com.ohjinsu.mac-bridge.update-fixture.' + uuid.uuid4().hex,
-                'CFBundleName': 'Mac Bridge Update Fixture', 'CFBundlePackageType': 'APPL',
+                'CFBundleName': 'Computer Controller Update Fixture', 'CFBundlePackageType': 'APPL',
                 'CFBundleVersion': '1', 'CFBundleShortVersionString': '1.0', 'LSUIElement': True,
                 'LSMinimumSystemVersion': '12.0', 'SUPublicEDKey': config['sparkle_public_key'],
                 'SURequireSignedFeed': True, 'SUVerifyUpdateBeforeExtraction': True,
@@ -160,7 +160,7 @@ def main():
                              'valid signed feed and archive downloaded, installed, and app relaunched at version 2',
                              'installed fixture code signature remains valid'],
                   'events': {'invalid_feed': rejected_feed, 'invalid_archive': rejected_archive, 'valid_update': updated_events},
-                  'not_tested': ['production Mac Bridge app delegate and private GitHub download',
+                  'not_tested': ['production Computer Controller app delegate and private GitHub download',
                                  'active tunnel switching', 'Developer ID and Gatekeeper notarization']}
         args.evidence.parent.mkdir(parents=True, exist_ok=True)
         for rows in report['events'].values():

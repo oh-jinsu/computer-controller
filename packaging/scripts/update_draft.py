@@ -40,7 +40,7 @@ def verify_bundle_metadata(folder: Path, config: dict) -> dict:
     if enclosure is None:
         raise ValueError('Signed feed contains no update enclosure.')
     version = config['display_version']; tag = 'v' + version
-    name = 'Mac-Bridge-' + version + '-macos26-arm64.zip'
+    name = 'Computer-Controller-' + version + '-macos26-arm64.zip'
     archive = folder / name
     if archive.is_symlink() or not archive.is_file():
         raise ValueError('Missing release archive.')
@@ -90,7 +90,7 @@ def main():
     (folder / 'SHA256SUMS.txt').write_text(checksums)
     command(['gh', 'release', 'upload', verified['tag'], '--repo', repo, '--clobber', *map(str, files)])
     command(['gh', 'release', 'edit', verified['tag'], '--repo', repo,
-             '--title', 'Mac Bridge ' + config['display_version'] + ' — signed internal preview',
+             '--title', 'Computer Controller ' + config['display_version'] + ' — signed internal preview',
              '--notes-file', str(folder / 'RELEASE-NOTES.md')])
     refreshed = json.loads(command(['gh', 'api', f'repos/{repo}/releases/{release["id"]}']).stdout)
     if not refreshed['draft']:

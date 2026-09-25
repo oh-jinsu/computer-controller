@@ -57,7 +57,7 @@ class ContextStore:
         if path.is_symlink():
             raise MacError('Context storage must not contain symlinks.')
         if not path.is_file():
-            raise MacError('No saved context with that name. Use mac_context_list.')
+            raise MacError('No saved context with that name. Use context_list.')
         if path.stat().st_size > 650000:
             raise MacError('Saved context exceeds the size limit.')
         value = json.loads(path.read_text(encoding='utf-8'))
@@ -99,7 +99,7 @@ class ContextStore:
         if not isinstance(content, str) or not 1 <= len(content) <= MAX_CONTENT:
             raise MacError('Context content must be 1..100000 characters.')
         if expected_revision and not re.fullmatch(r'[0-9a-f]{32}', expected_revision):
-            raise MacError('Use the exact revision returned by mac_context_read.')
+            raise MacError('Use the exact revision returned by context_read.')
         with self.locked() as directory:
             path = directory / (name + '.json')
             old = self._read(path) if path.exists() or path.is_symlink() else None

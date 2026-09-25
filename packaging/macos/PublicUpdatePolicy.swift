@@ -22,7 +22,7 @@ enum PublicUpdatePolicy {
         let alphabet = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._+-")
         return tag.hasPrefix("v") && tag.count > 1 && !tag.contains("..")
             && tag.unicodeScalars.allSatisfy { alphabet.contains($0) }
-            && name.hasPrefix("Mac-Bridge-") && name.hasSuffix(".zip")
+            && name.hasPrefix("Computer-Controller-") && name.hasSuffix(".zip")
             && !name.contains("..") && name.unicodeScalars.allSatisfy { alphabet.contains($0) }
     }
 }

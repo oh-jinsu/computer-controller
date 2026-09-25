@@ -19,7 +19,8 @@ class ProcessControlTests(unittest.TestCase):
             {'pid': 301, 'ppid': 300, 'cpu': '0.5', 'memory': '1.0', 'command': 'node child.js'},
             {'pid': 400, 'ppid': 1, 'cpu': '3.5', 'memory': '4.0', 'command': '/Applications/Godot.app/Contents/MacOS/Godot --editor'},
             {'pid': 500, 'ppid': 1, 'cpu': '0.0', 'memory': '0.1', 'command': 'python unrelated.py'},
-            {'pid': 600, 'ppid': 1, 'cpu': '0.0', 'memory': '0.1', 'command': '/Users/me/Applications/Mac Bridge.app/Contents/MacOS/MacBridge'},
+            {'pid': 600, 'ppid': 1, 'cpu': '0.0', 'memory': '0.1', 'command': '/Users/me/Applications/Computer Controller.app/Contents/MacOS/MacBridge'},
+            {'pid': 601, 'ppid': 1, 'cpu': '0.0', 'memory': '0.1', 'command': '/Users/me/Applications/Mac Bridge.app/Contents/MacOS/MacBridge'},
             {'pid': 700, 'ppid': 1, 'cpu': '0.0', 'memory': '0.1', 'command': 'zsh'},
         ]
         self.cwds = {
@@ -29,6 +30,7 @@ class ProcessControlTests(unittest.TestCase):
             400: str(self.workspace / 'game'),
             500: '/tmp',
             600: str(self.workspace),
+            601: str(self.workspace),
             700: str(self.workspace),
         }
         (self.workspace / 'game').mkdir()
@@ -55,6 +57,7 @@ class ProcessControlTests(unittest.TestCase):
         rows = {row['pid']: row for row in self.inventory()}
         self.assertFalse(rows[100]['killable'])
         self.assertFalse(rows[600]['killable'])
+        self.assertFalse(rows[601]['killable'])
         self.assertFalse(rows[700]['killable'])
         self.assertIsNone(rows[100]['kill_token'])
         self.assertIsNone(rows[600]['kill_token'])

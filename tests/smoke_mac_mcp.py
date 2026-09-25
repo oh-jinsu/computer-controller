@@ -1,4 +1,4 @@
-"""Local pre-update gate: REAL MCP SDK -> Mac Bridge -> local Desktop Commander.
+"""Local pre-update gate: REAL MCP SDK -> Computer Controller -> local Desktop Commander.
 Uses disposable files only; does not capture the user's screen or call a tunnel.
 Native approval is not silently auto-approved or disabled in this test.
 """
@@ -44,25 +44,25 @@ async def test():
                 assert len(tools) == 37, sorted(tools)
                 for name in ['start_extraction', 'get_extraction', 'get_frame', 'list_local_videos', 'bridge_status']:
                     assert name not in tools, name
-                assert tools['mac_write_file'].annotations.read_only_hint is False
-                assert tools['mac_start_process'].annotations.read_only_hint is False
-                assert tools['mac_read_file'].annotations.read_only_hint is True
-                status = await client.call_tool('mac_status', {})
+                assert tools['write_file'].annotations.read_only_hint is False
+                assert tools['start_process'].annotations.read_only_hint is False
+                assert tools['read_file'].annotations.read_only_hint is True
+                status = await client.call_tool('status', {})
                 assert not status.is_error, status
                 assert status.structured_content['desktop_connected']
-                result = await client.call_tool('mac_read_file', {'path': 'sample.txt'})
+                result = await client.call_tool('read_file', {'path': 'sample.txt'})
                 assert not result.is_error, result
                 assert any('MAC_BRIDGE_TEST_ONLY' in getattr(c, 'text', '') for c in result.content)
-                multiple = await client.call_tool('mac_read_multiple_files', {'paths': ['sample.txt', 'second.txt']})
+                multiple = await client.call_tool('read_multiple_files', {'paths': ['sample.txt', 'second.txt']})
                 assert not multiple.is_error, multiple
                 multiple_text = '\n'.join(getattr(c, 'text', '') for c in multiple.content)
                 assert 'MAC_BRIDGE_TEST_ONLY' in multiple_text and 'SECOND_FILE_MARKER' in multiple_text
-                info = await client.call_tool('mac_file_info', {'path': 'second.txt'})
+                info = await client.call_tool('file_info', {'path': 'second.txt'})
                 assert not info.is_error and 'size:' in '\n'.join(getattr(c, 'text', '') for c in info.content)
-                searched = await client.call_tool('mac_search', {'pattern': 'searchable phrase', 'search_type': 'content', 'max_results': 20})
+                searched = await client.call_tool('search', {'pattern': 'searchable phrase', 'search_type': 'content', 'max_results': 20})
                 assert not searched.is_error, searched
                 assert 'second.txt' in '\n'.join(getattr(c, 'text', '') for c in searched.content)
-                batched = await client.call_tool('mac_batch_files', {'operations': [
+                batched = await client.call_tool('batch_files', {'operations': [
                     {'op': 'mkdir', 'path': 'batch-dir'},
                     {'op': 'write', 'path': 'batch-dir/new.txt', 'content': 'new marker'},
                     {'op': 'edit', 'path': 'batch-edit.txt', 'old_string': 'TOKEN', 'new_string': 'EDITED'},
@@ -75,31 +75,31 @@ async def test():
                 assert 'EDITED' in (project / 'batch-edit.txt').read_text()
                 assert (project / 'batch-dir/moved.txt').read_text() == 'move marker\n'
                 assert not (project / 'batch-delete.txt').exists()
-                launched = await client.call_tool('mac_start_process',
+                launched = await client.call_tool('start_process',
                     {'command': 'sleep 30', 'wait': 'start'})
                 assert not launched.is_error, launched
                 import re
                 launched_text = '\n'.join(getattr(c, 'text', '') for c in launched.content)
                 process_pid = int(re.search(r'PID (\d+)', launched_text).group(1))
-                listed = await client.call_tool('mac_list_processes', {'limit': 200})
+                listed = await client.call_tool('list_processes', {'limit': 200})
                 assert not listed.is_error, listed
                 row = next(p for p in listed.structured_content['processes'] if p['pid'] == process_pid)
                 assert row['killable'] and row['kill_token'], row
-                killed = await client.call_tool('mac_kill_process',
+                killed = await client.call_tool('kill_process',
                     {'pid': process_pid, 'kill_token': row['kill_token']})
                 assert not killed.is_error, killed
                 assert process_pid in killed.structured_content['termination_signalled'], killed
                 assert killed.structured_content['descendants_first']
                 assert len(killed.structured_content['requested_pids']) >= 2, killed
-                denied = await client.call_tool('mac_read_file', {'path': str(parent / 'outside.txt')})
+                denied = await client.call_tool('read_file', {'path': str(parent / 'outside.txt')})
                 assert denied.is_error
-                denied = await client.call_tool('mac_process_output', {'pid': 1})
+                denied = await client.call_tool('process_output', {'pid': 1})
                 assert denied.is_error
-                paused = await client.call_tool('mac_pause', {})
+                paused = await client.call_tool('pause', {})
                 assert not paused.is_error
-                denied = await client.call_tool('mac_list_directory', {})
+                denied = await client.call_tool('list_directory', {})
                 assert denied.is_error
-                video = await client.call_tool('mac_start_process', {'command': 'echo NO'})
+                video = await client.call_tool('start_process', {'command': 'echo NO'})
                 assert video.is_error, video
         # Engine-only smoke, against disposable files. Not a bypass exposed through MCP.
         policy = Policy(root, project)

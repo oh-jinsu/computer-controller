@@ -3,7 +3,7 @@
 Build-machine operation only. Downloads are HTTPS, checked against pinned hashes when
 available; each exact downloaded archive is recorded in the manifest. This does not
 read runtime credentials, publish, change the running app, or select a source license
-for Mac Bridge. Sources and build recipes are uploaded beside the application ZIP.
+for Computer Controller. Sources and build recipes are uploaded beside the application ZIP.
 """
 from __future__ import annotations
 import argparse
@@ -163,10 +163,10 @@ version properties, patches and source archives are supplied unchanged. Sources 
 under sharp-dependencies; the pinned build/posix.sh identifies each patch and build
 step. Do not use the scripts to fetch unrelated current versions.
 
-Mac Bridge changes library install names/rpaths for relocation and applies code
+Computer Controller changes library install names/rpaths for relocation and applies code
 signatures; it does not change these dependency sources. The relocation recipe is
-packaging/scripts/build_app.py in the matching Mac Bridge Git tag. Build/install
-scripts for Mac Bridge are included with that tag's source. You may rebuild and
+packaging/scripts/build_app.py in the matching Computer Controller Git tag. Build/install
+scripts for Computer Controller are included with that tag's source. You may rebuild and
 replace LGPL libraries; no license term prohibits reverse engineering to debug
 those modifications. Do not redistribute the developer's private signing key.
 

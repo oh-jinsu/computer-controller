@@ -20,7 +20,7 @@ Executed on the user's macOS development worktree, Python 3.12.14, Node 22.23.2,
 - `smoke_browser_mcp.py`: real SDK -> integrated bridge -> real Playwright MCP -> local Chrome, using an ephemeral loopback-only fixture website and disposable profile. Verified navigation, observed target references, text input, click, key input, viewport resize, tabs, console messages and request metadata.
 - Browser screenshot returned as an actual **800x600 JPEG image block**, decoded with Pillow. This was a capture of the local test web page, not the user's personal screen or a generated substitute.
 - Test localStorage persisted after closing and reopening the dedicated browser. Explicit summary content/revision persisted after starting a completely new MCP server process. Stale revisions were rejected and the latest note was preserved.
-- `mac_pause` closed the dedicated browser and blocked browser/context operations while video remained available.
+- `pause` closed the dedicated browser and blocked browser/context operations while video remained available.
 - Full `verify_installation(..., force=True)` startup gate completed with exit 0, including all four real MCP smoke scripts. Python compilation, Bash syntax, Node adapter syntax and Git whitespace checks also completed.
 
 Machine output is summarized in `docs/test-evidence/browser-context-0.4.0.txt`. Raw local logs remain under Git-ignored `.state/test-runs/`. Installed SDK emits a Pydantic lifespan forward-reference warning; the real integration tests complete despite that warning. It is not suppressed or misreported as an error-free dependency audit.

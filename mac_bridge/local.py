@@ -57,9 +57,9 @@ def configure(root: Path, legacy: Path | None = None) -> dict:
         migrate_settings(legacy, root)
         print('터널 ID와 작업 폴더 설정을 이전했습니다. 이전 폴더는 수정하지 않았습니다.', flush=True)
     if not config_file.exists():
-        answer = input('기존 Scene Bridge/Mac Bridge 설정을 가져오시겠습니까? [Y/n]: ').strip().lower()
+        answer = input('기존 Scene Bridge/Computer Controller 설정을 가져오시겠습니까? [Y/n]: ').strip().lower()
         if answer not in ('n', 'no'):
-            source = choose_folder('기존 Scene Bridge 또는 Mac Bridge 폴더를 선택하세요.')
+            source = choose_folder('기존 Scene Bridge 또는 Computer Controller 폴더를 선택하세요.')
             migrate_settings(source, root)
         else:
             tunnel_id = valid_tunnel_id(input('사용할 tunnel_id: ').strip())
@@ -145,16 +145,16 @@ def start(root: Path, legacy: Path | None = None, *, recheck: bool = False,
         if pause.is_symlink():
             raise MacError('잘못된 일시 중지 마커입니다.')
         pause.unlink(missing_ok=True)
-        print(f'\nMac Bridge {__version__} — 이 저장소 하나로 영상 추출과 Mac 작업을 실행합니다.', flush=True)
+        print(f'\nComputer Controller {__version__} — 이 저장소 하나로 영상 추출과 컴퓨터 작업을 실행합니다.', flush=True)
         if changed:
             print('같은 터널 ID를 사용합니다. ChatGPT의 기존 My Mac 연결을 Refresh하세요.', flush=True)
         mode = approval_mode(root)
         print('로컬 승인 모드: ' + ('항상 허용 (기간 제한 없음, 재시작 후 유지)' if mode == 'always'
                                        else '매번 확인'), flush=True)
         if mode == 'always':
-            print('요청된 파일 변경·명령·프로세스 입력은 Mac 승인창 없이 실행됩니다. 터미널은 샌드박스가 아닙니다.', flush=True)
+            print('요청된 파일 변경·명령·프로세스 입력은 로컬 승인창 없이 실행됩니다. 터미널은 샌드박스가 아닙니다.', flush=True)
         print('작업 로그: 도구·대상 요약 → 결과·시간 (본문/키 제외), .state/request-logs/requests.jsonl', flush=True)
-        print('전체 종료: Ctrl+C / Mac 작업만 중지: Mac-Stop.command', flush=True)
+        print('전체 종료: Ctrl+C / 컴퓨터 작업만 중지: Mac-Stop.command', flush=True)
         print('업데이트: 종료 → git pull --ff-only → bash Mac-Start.command\n', flush=True)
         try:
             return subprocess.call([tunnel, 'run', '--profile', config['profile'], '--log.level', tunnel_log_level], env=env)
@@ -163,7 +163,7 @@ def start(root: Path, legacy: Path | None = None, *, recheck: bool = False,
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Mac Bridge local controls')
+    parser = argparse.ArgumentParser(description='Computer Controller local controls')
     parser.add_argument('action', choices=['start', 'pause', 'permission', 'check', 'approval'])
     parser.add_argument('--migrate', type=Path, help='Import non-secret settings from an old installation once')
     parser.add_argument('--recheck', action='store_true', help='Force the real local MCP smoke tests')
@@ -217,6 +217,6 @@ if __name__ == '__main__':
         raise SystemExit(0)
     except (MacError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
         # CalledProcessError string can include command arguments, but never env/key.
-        print('Mac Bridge 시작 중단:', exc, file=sys.stderr)
+        print('Computer Controller 시작 중단:', exc, file=sys.stderr)
         print('키를 이 대화에 공유하지 마시고, 오류 메시지만 확인하세요.', file=sys.stderr)
         raise SystemExit(1)

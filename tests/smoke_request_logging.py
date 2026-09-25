@@ -46,25 +46,25 @@ async def run(runtime: Path):
                         result = await client.call_tool(name, args or {})
                         assert bool(result.is_error) == error, name
                         return result
-                    await call('mac_status')
-                    await call('mac_list_directory', {'path': '.', 'depth': 1})
-                    body = await call('mac_read_file', {'path': 'sample.txt'})
+                    await call('status')
+                    await call('list_directory', {'path': '.', 'depth': 1})
+                    body = await call('read_file', {'path': 'sample.txt'})
                     assert secret in ''.join(getattr(x, 'text', '') for x in body.content)
-                    await call('mac_write_file', {'path': 'output.txt', 'content': secret})
-                    await call('mac_batch_files', {'operations': [
+                    await call('write_file', {'path': 'output.txt', 'content': secret})
+                    await call('batch_files', {'operations': [
                         {'op': 'write', 'path': 'batch-output.txt', 'content': secret},
                     ]})
-                    result = await call('mac_start_process', {'command': 'printf ' + secret, 'timeout_ms': 1000})
+                    result = await call('start_process', {'command': 'printf ' + secret, 'timeout_ms': 1000})
                     text = ''.join(getattr(x, 'text', '') for x in result.content)
                     assert re.search(r'Process started with PID \d+', text), text
                     assert 'Process completed with exit code 0' in text, text
-                    await call('mac_read_file', {'path': str(parent / 'outside.txt')}, error=True)
-                    await call('mac_read_file', {'path': 'missing.txt'}, error=True)
-                    await call('mac_list_directory', {'depth': secret}, error=True)
+                    await call('read_file', {'path': str(parent / 'outside.txt')}, error=True)
+                    await call('read_file', {'path': 'missing.txt'}, error=True)
+                    await call('list_directory', {'depth': secret}, error=True)
                     await call(secret, {}, error=True)
                     await call('browser_snapshot', {}, error=True)
-                    await call('mac_status')
-                    await call('mac_list_directory')
+                    await call('status')
+                    await call('list_directory')
         rows = [json.loads(line) for line in (root / '.state/request-logs/requests.jsonl').read_text().splitlines()]
         human = stderr_path.read_text()
         assert secret not in human, 'Private content leaked to stderr'

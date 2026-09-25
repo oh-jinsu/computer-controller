@@ -65,20 +65,20 @@ async def run():
                         result = await client.call_tool(name, args)
                         assert not result.is_error, (name, text(result))
                         return result
-                    status = (await call('mac_status')).structured_content
+                    status = (await call('status')).structured_content
                     command = status['workflows']['video']['command'] + ' ' + shlex.join([
                         str(video), '--output', str(project / 'frames'), '--timestamps', '0.5', '1.5'])
-                    launched = await call('mac_start_process', command=command, timeout_ms=1500)
+                    launched = await call('start_process', command=command, timeout_ms=1500)
                     output = text(launched)
                     pid = int(re.search(r'PID (\d+)', output).group(1))
                     result = complete_event(output)
                     assert result and 'exit code 0' in output, output
-                    manifest_result = await call('mac_read_file', path=result['manifest_path'])
+                    manifest_result = await call('read_file', path=result['manifest_path'])
                     assert 'requested_seconds' in text(manifest_result)
                     manifest = json.loads(Path(result['manifest_path']).read_text())
                     assert [f['requested_seconds'] for f in manifest['frames']] == [.5, 1.5]
                     for path in [result['sheet_path'], *result['frame_paths']]:
-                        image_result = await call('mac_read_file', path=path)
+                        image_result = await call('read_file', path=path)
                         images = [x for x in image_result.content if x.type == 'image']
                         assert len(images) == 1, image_result
                         im = Image.open(io.BytesIO(base64.b64decode(images[0].data))); im.load()
@@ -87,22 +87,22 @@ async def run():
                     assert not list((project / 'frames').glob('.partial-*'))
                     denied = await client.call_tool('get_frame', {'job_id': 'old', 'index': 1})
                     assert denied.is_error
-                    await call('mac_pause')
-                    denied = await client.call_tool('mac_start_process', {'command': command})
+                    await call('pause')
+                    denied = await client.call_tool('start_process', {'command': command})
                     assert denied.is_error
-                    assert (await client.call_tool('mac_read_file', {'path': result['sheet_path']})).is_error
+                    assert (await client.call_tool('read_file', {'path': result['sheet_path']})).is_error
             # Completed results are normal project files: a new server can read them.
             (data / '.state/MAC_PAUSED').unlink()
             async with stdio_client(params, errlog=stderr) as (reader, writer):
                 async with ClientSession(reader, writer, read_timeout_seconds=45) as client:
                     await client.initialize()
-                    recovered = await client.call_tool('mac_read_file', {'path': result['sheet_path']})
+                    recovered = await client.call_tool('read_file', {'path': result['sheet_path']})
                     assert not recovered.is_error and any(x.type == 'image' for x in recovered.content)
         print(json.dumps({'passed': True, 'tool_count': 37,
             'removed_video_tools': sorted(REMOVED),
             'checks': ['actual common process start/output with zero exit code',
                        'real FFmpeg frame extraction at two explicit timestamps',
-                       'manifest plus contact sheet and individual images via mac_read_file',
+                       'manifest plus contact sheet and individual images via read_file',
                        'unchanged source, no incomplete staging, results survive MCP restart',
                        'same pause gate blocks video process and image access'],
             'not_tested': ['online YouTube access', 'personal video', 'active tunnel switch']}, indent=2))

@@ -15,7 +15,7 @@ from PIL import Image
 from .policy import MacError, Policy, private_dir, private_write
 
 APPROVAL_SCRIPT = '''on run argv
-    set r to display dialog (item 1 of argv) with title "Mac Bridge · 실행 승인" buttons {"거부", "한 번 허용"} default button "거부" cancel button "거부" giving up after 35
+    set r to display dialog (item 1 of argv) with title "Computer Controller · 실행 승인" buttons {"거부", "한 번 허용"} default button "거부" cancel button "거부" giving up after 35
     if gave up of r then return "DENY"
     if button returned of r is "한 번 허용" then return "ALLOW"
     return "DENY"
@@ -92,7 +92,7 @@ def windows(app_name: str) -> list[dict]:
             raise MacError(str(exc)) from exc
     cg, cf = quartz()
     if not cg.CGPreflightScreenCaptureAccess():
-        raise MacError('Screen Recording permission is missing. Use the Mac Bridge app screen-permission menu (or Mac-Screen-Permission.command for source installs), then restart if macOS requests it.')
+        raise MacError('Screen Recording permission is missing. Use the Computer Controller app screen-permission menu (or Mac-Screen-Permission.command for source installs), then restart if macOS requests it.')
     info = cg.CGWindowListCopyWindowInfo(1 | 16, 0)  # on-screen only, exclude desktop
     if not info:
         raise MacError('macOS returned no window information')
@@ -140,7 +140,7 @@ def resize_capture(raw: bytes, max_edge: int) -> tuple[bytes, dict]:
 def capture_window(policy: Policy, app_name: str, window_id: int, owner_pid: int,
                    max_edge: int = 1600) -> tuple[dict, bytes]:
     if window_id < 1 or owner_pid < 1:
-        raise MacError('Select positive window_id and owner_pid from mac_list_windows first')
+        raise MacError('Select positive window_id and owner_pid from list_windows first')
     policy.require_active()
     match = next((x for x in windows(app_name) if x['window_id'] == window_id and x['owner_pid'] == owner_pid), None)
     if match is None:

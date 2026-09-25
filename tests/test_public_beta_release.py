@@ -31,7 +31,7 @@ class PublicBetaTests(unittest.TestCase):
     def test_source_artifact_must_match_app_record(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            app = root / 'Mac Bridge.app'
+            app = root / 'Computer Controller.app'
             record = app / 'Contents/Resources/Licenses/Distribution/SOURCE-ARCHIVE.json'
             record.parent.mkdir(parents=True)
             source = root / '.cache/distribution/Third-Party-Sources.tar.gz'
@@ -44,7 +44,7 @@ class PublicBetaTests(unittest.TestCase):
 
     def test_source_record_cannot_select_arbitrary_file(self):
         with tempfile.TemporaryDirectory() as temp:
-            app = Path(temp) / 'Mac Bridge.app'
+            app = Path(temp) / 'Computer Controller.app'
             record = app / 'Contents/Resources/Licenses/Distribution/SOURCE-ARCHIVE.json'
             record.parent.mkdir(parents=True)
             record.write_text(json.dumps({'filename': '../private-file'}))

@@ -79,8 +79,8 @@ def notarize(app: Path, output: Path, identity: str, profile: str) -> dict:
     if not profile or len(profile) > 160 or any(ord(c) < 32 for c in profile):
         raise ValueError('Specify an existing local notarytool Keychain profile name.')
     app = app.resolve(strict=True)
-    if app.name != 'Mac Bridge.app' or not (app / 'Contents/Info.plist').is_file():
-        raise ValueError('Choose a built Mac Bridge.app.')
+    if app.name != 'Computer Controller.app' or not (app / 'Contents/Info.plist').is_file():
+        raise ValueError('Choose a built Computer Controller.app.')
     output = output.absolute()
     if output.is_relative_to(app) or output.exists() or output.is_symlink():
         raise ValueError('Choose a fresh output directory, outside the input bundle.')

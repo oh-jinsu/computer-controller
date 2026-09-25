@@ -22,7 +22,7 @@ from mac_bridge.platform_support import (app_data_dir, command_line, default_she
 class WindowsPortabilityTests(unittest.TestCase):
     def test_app_data_uses_localappdata(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"LOCALAPPDATA": tmp}, clear=False):
-            self.assertEqual(app_data_dir(), Path(tmp) / "Mac Bridge")
+            self.assertEqual(app_data_dir(), Path(tmp) / "Computer Controller")
 
     def test_windows_executable_and_shell_helpers(self):
         self.assertEqual(executable_name("node"), "node.exe")
@@ -37,10 +37,10 @@ class WindowsPortabilityTests(unittest.TestCase):
         self.assertIn(r"C:\Users\Tester\dev\game", script)
         self.assertIn("git status --short", script)
         self.assertEqual(command_line(["tool.exe", "hello world"]), "& 'tool.exe' 'hello world'")
-        tunnel = tunnel_command_line([r"C:\Program Files\Mac Bridge\Mac Bridge.exe", "--worker",
-                                      "--data", r"C:\Users\Tester\AppData\Local\Mac Bridge"])
-        self.assertEqual(tunnel, '"C:/Program Files/Mac Bridge/Mac Bridge.exe" --worker --data '
-                                 '"C:/Users/Tester/AppData/Local/Mac Bridge"')
+        tunnel = tunnel_command_line([r"C:\Program Files\Computer Controller\Computer Controller.exe", "--worker",
+                                      "--data", r"C:\Users\Tester\AppData\Local\Computer Controller"])
+        self.assertEqual(tunnel, '"C:/Program Files/Computer Controller/Computer Controller.exe" --worker --data '
+                                 '"C:/Users/Tester/AppData/Local/Computer Controller"')
 
     def test_cross_platform_lock_is_exclusive(self):
         with tempfile.TemporaryDirectory() as tmp:

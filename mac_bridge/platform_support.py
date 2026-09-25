@@ -20,12 +20,23 @@ def executable_name(name: str) -> str:
 
 
 def app_data_dir() -> Path:
+    """Use the new product directory for fresh installs, but keep an existing legacy install in place.
+
+    Avoiding an automatic move here preserves rollback compatibility with Mac Bridge builds while the
+    product name migrates. The existing tunnel ID, approval mode, browser profile, backups and contexts
+    therefore remain available without copying state.
+    """
     if IS_WINDOWS:
-        base = os.environ.get("LOCALAPPDATA")
-        if base:
-            return Path(base) / "Mac Bridge"
-        return Path.home() / "AppData/Local/Mac Bridge"
-    return Path.home() / "Library/Application Support/Mac Bridge"
+        base = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData/Local"))
+    else:
+        base = Path.home() / "Library/Application Support"
+    current = base / "Computer Controller"
+    legacy = base / "Mac Bridge"
+    if current.exists():
+        return current
+    if legacy.exists():
+        return legacy
+    return current
 
 
 def default_shell() -> str:

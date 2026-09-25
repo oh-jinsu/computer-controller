@@ -10,8 +10,8 @@ import time
 from .policy import MacError, private_write, private_dir
 from .filelock import locked_handle
 
-DRAIN_SAFE = {'mac_status', 'browser_status', 'mac_process_output', 'mac_list_sessions',
-              'mac_stop_process', 'mac_recent_actions', 'browser_close', 'mac_pause'}
+DRAIN_SAFE = {'status', 'browser_status', 'process_output', 'list_sessions',
+              'stop_process', 'recent_actions', 'browser_close', 'pause'}
 
 
 def process_exists(pid: int) -> bool:

@@ -165,7 +165,7 @@ def build_app() -> Path:
     sep = os.pathsep
     cmd = [
         sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onedir", "--console",
-        "--name", "Mac Bridge", "--distpath", str(dist), "--workpath", str(WORK / "pyi-work"),
+        "--name", "Computer Controller", "--distpath", str(dist), "--workpath", str(WORK / "pyi-work"),
         "--specpath", str(spec),
         "--additional-hooks-dir", str(ROOT / "packaging/windows/hooks"),
         "--collect-all", "keyring", "--collect-all", "yt_dlp",
@@ -178,10 +178,10 @@ def build_app() -> Path:
         str(ROOT / "packaging/windows/entry.py"),
     ]
     subprocess.run(cmd, cwd=ROOT, check=True, timeout=1200)
-    app = dist / "Mac Bridge"
-    exe = app / "Mac Bridge.exe"
+    app = dist / "Computer Controller"
+    exe = app / "Computer Controller.exe"
     if not exe.is_file():
-        raise RuntimeError("PyInstaller did not produce Mac Bridge.exe")
+        raise RuntimeError("PyInstaller did not produce Computer Controller.exe")
     doctor = subprocess.run([str(exe), "--doctor"], cwd=app, capture_output=True, text=True, timeout=90)
     if doctor.returncode:
         raise RuntimeError("Packaged --doctor failed:\n" + doctor.stdout + doctor.stderr)
@@ -195,7 +195,7 @@ def package(app: Path) -> Path:
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
-    archive_base = out / f"Mac-Bridge-{DISPLAY_VERSION}-windows-x64"
+    archive_base = out / f"Computer-Controller-{DISPLAY_VERSION}-windows-x64"
     archive = Path(shutil.make_archive(str(archive_base), "zip", root_dir=app.parent, base_dir=app.name))
     provenance = {
         "schema": 1, "version": DISPLAY_VERSION, "engine_version": VERSION,

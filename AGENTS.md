@@ -1,4 +1,4 @@
-# Mac Bridge development
+# Computer Controller development
 
 - This is ONE standalone repository. `scene_bridge` is its internal video module; never reintroduce an external Scene Bridge installation requirement.
 - Read live code and Git state before changing it. Preserve local modifications and user files; do not reset worktrees or overwrite local configuration.
@@ -27,7 +27,7 @@
 
 - README is the end-user installation guide, not a build log. Keep app installation separate from docs/DEVELOPMENT.md, document actual UI labels and supported macOS/architecture, distinguish Draft from public download, and never describe planned upload/background-window or pause-resume UI as implemented. Read docs/RELEASE-STATUS.md before claiming rollout completion.
 
-- Video inspection now uses `mac_status.workflows.video.command` through normal process tools and `mac_read_file` for real images. No dedicated video MCP endpoints or server-side Jobs instance. Read docs/VIDEO-WORKFLOW.md. Do not restore separate video/PID/image services. Use the installed command, project output paths and observed PID; wait for complete + exit 0 before reading results. Online YouTube access is not established by synthetic local-video smoke tests. Keep old user artifacts; no automatic migration/deletion.
+- Video inspection now uses `status.workflows.video.command` through normal process tools and `read_file` for real images. No dedicated video MCP endpoints or server-side Jobs instance. Read docs/VIDEO-WORKFLOW.md. Do not restore separate video/PID/image services. Use the installed command, project output paths and observed PID; wait for complete + exit 0 before reading results. Online YouTube access is not established by synthetic local-video smoke tests. Keep old user artifacts; no automatic migration/deletion.
 
 - Startup screenshot onboarding checks actual bundled-helper permission, then requests macOS consent once when needed. Remembered onboarding is NOT permission. Never edit TCC, reset user permission, auto-capture to test access, or force repeated prompts after denial. UI smoke/no-connect must never ask.
 

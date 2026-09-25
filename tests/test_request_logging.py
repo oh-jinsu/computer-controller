@@ -17,7 +17,7 @@ from unittest import mock
 from mac_bridge import request_logging as rl
 
 
-def request(name='mac_status', **arguments):
+def request(name='status', **arguments):
     return NS(params=NS(name=name, arguments=arguments))
 
 
@@ -122,19 +122,19 @@ class SummaryTests(unittest.TestCase):
         self.assertNotIn('DO_NOT_LOG', json.dumps(out))
 
     def test_tool_error_is_a_failure_even_without_exception(self):
-        out = rl.summarize_result(response('Path is outside the selected project directory: PRIVATE', error=True), 'mac_read_file')
+        out = rl.summarize_result(response('Path is outside the selected project directory: PRIVATE', error=True), 'read_file')
         self.assertEqual(out['status'], 'error'); self.assertEqual(out['error_code'], 'outside_workspace')
         self.assertNotIn('PRIVATE', json.dumps(out))
 
     def test_starting_a_process_is_not_reported_as_completion(self):
-        out = rl.summarize_result(response('Process started with PID 456 (shell: /bin/sh)\nInitial output: PRIVATE'), 'mac_start_process')
+        out = rl.summarize_result(response('Process started with PID 456 (shell: /bin/sh)\nInitial output: PRIVATE'), 'start_process')
         self.assertEqual(out['pid'], 456); self.assertEqual(out['process_state'], 'started')
         self.assertNotIn('reported_exit_code', out)
 
     def test_completed_start_process_reports_exit_code(self):
         text = ('Process started with PID 456 (shell: /bin/sh)\nInitial output:\nhello\n\n'
                 '✅ Process completed with exit code 7 (runtime: 1.25s)')
-        out = rl.summarize_result(response(text), 'mac_start_process')
+        out = rl.summarize_result(response(text), 'start_process')
         self.assertEqual(out['pid'], 456)
         self.assertEqual(out['process_state'], 'completed')
         self.assertEqual(out['reported_exit_code'], 7)
@@ -144,7 +144,7 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(rl.summarize_arguments(value), value)
 
     def test_exit_code_is_separate_from_tool_success(self):
-        out = rl.summarize_result(response('✅ Process completed with exit code 3 (runtime: 1.1s)'), 'mac_process_output')
+        out = rl.summarize_result(response('✅ Process completed with exit code 3 (runtime: 1.1s)'), 'process_output')
         self.assertEqual(out['status'], 'ok'); self.assertEqual(out['reported_exit_code'], 3)
 
     def test_video_job_state_and_counts(self):
@@ -167,17 +167,17 @@ class SinkTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(); self.root = Path(self.tmp.name).resolve()
         self.stderr = io.StringIO(); self.sink = rl.RequestLog(self.root, stream=self.stderr)
-        self.call = {'tool': 'mac_status', 'trace_id': 'test-1'}
+        self.call = {'tool': 'status', 'trace_id': 'test-1'}
     def tearDown(self): self.tmp.cleanup()
 
     def test_only_stderr_and_private_jsonl(self):
         stdout = io.StringIO()
         with redirect_stdout(stdout): self.sink.emit('request', self.call, arguments={})
         self.assertEqual(stdout.getvalue(), '')
-        self.assertIn('REQ mac_status', self.stderr.getvalue())
+        self.assertIn('REQ status', self.stderr.getvalue())
         path = self.root / '.state/request-logs/requests.jsonl'
         self.assertEqual(path.stat().st_mode & 0o777, 0o600)
-        self.assertEqual(json.loads(path.read_text())['tool'], 'mac_status')
+        self.assertEqual(json.loads(path.read_text())['tool'], 'status')
 
     def test_rotation_keeps_two_previous_files(self):
         self.sink.max_bytes = 512
@@ -213,7 +213,7 @@ class SinkTests(unittest.TestCase):
         other = rl.RequestLog(self.root, stream=io.StringIO())
         def write(index):
             sink = self.sink if index % 2 else other
-            sink.emit('request', {'tool': 'mac_status', 'trace_id': 't-' + str(index)}, arguments={})
+            sink.emit('request', {'tool': 'status', 'trace_id': 't-' + str(index)}, arguments={})
         with ThreadPoolExecutor(max_workers=4) as pool: list(pool.map(write, range(40)))
         rows = [json.loads(l) for l in (self.root / '.state/request-logs/requests.jsonl').read_text().splitlines()]
         self.assertEqual(len(rows), 40)
@@ -267,7 +267,7 @@ class HandlerTests(unittest.IsolatedAsyncioTestCase):
         async def handler(req):
             await asyncio.to_thread(rl.request_phase, 'approval_requested')
             return response('Denied or timed out locally; nothing executed.', error=True)
-        await self.sink.handle(handler, request('mac_write_file', content='PRIVATE'))
+        await self.sink.handle(handler, request('write_file', content='PRIVATE'))
         rows = self.rows(); self.assertEqual(rows[1]['phase'], 'approval_wait')
         self.assertEqual(rows[0]['trace_id'], rows[1]['trace_id'])
         self.assertEqual(rows[-1]['error_code'], 'approval_denied')
@@ -277,7 +277,7 @@ class HandlerTests(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(0)
             rl.request_phase('auto_approved')
             return response()
-        await asyncio.gather(self.sink.handle(handler, request('browser_click')), self.sink.handle(handler, request('mac_write_file')))
+        await asyncio.gather(self.sink.handle(handler, request('browser_click')), self.sink.handle(handler, request('write_file')))
         for row in self.rows():
             matches = [r for r in self.rows() if r['trace_id'] == row['trace_id']]
             self.assertEqual(len(matches), 3); self.assertEqual(len({r['tool'] for r in matches}), 1)

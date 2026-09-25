@@ -26,37 +26,37 @@ publish = load('update_draft')
 class ExistingArchiveTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(); self.root = Path(self.tmp.name)
-        self.app = self.root / 'Mac Bridge.app'; (self.app / 'Contents').mkdir(parents=True)
+        self.app = self.root / 'Computer Controller.app'; (self.app / 'Contents').mkdir(parents=True)
         (self.app / 'Contents/source.py').write_bytes(b'original')
         self.archive = self.root / 'existing.zip'
     def tearDown(self): self.tmp.cleanup()
     def make(self, entries=None):
         with zipfile.ZipFile(self.archive, 'w') as z:
-            for name, data in (entries or [('Mac Bridge.app/Contents/source.py', b'original')]):
+            for name, data in (entries or [('Computer Controller.app/Contents/source.py', b'original')]):
                 z.writestr(name, data)
     def test_existing_bytes_match_without_recompression(self):
         self.make(); before = self.archive.read_bytes()
         prepare.verify_existing_archive(self.archive, self.app)
         self.assertEqual(self.archive.read_bytes(), before)
     def test_changed_file_rejected(self):
-        self.make([('Mac Bridge.app/Contents/source.py', b'changed')])
+        self.make([('Computer Controller.app/Contents/source.py', b'changed')])
         with self.assertRaises(ValueError): prepare.verify_existing_archive(self.archive, self.app)
     def test_missing_file_rejected(self):
         self.make(); (self.app / 'Contents/missing.py').write_text('x')
         with self.assertRaises(ValueError): prepare.verify_existing_archive(self.archive, self.app)
     def test_extra_file_rejected(self):
-        self.make([('Mac Bridge.app/Contents/source.py', b'original'), ('Mac Bridge.app/Contents/unknown', b'x')])
+        self.make([('Computer Controller.app/Contents/source.py', b'original'), ('Computer Controller.app/Contents/unknown', b'x')])
         with self.assertRaises(ValueError): prepare.verify_existing_archive(self.archive, self.app)
     def test_traversal_rejected(self):
-        self.make([('Mac Bridge.app/../escape', b'x')])
+        self.make([('Computer Controller.app/../escape', b'x')])
         with self.assertRaises(ValueError): prepare.verify_existing_archive(self.archive, self.app)
     def test_absolute_entry_rejected(self):
-        self.make([('/Mac Bridge.app/Contents/source.py', b'original')])
+        self.make([('/Computer Controller.app/Contents/source.py', b'original')])
         with self.assertRaises(ValueError): prepare.verify_existing_archive(self.archive, self.app)
     def test_duplicate_rejected(self):
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', UserWarning)
-            self.make([('Mac Bridge.app/Contents/source.py', b'original')]*2)
+            self.make([('Computer Controller.app/Contents/source.py', b'original')]*2)
         with self.assertRaises(ValueError): prepare.verify_existing_archive(self.archive, self.app)
     def test_other_application_rejected(self):
         self.make([('Another.app/Contents/source.py', b'original')])
@@ -66,13 +66,13 @@ class ExistingArchiveTests(unittest.TestCase):
         with self.assertRaises(ValueError): prepare.verify_existing_archive(alias, self.app)
     def test_matching_internal_symlink(self):
         (self.app / 'Contents/link').symlink_to('source.py'); self.make()
-        info = zipfile.ZipInfo('Mac Bridge.app/Contents/link'); info.create_system = 3
+        info = zipfile.ZipInfo('Computer Controller.app/Contents/link'); info.create_system = 3
         info.external_attr = (stat.S_IFLNK | 0o777) << 16
         with zipfile.ZipFile(self.archive, 'a') as z: z.writestr(info, 'source.py')
         prepare.verify_existing_archive(self.archive, self.app)
     def test_different_symlink_rejected(self):
         (self.app / 'Contents/link').symlink_to('source.py'); self.make()
-        info = zipfile.ZipInfo('Mac Bridge.app/Contents/link'); info.create_system = 3
+        info = zipfile.ZipInfo('Computer Controller.app/Contents/link'); info.create_system = 3
         info.external_attr = (stat.S_IFLNK | 0o777) << 16
         with zipfile.ZipFile(self.archive, 'a') as z: z.writestr(info, '../../elsewhere')
         with self.assertRaises(ValueError): prepare.verify_existing_archive(self.archive, self.app)
@@ -82,7 +82,7 @@ class SignedMetadataTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(); self.root = Path(self.tmp.name)
         self.config = {'display_version':'0.5.0-beta.1','build_number':50001,
             'github_repository':'owner/bridge','sparkle_keychain_account':'unit-test-no-keychain-access'}
-        self.name = 'Mac-Bridge-0.5.0-beta.1-macos26-arm64.zip'
+        self.name = 'Computer-Controller-0.5.0-beta.1-macos26-arm64.zip'
         (self.root / self.name).write_bytes(b'fixture')
         self.rss = ET.Element('rss'); channel = ET.SubElement(self.rss,'channel'); item = ET.SubElement(channel,'item')
         self.version = ET.SubElement(item,'{' + publish.NS + '}version'); self.version.text = '50001'

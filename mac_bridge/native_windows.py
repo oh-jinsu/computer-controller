@@ -90,7 +90,7 @@ def _apis():
 def approval_dialog(message: str) -> bool:
     user32, _, _ = _apis()
     # MessageBox is deliberately a local OS dialog. "No" is the default.
-    result = user32.MessageBoxW(None, message, "Mac Bridge · 실행 승인",
+    result = user32.MessageBoxW(None, message, "Computer Controller · 실행 승인",
                                 MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SYSTEMMODAL)
     return result == IDYES
 

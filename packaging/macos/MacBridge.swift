@@ -72,9 +72,9 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         statusBar = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusBar.button?.title = "MB"
+        statusBar.button?.title = "CC"
         let menu = NSMenu()
-        stateItem = NSMenuItem(title: "Mac Bridge · 확인 중", action: nil, keyEquivalent: "")
+        stateItem = NSMenuItem(title: "Computer Controller · 확인 중", action: nil, keyEquivalent: "")
         menu.addItem(stateItem)
         screenStatusItem = NSMenuItem(title: "화면 캡처 · 확인 중", action: nil, keyEquivalent: "")
         menu.addItem(screenStatusItem)
@@ -108,10 +108,10 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
 
     func buildWindow() {
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 590, height: 490), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
-        window.title = "Mac Bridge"; window.isReleasedWhenClosed = false; window.center()
+        window.title = "Computer Controller"; window.isReleasedWhenClosed = false; window.center()
         let view = window.contentView!
         func label(_ text: String, _ y: CGFloat) { let l = NSTextField(labelWithString: text); l.frame = NSRect(x: 26, y: y, width: 535, height: 24); view.addSubview(l) }
-        label("Mac Bridge · 독립 실행 앱", 445)
+        label("Computer Controller · 독립 실행 앱", 445)
         message = NSTextField(wrappingLabelWithString: "기존 연결 설정을 가져오거나 새 연결을 설정하세요.")
         message.frame = NSRect(x: 26, y: 388, width: 535, height: 52); view.addSubview(message)
         label("터널 ID", 354); tunnel = NSTextField(frame: NSRect(x: 26, y: 323, width: 535, height: 26)); view.addSubview(tunnel)
@@ -119,7 +119,7 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
         let choose = NSButton(title: "선택…", target: self, action: #selector(chooseWorkspace)); choose.frame = NSRect(x: 463, y: 261, width: 96, height: 30); view.addSubview(choose)
         label("Runtime API 키 (키체인에 있으면 비워 두세요)", 232)
         secret = NSSecureTextField(frame: NSRect(x: 26, y: 203, width: 535, height: 26)); view.addSubview(secret)
-        always = NSButton(checkboxWithTitle: "요청된 Mac 작업 항상 허용 (로컬 승인창 생략)", target: nil, action: nil)
+        always = NSButton(checkboxWithTitle: "요청된 컴퓨터 작업 항상 허용 (로컬 승인창 생략)", target: nil, action: nil)
         always.frame = NSRect(x: 26, y: 167, width: 535, height: 24); always.state = .on; view.addSubview(always)
         personal = NSButton(checkboxWithTitle: "평소 Chrome 로그인 상태 사용 (Chrome 자체 허용 필요)", target: nil, action: nil)
         personal.frame = NSRect(x: 26, y: 137, width: 535, height: 24); personal.state = .on; view.addSubview(personal)
@@ -233,14 +233,14 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
     }
     func refreshStatus() { helper(["status"]) { [weak self] value, _ in
         guard let self = self else { return }; self.latestStatus = value
-        self.stateItem.title = value["running"] as? Bool == true ? "Mac Bridge · 서버 실행 중" : (self.runner == nil ? "Mac Bridge · 중지됨" : "Mac Bridge · 연결 준비 중")
+        self.stateItem.title = value["running"] as? Bool == true ? "Computer Controller · 서버 실행 중" : (self.runner == nil ? "Computer Controller · 중지됨" : "Computer Controller · 연결 준비 중")
     } }
     @objc func start() {
         guard runner == nil, !noConnect else { return }
         let process = Process(); process.executableURL = resources.appendingPathComponent("python/bin/python3")
         process.arguments = [resources.appendingPathComponent("engine/app_entry.py").path, "serve"]
         process.environment = runtimeEnvironment; process.standardInput = FileHandle.nullDevice
-        let log = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Logs/Mac Bridge")
+        let log = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Logs/Computer Controller")
         do {
             try FileManager.default.createDirectory(at: log, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             let target = log.appendingPathComponent("app.log")
@@ -262,8 +262,13 @@ struct CommandResult { let status: Int32; let out: Data; let err: Data }
         if let runner = runner, runner.isRunning { quitPending = true; runner.terminate(); return .terminateLater }
         return .terminateNow
     }
-    @objc func showLogs() { NSWorkspace.shared.open(URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Logs/Mac Bridge")) }
-    @objc func showPrevious() { NSWorkspace.shared.open(URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support/Mac Bridge/previous")) }
+    @objc func showLogs() { NSWorkspace.shared.open(URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Logs/Computer Controller")) }
+    @objc func showPrevious() {
+        helper(["status"]) { value, code in
+            guard code == 0, let dataDirectory = value["data_directory"] as? String else { return }
+            NSWorkspace.shared.open(URL(fileURLWithPath: dataDirectory).appendingPathComponent("previous"))
+        }
+    }
     @objc func toggleAutomatic() {
         UserDefaults.standard.set(autoUpdate.state == .on, forKey: "MBUpdatesEnabled")
         startPublicUpdater()

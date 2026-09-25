@@ -83,7 +83,7 @@ class DesktopClient:
 
     async def invoke(self, name: str, arguments: dict, *, allow_paused: bool = False):
         if name not in REQUIRED:
-            raise MacError('This Desktop Commander tool is not exposed by Mac Bridge')
+            raise MacError('This Desktop Commander tool is not exposed by Computer Controller')
         if not allow_paused:
             self.policy.require_active()
         if self.session is None:

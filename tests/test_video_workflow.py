@@ -166,7 +166,7 @@ class VideoWorkflowTests(unittest.TestCase):
         self.assertEqual(command[0], sys.executable)
         self.assertEqual(Path(command[-1]).name, 'video.py')
         self.assertFalse(status['dedicated_mcp_tools'])
-        self.assertEqual(status['result_reader'], 'mac_read_file')
+        self.assertEqual(status['result_reader'], 'read_file')
 
     def test_cli_errors_are_json_no_traceback(self):
         result = subprocess.run([sys.executable, '-B', ROOT / 'mac_bridge/video.py', 'https://127.0.0.1/private'], capture_output=True, text=True, timeout=10)

@@ -113,20 +113,20 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_tools_and_write_annotations(self):
         self.assertEqual(len(self.mcp.tools), 37)
-        self.assertFalse(self.mcp.annotations['mac_start_process'].read_only_hint)
-        self.assertFalse(self.mcp.annotations['mac_write_file'].read_only_hint)
-        self.assertTrue(self.mcp.annotations['mac_read_file'].read_only_hint)
+        self.assertFalse(self.mcp.annotations['start_process'].read_only_hint)
+        self.assertFalse(self.mcp.annotations['write_file'].read_only_hint)
+        self.assertTrue(self.mcp.annotations['read_file'].read_only_hint)
         self.assertNotIn('mac_resume', self.mcp.tools)
         for name in ('start_extraction', 'get_extraction', 'get_frame', 'list_local_videos', 'bridge_status'):
             self.assertNotIn(name, self.mcp.tools)
 
     async def test_denial_does_not_run_command(self):
-        r = await self.mcp.tools['mac_start_process']('echo unsafe')
+        r = await self.mcp.tools['start_process']('echo unsafe')
         self.assertTrue(r.is_error); self.assertEqual(self.dc.calls, [])
 
     async def test_approval_runs_only_shown_command(self):
         self.approver.approve.return_value = True
-        r = await self.mcp.tools['mac_start_process']('echo approved')
+        r = await self.mcp.tools['start_process']('echo approved')
         self.assertFalse(r.is_error)
         self.assertEqual([name for name, _ in self.dc.calls].count('start_process'), 1)
         self.assertIn('echo approved', self.dc.calls[0][1]['command'])
@@ -134,7 +134,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_wait_start_returns_without_polling(self):
         self.approver.approve.return_value = True
-        r = await self.mcp.tools['mac_start_process']('echo approved', wait='start')
+        r = await self.mcp.tools['start_process']('echo approved', wait='start')
         self.assertFalse(r.is_error)
         self.assertEqual([name for name, _ in self.dc.calls], ['start_process'])
         self.assertIn('Process started with PID 321', '\n'.join(x.text for x in r.content))
@@ -142,7 +142,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_wait_timeout_leaves_process_running(self):
         self.approver.approve.return_value = True
         self.dc.process_complete = False
-        r = await self.mcp.tools['mac_start_process'](
+        r = await self.mcp.tools['start_process'](
             'echo approved', wait='complete', wait_timeout_ms=1000)
         self.assertFalse(r.is_error)
         text = '\n'.join(x.text for x in r.content)
@@ -153,19 +153,19 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_pause_after_approval_prevents_execution(self):
         def approve(*args): self.dc.policy.pause(); return True
         self.approver.approve.side_effect = approve
-        r = await self.mcp.tools['mac_start_process']('echo approved')
+        r = await self.mcp.tools['start_process']('echo approved')
         self.assertTrue(r.is_error); self.assertEqual(self.dc.calls, [])
 
     async def test_write_denied_keeps_original(self):
         p = self.project / 'a.txt'; p.write_text('before')
-        r = await self.mcp.tools['mac_write_file']('a.txt', 'after')
+        r = await self.mcp.tools['write_file']('a.txt', 'after')
         self.assertTrue(r.is_error); self.assertEqual(p.read_text(), 'before')
         self.assertFalse((self.root / '.state/file-backups').exists())
 
     async def test_write_approved_backs_up_original(self):
         p = self.project / 'a.txt'; p.write_text('before')
         self.approver.approve.return_value = True
-        r = await self.mcp.tools['mac_write_file']('a.txt', 'after')
+        r = await self.mcp.tools['write_file']('a.txt', 'after')
         self.assertFalse(r.is_error); self.assertEqual(p.read_text(), 'after')
         backups = list((self.root / '.state/file-backups').rglob('a.txt'))
         self.assertEqual(backups[0].read_text(), 'before')
@@ -177,7 +177,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
             BatchEdit(op='edit', path='batch.txt', old_string='TOKEN', new_string='EDITED'),
             BatchWrite(op='write', path='created.txt', content='created'),
         ]
-        denied = await self.mcp.tools['mac_batch_files'](ops)
+        denied = await self.mcp.tools['batch_files'](ops)
         self.assertTrue(denied.is_error)
         self.assertEqual(target.read_text(), 'before TOKEN')
         self.assertFalse((self.project / 'created.txt').exists())
@@ -185,47 +185,47 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
         self.approver.reset_mock()
         self.always()
-        done = await self.mcp.tools['mac_batch_files'](ops)
+        done = await self.mcp.tools['batch_files'](ops)
         self.assertFalse(done.is_error)
         self.assertEqual(target.read_text(), 'before EDITED')
         self.assertEqual((self.project / 'created.txt').read_text(), 'created')
         self.approver.approve.assert_not_called()
-        self.assertTrue(self.mcp.annotations['mac_batch_files'].destructive_hint)
+        self.assertTrue(self.mcp.annotations['batch_files'].destructive_hint)
 
     async def test_multi_read_file_info_and_search_use_project_guardrails(self):
         (self.project / 'a.txt').write_text('alpha')
         (self.project / 'b.txt').write_text('beta')
-        r = await self.mcp.tools['mac_read_multiple_files'](['a.txt', 'b.txt'])
+        r = await self.mcp.tools['read_multiple_files'](['a.txt', 'b.txt'])
         self.assertFalse(r.is_error)
         self.assertEqual(self.dc.calls[-1][0], 'read_multiple_files')
         self.assertEqual(len(self.dc.calls[-1][1]['paths']), 2)
 
-        r = await self.mcp.tools['mac_file_info']('a.txt')
+        r = await self.mcp.tools['file_info']('a.txt')
         self.assertFalse(r.is_error)
         self.assertEqual(self.dc.calls[-1][0], 'get_file_info')
 
-        r = await self.mcp.tools['mac_search']('sample', '.', 'files')
+        r = await self.mcp.tools['search']('sample', '.', 'files')
         self.assertFalse(r.is_error)
         self.assertEqual([name for name, _ in self.dc.calls[-3:]],
                          ['start_search', 'get_more_search_results', 'stop_search'])
 
-        denied = await self.mcp.tools['mac_read_multiple_files'](['../outside.txt'])
+        denied = await self.mcp.tools['read_multiple_files'](['../outside.txt'])
         self.assertTrue(denied.is_error)
 
     async def test_create_directory_and_move_respect_approval_and_no_overwrite(self):
         self.always()
-        made = await self.mcp.tools['mac_create_directory']('nested/path')
+        made = await self.mcp.tools['create_directory']('nested/path')
         self.assertFalse(made.is_error)
         self.assertTrue((self.project / 'nested/path').is_dir())
 
         source = self.project / 'move-me.txt'; source.write_text('hello')
-        moved = await self.mcp.tools['mac_move_file']('move-me.txt', 'nested/moved.txt')
+        moved = await self.mcp.tools['move_file']('move-me.txt', 'nested/moved.txt')
         self.assertFalse(moved.is_error)
         self.assertFalse(source.exists())
         self.assertEqual((self.project / 'nested/moved.txt').read_text(), 'hello')
 
         source.write_text('again')
-        denied = await self.mcp.tools['mac_move_file']('move-me.txt', 'nested/moved.txt')
+        denied = await self.mcp.tools['move_file']('move-me.txt', 'nested/moved.txt')
         self.assertTrue(denied.is_error)
         self.assertTrue(source.exists())
 
@@ -233,17 +233,17 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         p = self.project / 'a.txt'; p.write_text('before')
         def approve(*args): p.write_text('USER_EDIT'); return True
         self.approver.approve.side_effect = approve
-        r = await self.mcp.tools['mac_write_file']('a.txt', 'after')
+        r = await self.mcp.tools['write_file']('a.txt', 'after')
         self.assertTrue(r.is_error); self.assertEqual(p.read_text(), 'USER_EDIT')
         self.assertEqual(self.dc.calls, [])
 
     async def test_ambiguous_edit_refused_before_approval(self):
         (self.project / 'a.txt').write_text('before before')
-        r = await self.mcp.tools['mac_edit_file']('a.txt', 'before', 'after')
+        r = await self.mcp.tools['edit_file']('a.txt', 'before', 'after')
         self.assertTrue(r.is_error); self.approver.approve.assert_not_called()
 
     async def test_foreign_pid_not_read_or_stopped(self):
-        for tool in ['mac_process_output', 'mac_stop_process']:
+        for tool in ['process_output', 'stop_process']:
             r = await self.mcp.tools[tool](1)
             self.assertTrue(r.is_error)
         self.assertEqual(self.dc.calls, [])
@@ -251,27 +251,27 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_process_inventory_and_kill_tools_are_guarded(self):
         rows = [{'pid': 456, 'name': 'Godot.app', 'killable': True, 'kill_token': 'token-123456'}]
         with mock.patch.object(self.server, 'process_inventory', return_value=rows):
-            listed = await self.mcp.tools['mac_list_processes']('godot', 20)
+            listed = await self.mcp.tools['list_processes']('godot', 20)
         self.assertEqual(listed.structured_content['processes'], rows)
-        self.assertTrue(self.mcp.annotations['mac_list_processes'].read_only_hint)
-        self.assertTrue(self.mcp.annotations['mac_kill_process'].destructive_hint)
+        self.assertTrue(self.mcp.annotations['list_processes'].read_only_hint)
+        self.assertTrue(self.mcp.annotations['kill_process'].destructive_hint)
 
         self.always()
         with mock.patch.object(self.server, 'validate_kill_plan', return_value=[{'pid': 456, 'name': 'Godot.app'}]):
-            killed = await self.mcp.tools['mac_kill_process'](456, 'token-123456')
+            killed = await self.mcp.tools['kill_process'](456, 'token-123456')
         self.assertFalse(killed.is_error)
         self.assertEqual(self.dc.calls[-1], ('kill_process', {'pid': 456}))
 
     async def test_kill_process_refuses_unvalidated_pid(self):
         self.always()
         with mock.patch.object(self.server, 'validate_kill_plan', side_effect=ValueError('not project related')):
-            result = await self.mcp.tools['mac_kill_process'](456, 'token-123456')
+            result = await self.mcp.tools['kill_process'](456, 'token-123456')
         self.assertTrue(result.is_error)
         self.assertEqual(self.dc.calls, [])
 
     async def test_paused_read_rejected(self):
         self.dc.policy.pause()
-        r = await self.mcp.tools['mac_list_directory']()
+        r = await self.mcp.tools['list_directory']()
         self.assertTrue(r.is_error); self.assertEqual(self.dc.calls, [])
 
 
@@ -281,7 +281,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_always_command_skips_native_dialog_and_records(self):
         self.always()
-        r = await self.mcp.tools['mac_start_process']('pwd')
+        r = await self.mcp.tools['start_process']('pwd')
         self.assertFalse(r.is_error)
         self.approver.approve.assert_not_called()
         self.assertEqual([name for name, _ in self.dc.calls].count('start_process'), 1)
@@ -293,7 +293,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_always_write_keeps_backup(self):
         self.always()
         p = self.project / 'a.txt'; p.write_text('before')
-        r = await self.mcp.tools['mac_write_file']('a.txt', 'after')
+        r = await self.mcp.tools['write_file']('a.txt', 'after')
         self.assertFalse(r.is_error)
         self.approver.approve.assert_not_called()
         self.assertEqual(p.read_text(), 'after')
@@ -303,22 +303,22 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_always_edit_keeps_exact_match_and_backup(self):
         self.always()
         p = self.project / 'a.txt'; p.write_text('before')
-        r = await self.mcp.tools['mac_edit_file']('a.txt', 'before', 'after')
+        r = await self.mcp.tools['edit_file']('a.txt', 'before', 'after')
         self.assertFalse(r.is_error)
         self.assertEqual(p.read_text(), 'after')
         self.approver.approve.assert_not_called()
         self.assertEqual(list((self.root / '.state/file-backups').rglob('a.txt'))[0].read_text(), 'before')
         p.write_text('x x')
-        r = await self.mcp.tools['mac_edit_file']('a.txt', 'x', 'y')
+        r = await self.mcp.tools['edit_file']('a.txt', 'x', 'y')
         self.assertTrue(r.is_error)
         self.assertEqual(p.read_text(), 'x x')
 
     async def test_always_input_still_requires_owned_pid(self):
         self.always()
-        r = await self.mcp.tools['mac_send_input'](123, 'hello')
+        r = await self.mcp.tools['send_input'](123, 'hello')
         self.assertTrue(r.is_error)
         self.dc.pids.add(123)
-        r = await self.mcp.tools['mac_send_input'](123, 'hello')
+        r = await self.mcp.tools['send_input'](123, 'hello')
         self.assertFalse(r.is_error)
         self.approver.approve.assert_not_called()
         self.assertEqual(self.dc.calls[-1][0], 'interact_with_process')
@@ -326,7 +326,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_always_never_bypasses_pause(self):
         self.always()
         self.dc.policy.pause()
-        r = await self.mcp.tools['mac_start_process']('pwd')
+        r = await self.mcp.tools['start_process']('pwd')
         self.assertTrue(r.is_error)
         self.assertEqual(self.dc.calls, [])
         self.approver.approve.assert_not_called()
@@ -334,7 +334,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_always_keeps_path_and_credentials_guardrails(self):
         self.always()
         for path in ['../outside.txt', '.env', str(self.root / 'run_server.py')]:
-            r = await self.mcp.tools['mac_write_file'](path, 'not written')
+            r = await self.mcp.tools['write_file'](path, 'not written')
             self.assertTrue(r.is_error, path)
         self.assertEqual(self.dc.calls, [])
 
@@ -342,7 +342,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         from mac_bridge.approvals import set_approval_mode
         self.always()
         set_approval_mode(self.root, 'ask')
-        r = await self.mcp.tools['mac_start_process']('pwd')
+        r = await self.mcp.tools['start_process']('pwd')
         self.assertTrue(r.is_error)
         self.approver.approve.assert_called_once()
         self.assertEqual(self.dc.calls, [])
@@ -352,7 +352,7 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
             self.always()
             return True
         self.approver.approve.side_effect = approve
-        r = await self.mcp.tools['mac_start_process']('pwd')
+        r = await self.mcp.tools['start_process']('pwd')
         self.assertTrue(r.is_error)
         self.assertEqual(self.dc.calls, [])
 
@@ -365,21 +365,21 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
             if state == 'auto_approved':
                 set_approval_mode(self.root, 'ask')
         with mock.patch.object(self.dc.policy, 'record', side_effect=record):
-            r = await self.mcp.tools['mac_start_process']('pwd')
+            r = await self.mcp.tools['start_process']('pwd')
         self.assertTrue(r.is_error)
         self.assertEqual(self.dc.calls, [])
 
     async def test_status_reports_persistent_mode(self):
         self.always()
         with mock.patch.object(self.server, 'screen_permission', return_value=False):
-            r = await self.mcp.tools['mac_status']()
+            r = await self.mcp.tools['status']()
         self.assertEqual(r.structured_content['approval_mode'], 'always')
         self.assertTrue(r.structured_content['approval_mode_persistent'])
         self.assertFalse(r.structured_content['terminal_is_sandboxed'])
 
     async def test_invalid_setting_does_not_run_or_prompt(self):
         (self.root / '.state/approval-settings.json').write_text('{"schema":1,"mode":"typo"}')
-        r = await self.mcp.tools['mac_start_process']('pwd')
+        r = await self.mcp.tools['start_process']('pwd')
         self.assertTrue(r.is_error)
         self.assertEqual(self.dc.calls, [])
         self.approver.approve.assert_not_called()
@@ -387,11 +387,11 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_always_keeps_write_annotations_and_no_policy_tool(self):
         self.always()
         self.assertEqual(len(self.mcp.tools), 37)
-        self.assertFalse(self.mcp.annotations['mac_write_file'].read_only_hint)
-        self.assertTrue(self.mcp.annotations['mac_start_process'].destructive_hint)
+        self.assertFalse(self.mcp.annotations['write_file'].read_only_hint)
+        self.assertTrue(self.mcp.annotations['start_process'].destructive_hint)
         self.assertNotIn('mac_set_approval_mode', self.mcp.tools)
         import inspect
-        for tool in ('mac_write_file', 'mac_start_process', 'mac_send_input'):
+        for tool in ('write_file', 'start_process', 'send_input'):
             self.assertNotIn('approved', inspect.signature(self.mcp.tools[tool]).parameters)
             self.assertNotIn('approval_mode', inspect.signature(self.mcp.tools[tool]).parameters)
 
@@ -447,34 +447,34 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         self.approver.approve.assert_not_called()
 
     async def test_browser_typing_and_context_annotations_remain_mutations(self):
-        for name in ['browser_navigate', 'browser_click', 'browser_type', 'browser_press_key', 'browser_tabs', 'mac_context_save']:
+        for name in ['browser_navigate', 'browser_click', 'browser_type', 'browser_press_key', 'browser_tabs', 'context_save']:
             self.assertFalse(self.mcp.annotations[name].read_only_hint, name)
-        for name in ['browser_screenshot', 'browser_snapshot', 'mac_context_read']:
+        for name in ['browser_screenshot', 'browser_snapshot', 'context_read']:
             self.assertTrue(self.mcp.annotations[name].read_only_hint, name)
         for name in ['browser_evaluate', 'browser_run_code', 'browser_file_upload', 'browser_cookie_list']:
             self.assertNotIn(name, self.mcp.tools)
 
     async def test_context_save_ask_denied_no_content_stored(self):
-        r = await self.mcp.tools['mac_context_save']('test', 'Title', 'not stored')
+        r = await self.mcp.tools['context_save']('test', 'Title', 'not stored')
         self.assertTrue(r.is_error)
-        r = await self.mcp.tools['mac_context_list']()
+        r = await self.mcp.tools['context_list']()
         self.assertEqual(r.structured_content['contexts'], [])
 
     async def test_context_save_always_and_revision_conflict(self):
         self.always()
-        r = await self.mcp.tools['mac_context_save']('test', 'Title', 'saved')
+        r = await self.mcp.tools['context_save']('test', 'Title', 'saved')
         self.assertFalse(r.is_error)
         revision = r.structured_content['revision']
-        read = await self.mcp.tools['mac_context_read']('test')
+        read = await self.mcp.tools['context_read']('test')
         self.assertEqual(read.structured_content['content'], 'saved')
-        r = await self.mcp.tools['mac_context_save']('test', 'Title', 'updated', revision)
+        r = await self.mcp.tools['context_save']('test', 'Title', 'updated', revision)
         self.assertFalse(r.is_error)
-        r = await self.mcp.tools['mac_context_save']('test', 'Title', 'stale', revision)
+        r = await self.mcp.tools['context_save']('test', 'Title', 'stale', revision)
         self.assertTrue(r.is_error)
         self.approver.approve.assert_not_called()
 
     async def test_pause_also_closes_dedicated_browser(self):
-        r = await self.mcp.tools['mac_pause']()
+        r = await self.mcp.tools['pause']()
         self.assertFalse(r.is_error)
         self.assertEqual(self.browser.closed, 1)
         r = await self.mcp.tools['browser_snapshot']()

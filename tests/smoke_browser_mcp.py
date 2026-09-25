@@ -24,8 +24,8 @@ sys.path.insert(0, str(ROOT))
 from mac_bridge.approvals import set_approval_mode
 from mac_bridge.policy import clean_env, private_write
 
-HTML = b'''<!doctype html><html><head><title>Mac Bridge local browser test</title></head>
-<body><h1>Mac Bridge local browser test</h1><label for="name">Name</label><input id="name">
+HTML = b'''<!doctype html><html><head><title>Computer Controller local browser test</title></head>
+<body><h1>Computer Controller local browser test</h1><label for="name">Name</label><input id="name">
 <button id="apply">Apply</button><h2 id="result">Waiting</h2><p id="saved"></p>
 <script>document.querySelector('#saved').textContent='saved:'+ (localStorage.getItem('test-value') || 'none');
 document.querySelector('#apply').onclick=()=>{const value=document.querySelector('#name').value;
@@ -80,7 +80,7 @@ async def run():
                     assert len(tools) == 37, sorted(tools)
                     assert not tools['browser_navigate'].annotations.read_only_hint
                     assert not tools['browser_type'].annotations.read_only_hint
-                    assert not tools['mac_context_save'].annotations.read_only_hint
+                    assert not tools['context_save'].annotations.read_only_hint
                     assert tools['browser_screenshot'].annotations.read_only_hint
                     assert 'browser_evaluate' not in tools and 'browser_file_upload' not in tools
                     async def call(tool, **args):
@@ -95,7 +95,7 @@ async def run():
                     assert denied.is_error
                     page = await call('browser_navigate', url=url)
                     snapshot = text(await call('browser_snapshot'))
-                    assert 'Mac Bridge local browser test' in snapshot, snapshot
+                    assert 'Computer Controller local browser test' in snapshot, snapshot
                     name_ref = ref(snapshot, 'textbox', 'Name')
                     apply_ref = ref(snapshot, 'button', 'Apply')
                     await call('browser_type', target=name_ref, element='Name input on local test page', text='Bridge test')
@@ -115,7 +115,7 @@ async def run():
                     await call('browser_press_key', key='Tab')
                     await call('browser_tabs', action='new', url=url + '?tab=2')
                     tabs = text(await call('browser_tabs', action='list'))
-                    assert 'Mac Bridge local browser test' in tabs, tabs
+                    assert 'Computer Controller local browser test' in tabs, tabs
                     await call('browser_tabs', action='select', index=0)
                     await call('browser_tabs', action='close', index=1)
                     logs = text(await call('browser_console_messages', level='error'))
@@ -129,25 +129,25 @@ async def run():
                     snapshot = text(await call('browser_snapshot'))
                     assert 'saved:Bridge test' in snapshot, snapshot
                     evidence.append('dedicated profile localStorage persisted across browser restart')
-                    first = await call('mac_context_save', name='smoke', title='Local test only', content='Verified local browser test.')
+                    first = await call('context_save', name='smoke', title='Local test only', content='Verified local browser test.')
                     revision = first.structured_content['revision']
-                    second = await call('mac_context_save', name='smoke', title='Local test only', content='Updated verified result.', expected_revision=revision)
-                    conflict = await client.call_tool('mac_context_save', {'name': 'smoke', 'title': 'stale', 'content': 'Must not replace', 'expected_revision': revision})
+                    second = await call('context_save', name='smoke', title='Local test only', content='Updated verified result.', expected_revision=revision)
+                    conflict = await client.call_tool('context_save', {'name': 'smoke', 'title': 'stale', 'content': 'Must not replace', 'expected_revision': revision})
                     assert conflict.is_error
-                    assert (await call('mac_context_read', name='smoke')).structured_content['content'] == 'Updated verified result.'
-                    assert len((await call('mac_context_list')).structured_content['contexts']) == 1
-                    await call('mac_pause')
+                    assert (await call('context_read', name='smoke')).structured_content['content'] == 'Updated verified result.'
+                    assert len((await call('context_list')).structured_content['contexts']) == 1
+                    await call('pause')
                     assert not (await call('browser_status')).structured_content['running']
                     assert (await client.call_tool('browser_navigate', {'url': url})).is_error
-                    assert (await client.call_tool('mac_context_read', {'name': 'smoke'})).is_error
-                    assert (await client.call_tool('mac_start_process', {'command': 'echo NO'})).is_error
+                    assert (await client.call_tool('context_read', {'name': 'smoke'})).is_error
+                    assert (await client.call_tool('start_process', {'command': 'echo NO'})).is_error
                     evidence.append('pause closes browser and blocks context/browser operations; video workflow uses the same paused process gate')
             # Simulate a LOCAL restart only inside the disposable fixture root.
             (root / '.state/MAC_PAUSED').unlink()
             async with stdio_client(params) as (reader, writer):
                 async with ClientSession(reader, writer, read_timeout_seconds=80) as client:
                     await client.initialize()
-                    result = await client.call_tool('mac_context_read', {'name': 'smoke'})
+                    result = await client.call_tool('context_read', {'name': 'smoke'})
                     assert not result.is_error and result.structured_content['content'] == 'Updated verified result.'
                     assert result.structured_content['revision'] == second.structured_content['revision']
                     evidence.append('summary survived a new MCP server process; revision conflict rejected')

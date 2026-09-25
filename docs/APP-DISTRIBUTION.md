@@ -1,8 +1,8 @@
-# Mac Bridge app distribution
+# Computer Controller app distribution
 
 ## End-user installation
 
-For first-time installation, follow the step-by-step [README](../README.md). This document covers implementation and verification. The distribution artifact is one `Mac Bridge.app` ZIP from GitHub Releases; current public availability is recorded in the README. Python, Node, FFmpeg/ffprobe, Deno, the pinned Desktop Commander/Playwright runtimes, tunnel-client/cloudflared and Sparkle are included. End users do not need Homebrew, Python, Node, git, GitHub CLI, or GitHub login. Existing Google Chrome is used for browser tasks; Chrome itself is not redistributed.
+For first-time installation, follow the step-by-step [README](../README.md). This document covers implementation and verification. The distribution artifact is one `Computer Controller.app` ZIP from GitHub Releases; current public availability is recorded in the README. Python, Node, FFmpeg/ffprobe, Deno, the pinned Desktop Commander/Playwright runtimes, tunnel-client/cloudflared and Sparkle are included. End users do not need Homebrew, Python, Node, git, GitHub CLI, or GitHub login. Existing Google Chrome is used for browser tasks; Chrome itself is not redistributed.
 
 First-time connection to the owner's ChatGPT tunnel and macOS/Chrome permissions remain separate from application installation. Runtime keys stay in macOS Keychain. Release-signing private keys are used by the developer only; recipients never receive them.
 
@@ -11,8 +11,8 @@ This internal build targets Apple Silicon, macOS 26.0 or later. Its native depen
 ## Source / runtime / data
 
 - Source: `~/dev/mac-bridge` or a Git worktree. Development can continue without mutating a running app.
-- Executable runtime: physical copies in `Mac Bridge.app`, never links to an editable source checkout or virtual environment. File tools protect the running bundle, not the separate source checkout.
-- Mutable state: `~/Library/Application Support/Mac Bridge`. Logs: `~/Library/Logs/Mac Bridge`. Runtime credentials: Keychain.
+- Executable runtime: physical copies in `Computer Controller.app`, never links to an editable source checkout or virtual environment. File tools protect the running bundle, not the separate source checkout.
+- Mutable state: `~/Library/Application Support/Computer Controller`. Logs: `~/Library/Logs/Computer Controller`. Runtime credentials: Keychain.
 
 After settings import, the app preserves the tunnel ID, workspace, ask/always mode, pause state and saved browser selection. The importer does not copy or delete old videos, summaries, logs or backups. Do not delete the old checkout merely because settings migration succeeded.
 
@@ -52,13 +52,13 @@ python packaging/scripts/sign_and_notarize.py --preflight
 
 # Only after the developer has installed the certificate and set up a local
 # notarytool credential profile; placeholders are not real credentials.
-python packaging/scripts/sign_and_notarize.py "dist/build/Mac Bridge.app" \
+python packaging/scripts/sign_and_notarize.py "dist/build/Computer Controller.app" \
   --identity "Developer ID Application: YOUR NAME (YOURTEAMID)" \
   --keychain-profile "YOUR_LOCAL_NOTARY_PROFILE" --output dist/notarized-new
 
 # Build/sign a feed and ZIP from the stapled app. --publish is a SEPARATE explicit action.
 python packaging/scripts/prepare_release.py \
-  "dist/notarized-new/Mac Bridge.app" --output dist/release-new
+  "dist/notarized-new/Computer Controller.app" --output dist/release-new
 ```
 
 The public publisher refuses a preview, an unnotarized/non-Developer-ID app, an unexpected public feed, or a repository that is still private. It never changes repository visibility. Existing signed archive bytes and old beta releases remain immutable. A new app build gets a new version/build number.

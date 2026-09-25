@@ -2,7 +2,7 @@
 
 **ChatGPT에서 내 Mac·Windows PC 또는 Linux/EC2 서버의 파일, 터미널, 브라우저와 영상 프레임을 다루는 개인용 MCP 연결 도구입니다.**
 
-macOS/Windows GUI 사용자는 **운영체제에 맞는 릴리스 ZIP을 내려받아 앱을 실행**하며 Python·Node를 따로 준비할 필요가 없습니다. Linux/EC2와 CLI 사용자는 아래 npm 설치 방식을 사용할 수 있습니다.
+기본 CLI 사용자는 아래 **npx 한 줄 방식**을 권장합니다. macOS/Windows에서 GUI를 선호하면 운영체제에 맞는 릴리스 ZIP을 사용할 수도 있습니다.
 
 [릴리스 / 다운로드](https://github.com/oh-jinsu/computer-controller/releases) · [기존 설치에서 이전하기](#기존-설치에서-이전하기) · [문제 해결](#문제-해결) · [개발자 문서](#개발자-문서)
 
@@ -22,12 +22,10 @@ macOS/Windows GUI 사용자는 **운영체제에 맞는 릴리스 ZIP을 내려�
 
 ## npm CLI — macOS / Windows / Linux / EC2 Preview
 
-npm Registry 게시 전에는 공개 GitHub 저장소를 npm이 직접 설치하게 할 수 있습니다.
+npm Registry 게시 전에는 공개 GitHub 저장소를 npx가 직접 실행합니다. **인자 없이 실행하면 첫 실행은 setup 후 바로 start하고, 이후에는 곧바로 start합니다.**
 
 ```sh
-npm install -g github:oh-jinsu/computer-controller
-computer-controller setup
-computer-controller start
+npx -y github:oh-jinsu/computer-controller
 ```
 
 현재 CLI의 외부 필수 런타임은 **Node.js 20+**입니다. 시스템에 Python 3.11+가 있으면 재사용하고, 없으면 `setup`이 SHA-256으로 검증한 `uv`를 받아 전용 Python 3.12를 자동으로 설치합니다. 이어서 전용 Python venv, Desktop Commander/Playwright 어댑터, 플랫폼별 OpenAI `tunnel-client` + `cloudflared`를 사용자 데이터 폴더에 준비하고 다운로드한 런타임의 SHA-256을 고정값과 비교합니다. macOS/Windows에서는 GUI 앱과 같은 설정 폴더를 재사용할 수 있지만, 같은 컴퓨터에서 GUI와 CLI를 동시에 같은 연결로 시작할 수 없도록 공통 실행 잠금을 사용합니다.
@@ -35,12 +33,11 @@ computer-controller start
 Linux/EC2는 네이티브 승인창이 없으므로 **`always` 승인 모드로 고정**되고, 개인 Chrome 연결 대신 **전용 headless 브라우저**만 사용합니다. Chromium이 필요하면 `computer-controller browser install`을 실행하세요. FFmpeg/ffprobe/Deno는 선택 기능이며 없으면 파일·터미널·프로세스 기능은 계속 사용할 수 있지만 해당 영상 기능은 제한됩니다.
 
 ```sh
-computer-controller status --json
-computer-controller doctor --json
-computer-controller service install
+npx -y github:oh-jinsu/computer-controller status --json
+npx -y github:oh-jinsu/computer-controller doctor --json
 ```
 
-Linux의 `service install`은 **사용자 systemd 서비스**를 설치합니다. EC2에서 로그인 전에도 재부팅 자동 시작이 필요하면 사용자 lingering 설정이 별도로 필요할 수 있으며, CLI가 `sudo`를 자동 실행하지는 않습니다. macOS는 LaunchAgent, Windows는 현재 사용자 예약 작업을 사용합니다. Runtime API 키는 macOS/Windows에서는 OS credential store를 사용하고, Linux에서는 해당 사용자만 읽을 수 있는 0600 상태 파일에 저장됩니다. `CONTROL_PLANE_API_KEY` 환경변수를 사용하면 파일 저장 없이 실행할 수도 있습니다.
+자동 시작은 npx 캐시 경로를 서비스에 고정하지 않도록 먼저 `npm install -g github:oh-jinsu/computer-controller`로 전역 설치한 뒤 `computer-controller service install`을 사용합니다. Linux의 `service install`은 **사용자 systemd 서비스**를 설치합니다. EC2에서 로그인 전에도 재부팅 자동 시작이 필요하면 사용자 lingering 설정이 별도로 필요할 수 있으며, CLI가 `sudo`를 자동 실행하지는 않습니다. macOS는 LaunchAgent, Windows는 현재 사용자 예약 작업을 사용합니다. Runtime API 키는 macOS/Windows에서는 OS credential store를 사용하고, Linux에서는 해당 사용자만 읽을 수 있는 0600 상태 파일에 저장됩니다. `CONTROL_PLANE_API_KEY` 환경변수를 사용하면 파일 저장 없이 실행할 수도 있습니다.
 
 ## Windows 11 x64 Preview
 

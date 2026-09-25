@@ -94,16 +94,10 @@ async def run(exe: Path) -> None:
                     # Use a PowerShell automatic variable so this lifecycle check does not
                     # trigger first-run module analysis on a fresh Windows runner.
                     launch = await call("mac_start_process", command="$PWD.Path")
-                    pid = int(re.search(r"PID (\d+)", text(launch)).group(1))
                     combined = text(launch)
-                    output = ""
-                    for _ in range(90):
-                        output = text(await call("mac_process_output", pid=pid))
-                        combined += "\n" + output
-                        if "exit code" in output:
-                            break
-                        await asyncio.sleep(.2)
-                    assert "exit code 0" in output, combined
+                    pid = int(re.search(r"PID (\d+)", combined).group(1))
+                    assert pid > 0
+                    assert "exit code 0" in combined, combined
                     assert str(workspace).casefold() in combined.casefold(), combined
                     checks.append("Windows PowerShell process + file write")
 
@@ -116,21 +110,17 @@ async def run(exe: Path) -> None:
                     command = command_line([str(exe), "--video", str(video),
                                             "--output", str(output_dir), "--count", "2"])
                     launch = await call("mac_start_process", command=command)
-                    video_pid = int(re.search(r"PID (\d+)", text(launch)).group(1))
+                    final_output = text(launch)
+                    video_pid = int(re.search(r"PID (\d+)", final_output).group(1))
+                    assert video_pid > 0
                     complete = None
-                    final_output = ""
-                    for _ in range(100):
-                        final_output = text(await call("mac_process_output", pid=video_pid))
-                        for line in final_output.splitlines():
-                            try:
-                                row = json.loads(line)
-                            except ValueError:
-                                continue
-                            if isinstance(row, dict) and row.get("event") == "complete":
-                                complete = row
-                        if "exit code 0" in final_output:
-                            break
-                        await asyncio.sleep(.2)
+                    for line in final_output.splitlines():
+                        try:
+                            row = json.loads(line)
+                        except ValueError:
+                            continue
+                        if isinstance(row, dict) and row.get("event") == "complete":
+                            complete = row
                     assert complete and "exit code 0" in final_output, final_output
                     image_result = await call("mac_read_file", path=complete["sheet_path"])
                     image_block = next(block for block in image_result.content if block.type == "image")

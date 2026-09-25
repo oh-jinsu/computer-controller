@@ -30,6 +30,7 @@ class FakeMCP:
 class FakeDC:
     def __init__(self, root, policy):
         self.policy = policy; self.calls = []; self.pids = set(); self.version = 'stub'; self.session = object()
+        self.process_complete = True
     async def invoke(self, name, args, **kw):
         if not kw.get('allow_paused'): self.policy.require_active()
         self.calls.append((name, args))
@@ -37,6 +38,15 @@ class FakeDC:
         if name == 'edit_block':
             path = Path(args['file_path'])
             path.write_text(path.read_text().replace(args['old_string'], args['new_string'], 1))
+        if name == 'start_process':
+            self.pids.add(321)
+            return Data(content=[Data(type='text',
+                text='Process started with PID 321 (shell: /bin/sh)\nInitial output:\nstarted')])
+        if name == 'read_process_output':
+            text = '[Reading last 1 lines (total: 1 lines)]\n\ndone'
+            if self.process_complete:
+                text += '\n✅ Process completed with exit code 0 (runtime: 0.01s)'
+            return Data(content=[Data(type='text', text=text)])
         return Data(content=[], structuredContent={'called': name})
     def require_owned(self, pid):
         from mac_bridge.policy import MacError
@@ -111,8 +121,28 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
     async def test_approval_runs_only_shown_command(self):
         self.approver.approve.return_value = True
         r = await self.mcp.tools['mac_start_process']('echo approved')
-        self.assertFalse(r.isError); self.assertEqual(len(self.dc.calls), 1)
+        self.assertFalse(r.isError)
+        self.assertEqual([name for name, _ in self.dc.calls].count('start_process'), 1)
         self.assertIn('echo approved', self.dc.calls[0][1]['command'])
+        self.assertIn('Process completed with exit code 0', '\n'.join(x.text for x in r.content))
+
+    async def test_wait_start_returns_without_polling(self):
+        self.approver.approve.return_value = True
+        r = await self.mcp.tools['mac_start_process']('echo approved', wait='start')
+        self.assertFalse(r.isError)
+        self.assertEqual([name for name, _ in self.dc.calls], ['start_process'])
+        self.assertIn('Process started with PID 321', '\n'.join(x.text for x in r.content))
+
+    async def test_wait_timeout_leaves_process_running(self):
+        self.approver.approve.return_value = True
+        self.dc.process_complete = False
+        r = await self.mcp.tools['mac_start_process'](
+            'echo approved', wait='complete', wait_timeout_ms=1000)
+        self.assertFalse(r.isError)
+        text = '\n'.join(x.text for x in r.content)
+        self.assertIn('still running after 1s', text)
+        self.assertIn('PID 321', text)
+        self.assertIn(321, self.dc.pids)
 
     async def test_pause_after_approval_prevents_execution(self):
         def approve(*args): self.dc.policy.pause(); return True
@@ -168,7 +198,8 @@ class LogicTests(unittest.IsolatedAsyncioTestCase):
         r = await self.mcp.tools['mac_start_process']('pwd')
         self.assertFalse(r.isError)
         self.approver.approve.assert_not_called()
-        self.assertEqual(len(self.dc.calls), 1)
+        self.assertEqual([name for name, _ in self.dc.calls].count('start_process'), 1)
+        self.assertIn('read_process_output', [name for name, _ in self.dc.calls])
         states = [row['state'] for row in self.dc.policy.history()]
         self.assertIn('auto_approved', states)
         self.assertEqual(states[-1], 'completed')

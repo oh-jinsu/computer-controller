@@ -12,6 +12,8 @@ const packageRoot = path.resolve(path.dirname(cliFile), '..');
 const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(packageRoot, 'npm/runtime-manifest.json'), 'utf8'));
 const VERSION = packageJson.version;
+const GITHUB_REPOSITORY = 'oh-jinsu/computer-controller';
+const GITHUB_MAIN_API = `https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/main`;
 
 export function platformKey(platform = process.platform, arch = process.arch) {
   const key = `${platform}-${arch}`;
@@ -63,6 +65,59 @@ function runtimePaths(data = dataDirectory()) {
   const assets = path.join(runtime, 'assets');
   const bin = path.join(runtime, 'bin');
   return { data, runtime, venv, assets, bin };
+}
+
+export function isNpxExecution(root = packageRoot) {
+  return root.split(path.sep).join('/').includes('/_npx/');
+}
+
+export function githubPackageAt(sha) {
+  if (!/^[0-9a-f]{40}$/.test(sha || '')) throw new Error('Invalid GitHub commit SHA.');
+  return `github:${GITHUB_REPOSITORY}#${sha}`;
+}
+
+export async function maybeRunLatestNpx(argv, options = {}) {
+  const root = options.root || packageRoot;
+  const env = options.env || process.env;
+  if (!isNpxExecution(root) || env.COMPUTER_CONTROLLER_RESOLVED_SHA) {
+    return { handled: false, reason: 'not-needed' };
+  }
+
+  const fetchImpl = options.fetchImpl || fetch;
+  const spawnImpl = options.spawnImpl || spawnSync;
+  const platform = options.platform || process.platform;
+  const log = options.log || (message => console.log(message));
+  const warn = options.warn || (message => console.warn(message));
+  let sha;
+  try {
+    log('Checking GitHub for the latest Computer Controller...');
+    const response = await fetchImpl(GITHUB_MAIN_API, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'computer-controller',
+      },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!response.ok) throw new Error(`GitHub returned HTTP ${response.status}`);
+    const value = await response.json();
+    sha = value?.sha;
+    githubPackageAt(sha);
+  } catch (error) {
+    warn(`Update check unavailable; continuing with the cached package (${error.message || error}).`);
+    return { handled: false, reason: 'update-check-failed' };
+  }
+
+  log(`Using latest main: ${sha.slice(0, 7)}`);
+  const npx = platform === 'win32' ? 'npx.cmd' : 'npx';
+  const result = spawnImpl(npx, [
+    '-y', `--package=${githubPackageAt(sha)}`, 'computer-controller', ...argv,
+  ], {
+    stdio: 'inherit',
+    windowsHide: true,
+    env: { ...env, COMPUTER_CONTROLLER_RESOLVED_SHA: sha },
+  });
+  if (result.error) throw result.error;
+  return { handled: true, status: result.status ?? 1, sha };
 }
 
 export function needsSetup(data = dataDirectory(), platform = process.platform) {
@@ -696,6 +751,11 @@ async function quickStartCommand() {
 }
 
 export async function main(argv = process.argv.slice(2)) {
+  const latest = await maybeRunLatestNpx(argv);
+  if (latest.handled) {
+    process.exitCode = latest.status;
+    return;
+  }
   const command = argv[0];
   if (!command) return await quickStartCommand();
   if (command === '--help' || command === '-h' || command === 'help') {

@@ -1,0 +1,25 @@
+{
+  "tunnel_client_version": "0.0.14",
+  "platforms": {
+    "darwin-arm64": {
+      "url": "https://github.com/openai/tunnel-client/releases/download/v0.0.14/tunnel-client-runtime-cloudflared-v0.0.14-darwin-arm64.zip",
+      "sha256": "c52bd95f8018b7b2903bebb45a47a1695b2c6e146b0672e2b11c38461ce729c1"
+    },
+    "darwin-x64": {
+      "url": "https://github.com/openai/tunnel-client/releases/download/v0.0.14/tunnel-client-runtime-cloudflared-v0.0.14-darwin-amd64.zip",
+      "sha256": "9edcf0beebf257a765c32146d906ff2abe9a2a11013e222727593d863f1414fa"
+    },
+    "linux-x64": {
+      "url": "https://github.com/openai/tunnel-client/releases/download/v0.0.14/tunnel-client-runtime-cloudflared-v0.0.14-linux-amd64.zip",
+      "sha256": "e52ff372c0fb89b182f2f3bee4f8f8c93c3cce89e496359d1000fcd4c93eae3b"
+    },
+    "linux-arm64": {
+      "url": "https://github.com/openai/tunnel-client/releases/download/v0.0.14/tunnel-client-runtime-cloudflared-v0.0.14-linux-arm64.zip",
+      "sha256": "08151562d5205bc466d937834447f002046285405480ffbb4f75b97a49b58e00"
+    },
+    "win32-x64": {
+      "url": "https://github.com/openai/tunnel-client/releases/download/v0.0.14/tunnel-client-runtime-cloudflared-v0.0.14-windows-amd64.zip",
+      "sha256": "b225e23bdb3dc33b41ac1e7bd3197b5c9d628508880bee643c1682cd69ee7f9c"
+    }
+  }
+}

@@ -35,6 +35,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e . pyinstaller==6.22.3
 
+      - name: npm CLI package checks
+        shell: pwsh
+        run: |
+          $env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD='1'
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm test
+          node npm/cli.mjs --help
+          npm pack --dry-run
+
       - name: Windows portability tests
         shell: pwsh
         run: |

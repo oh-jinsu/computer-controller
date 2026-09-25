@@ -18,12 +18,12 @@ import uuid
 from .activity import exclusive_lock, heartbeat_safe, process_exists, update_admission
 from .approvals import approval_mode, set_approval_mode
 from .browser_connection import browser_settings, set_browser_mode
+from .credentials import get_runtime_key, set_runtime_key
 from .migration import read_settings, valid_tunnel_id, valid_workspace
 from .policy import MacError, clean_env, private_dir, private_write
 from .platform_support import (IS_WINDOWS, app_data_dir, executable_name,
                                packaged_worker_command, tunnel_command_line)
 
-SERVICE = 'scene-bridge-tunnel'
 DEFAULT_DATA = app_data_dir()
 if IS_WINDOWS and getattr(sys, 'frozen', False):
     RESOURCES = Path(getattr(sys, '_MEIPASS')).resolve()
@@ -95,8 +95,7 @@ def configure(data: Path, values: dict) -> dict:
     if not isinstance(key, str) or (key and (len(key) > 4096 or any(c.isspace() for c in key))):
         raise MacError('Invalid runtime key.')
     if key:
-        import keyring
-        keyring.set_password(SERVICE, tid, key)
+        set_runtime_key(data, tid, key)
     private_write(data / '.state/mac-settings.json', json.dumps({'workspace': str(workspace)}).encode())
     private_write(data / '.state/settings.json', json.dumps({'schema': 1, 'tunnel_id': tid}).encode())
     set_approval_mode(data, mode)
@@ -179,10 +178,7 @@ def serve(data: Path) -> int:
             if target.is_symlink():
                 raise MacError('Invalid update state.')
             target.unlink(missing_ok=True)
-        import keyring
-        key = keyring.get_password(SERVICE, tid)
-        if not key:
-            raise MacError('Runtime API key is missing. Enter it once in the app settings.')
+        key = get_runtime_key(data, tid)
         env = environment()
         env['CONTROL_PLANE_API_KEY'] = key
         env['CONTROL_PLANE_TUNNEL_ID'] = tid

@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -57,13 +58,13 @@ class DesktopClient:
         package = self.assets / '.runtime' / 'desktop-commander' / 'node_modules' / '@wonderwhy-er' / 'desktop-commander'
         package_json = package / 'package.json'
         if not package_json.is_file():
-            raise MacError('Desktop Commander dependency missing. Run Mac-Start.command.')
+            raise MacError('Desktop Commander dependency missing. Run computer-controller setup or reinstall the app.')
         self.version = json.loads(package_json.read_text())['version']
         if self.version != DC_VERSION:
             raise MacError('Desktop Commander version differs from the tested adapter version')
-        node = shutil.which('node')
+        node = os.environ.get('COMPUTER_CONTROLLER_NODE') or shutil.which('node')
         if not node:
-            raise MacError('Node.js is missing. Run Mac-Start.command.')
+            raise MacError('Node.js is missing. Run computer-controller setup or reinstall the app.')
         _, env = configure_engine(self.root, self.policy.workspace)
         params = StdioServerParameters(command=node, args=[str(self.assets / 'mac_bridge' / 'dc_entry.mjs')],
                                        cwd=str(self.policy.workspace), env=env)

@@ -71,7 +71,7 @@ class Policy:
 
     def require_active(self) -> None:
         if self.pause_file.exists() or self.pause_file.is_symlink():
-            raise MacError('Mac operations are paused. Resume locally with Mac-Start.command; chat cannot resume them.')
+            raise MacError('Computer operations are paused. Restart Computer Controller locally to resume; chat cannot resume them.')
 
     def pause(self) -> None:
         private_write(self.pause_file, b'paused locally or by MCP\n')

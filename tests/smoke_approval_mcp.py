@@ -1,7 +1,7 @@
 """Real stdio MCP + Desktop Commander in explicit always mode; disposable data only.
 
 No native approvals are mocked, no user settings are changed, and no tunnel is
-connected. /bin/zsh is required because that is the real bridge command route.
+connected. The test uses the platform's real non-interactive shell route.
 """
 from __future__ import annotations
 
@@ -34,7 +34,10 @@ async def connect(root: Path):
 
 
 async def test():
-    assert Path('/bin/zsh').is_file(), 'The real command test requires /bin/zsh (macOS or Linux CI).'
+    if sys.platform == 'darwin':
+        assert Path('/bin/zsh').is_file(), 'macOS command routing requires /bin/zsh.'
+    else:
+        assert Path('/bin/bash').is_file() or Path('/bin/sh').is_file(), 'A POSIX shell is required.'
     with tempfile.TemporaryDirectory(prefix='mac-approval-smoke-') as tmp:
         parent = Path(tmp).resolve()
         root, project = parent / 'bridge', parent / 'project'

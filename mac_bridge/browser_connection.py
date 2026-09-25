@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -27,6 +28,11 @@ def chrome_executable() -> Path | None:
             if base:
                 candidates.append(Path(base) / 'Google/Chrome/Application/chrome.exe')
         return next((path for path in candidates if path.is_file()), None)
+    if sys.platform.startswith('linux'):
+        for name in ('google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'):
+            found = shutil.which(name)
+            if found:
+                return Path(found)
     return None
 
 
@@ -45,6 +51,8 @@ def browser_settings(root: Path) -> dict:
     if state.is_symlink() or path.is_symlink():
         raise MacError('Browser settings must not be a symlink.')
     if not path.exists():
+        if sys.platform.startswith('linux'):
+            return {'schema': 2, 'mode': 'dedicated', 'headless': True}
         return {'schema': 2, 'mode': 'personal', 'headless': False}
     if not path.is_file() or path.stat().st_size > 4096:
         raise MacError('Invalid or oversized browser settings.')
@@ -68,6 +76,8 @@ def set_browser_mode(root: Path, mode: str) -> dict:
     """Explicit local choice only. Never change the owner's approval mode or pause flag."""
     if mode not in MODES:
         raise MacError('Browser mode must be dedicated or personal.')
+    if sys.platform.startswith('linux') and mode == 'personal':
+        raise MacError('Personal Chrome mode is supported on macOS and Windows; use dedicated mode on Linux.')
     previous = browser_settings(root)
     state = private_dir(root / '.state')
     path = state / 'browser-settings.json'

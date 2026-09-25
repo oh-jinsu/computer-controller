@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -68,7 +69,7 @@ def browser_executable(root: Path, *, data: Path | None = None) -> str:
     chrome = chrome_executable()
     if chrome is not None:
         return str(chrome)
-    node = shutil.which('node')
+    node = os.environ.get('COMPUTER_CONTROLLER_NODE') or shutil.which('node')
     if not node:
         raise MacError('Node.js is unavailable.')
     result = subprocess.run([node, '-e', 'console.log(require("playwright").chromium.executablePath())'],
@@ -76,7 +77,7 @@ def browser_executable(root: Path, *, data: Path | None = None) -> str:
                             check=True, capture_output=True, text=True, timeout=15)
     value = result.stdout.strip()
     if not value or not Path(value).is_file():
-        raise MacError('Managed Chromium is missing. Run Mac-Start.command to prepare it.')
+        raise MacError('Managed Chromium is missing. Run computer-controller browser install (CLI) or reinstall the app browser runtime.')
     return value
 
 
@@ -101,7 +102,7 @@ def ensure_browser(root: Path) -> bool:
         try:
             browser_executable(root)
         except MacError:
-            node = shutil.which('node')
+            node = os.environ.get('COMPUTER_CONTROLLER_NODE') or shutil.which('node')
             print('No system Chrome; installing Chromium into this checkout only.', flush=True)
             subprocess.run([node, str(root / '.runtime/playwright/node_modules/playwright/cli.js'),
                             'install', 'chromium'], env=runtime_env(root), check=True, timeout=300)
@@ -190,7 +191,7 @@ class BrowserClient:
         current = None
         try:
             if not installed(self.assets):
-                raise MacError('Playwright MCP is not installed. Run Mac-Start.command once.')
+                raise MacError('Playwright MCP is not installed. Run computer-controller setup or reinstall the app.')
             self.active_settings = browser_settings(self.root)
             personal = self.active_settings['mode'] == 'personal'
             output = state_dir(self.root, 'browser', 'output')
@@ -210,7 +211,7 @@ class BrowserClient:
                              '--block-service-workers', '--sandbox', '--viewport-size', '1280x800'])
                 if self.active_settings['headless']:
                     args.append('--headless')
-            node = shutil.which('node')
+            node = os.environ.get('COMPUTER_CONTROLLER_NODE') or shutil.which('node')
             if not node:
                 raise MacError('Node.js is unavailable.')
             params = StdioServerParameters(command=node, args=args, cwd=str(work),

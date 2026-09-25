@@ -11,6 +11,7 @@ import sys
 
 IS_WINDOWS = sys.platform == "win32"
 IS_MAC = sys.platform == "darwin"
+IS_LINUX = sys.platform.startswith("linux")
 
 
 def executable_name(name: str) -> str:
@@ -28,10 +29,16 @@ def app_data_dir() -> Path:
     """
     if IS_WINDOWS:
         base = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData/Local"))
-    else:
+        current = base / "Computer Controller"
+        legacy = base / "Mac Bridge"
+    elif IS_MAC:
         base = Path.home() / "Library/Application Support"
-    current = base / "Computer Controller"
-    legacy = base / "Mac Bridge"
+        current = base / "Computer Controller"
+        legacy = base / "Mac Bridge"
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME") or (Path.home() / ".local/share"))
+        current = base / "computer-controller"
+        legacy = base / "mac-bridge"
     if current.exists():
         return current
     if legacy.exists():
@@ -91,8 +98,14 @@ def shell_command(workspace: Path, command: str) -> tuple[str, str]:
         encoded = base64.b64encode(script.encode('utf-16le')).decode('ascii')
         wrapped = f"powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand {encoded}"
         return wrapped, "cmd.exe"
+    if IS_MAC:
+        shell = "/bin/zsh"
+        shell_args = "-f -c"
+    else:
+        shell = "/bin/bash" if Path("/bin/bash").is_file() else "/bin/sh"
+        shell_args = "--noprofile --norc -c" if shell.endswith("bash") else "-c"
     wrapped = (f"cd {shlex.quote(str(workspace))} && "
-               f"HOME={shlex.quote(str(Path.home()))} /bin/zsh -f -c {shlex.quote(command)}")
+               f"HOME={shlex.quote(str(Path.home()))} {shlex.quote(shell)} {shell_args} {shlex.quote(command)}")
     return wrapped, "/bin/sh"
 
 

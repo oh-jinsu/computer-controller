@@ -1,7 +1,7 @@
 [project]
 name = "mac-bridge"
-version = "0.5.0b17"
-description = "Private MCP desktop bridge for macOS/Windows development, Chrome, screenshots and video frames"
+version = "0.5.0b18"
+description = "Cross-platform MCP computer controller for macOS, Windows and Linux/EC2"
 requires-python = ">=3.11"
 dependencies = [
   "mcp==2.2.0",

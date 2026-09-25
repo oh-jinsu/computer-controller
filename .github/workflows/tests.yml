@@ -1,4 +1,6 @@
-name: Mac Bridge tests
+name: Computer Controller tests
+name: Computer Controller tests
+
 on:
   push:
     branches: [main]
@@ -21,8 +23,17 @@ jobs:
       - name: Dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg zsh
+          sudo apt-get install -y ffmpeg
           python -m pip install -e .
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci --ignore-scripts --no-audit --no-fund
+      - name: npm CLI package checks
+        run: |
+          npm test
+          node npm/cli.mjs --help
+          npm pack --dry-run
+          node npm/tests/linux-package-smoke.mjs
+      - name: Linux npm install, setup, doctor and MCP catalog smoke
+        run: node npm/tests/linux-package-smoke.mjs
       - name: Unit tests (includes real FFmpeg; native macOS mocked)
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Syntax
@@ -30,6 +41,7 @@ jobs:
           python -m compileall -q mac_bridge scene_bridge tests run_server.py
           bash -n Mac-Start.command Mac-Stop.command Mac-Screen-Permission.command Mac-Release.command
           node --check mac_bridge/dc_entry.mjs
+          node --check npm/cli.mjs
       - name: Install isolated pinned local engine
         run: python -c 'from pathlib import Path; from mac_bridge.setup import ensure_engine; ensure_engine(Path.cwd())'
       - name: Real MCP SDK and engine (disposable files; no native UI or tunnel)

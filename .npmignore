@@ -1,0 +1,16 @@
+**/__pycache__/
+**/*.py[cod]
+.state/
+.runtime/
+.venv/
+.cache/
+dist/
+build/
+tests/
+docs/test-evidence/
+input/
+output/
+.mac-bridge-artifacts/
+*.log
+.env
+.env.*

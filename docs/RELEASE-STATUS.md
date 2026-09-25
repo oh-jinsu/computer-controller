@@ -81,3 +81,7 @@ ChatGPT 플러그인 새로고침이 사용하는 `server/discover`를 지원하
 ## 0.5.0-beta.17 — single recoverable delete_file
 
 `delete_file`를 추가한 Preview입니다. 빌드 번호는 `50017`이며 Windows 파일명은 `Computer-Controller-0.5.0-beta.17-windows-x64.zip`, macOS 파일명은 `Computer-Controller-0.5.0-beta.17-macos26-arm64.zip`입니다. 전체 도구 수는 38개입니다. 단일 삭제도 `batch_files`의 `delete`와 같은 복구 가능 삭제 경로를 사용해 내부 보관소로 이동하며, 일반 파일만 허용하고 디렉터리는 거부합니다.
+
+## 0.5.0-beta.18 — npm CLI / Linux·EC2 Preview
+
+공통 npm CLI와 Linux/EC2 headless host를 추가한 Preview입니다. 빌드 번호는 `50018`이며 Windows 파일명은 `Computer-Controller-0.5.0-beta.18-windows-x64.zip`, macOS 파일명은 `Computer-Controller-0.5.0-beta.18-macos26-arm64.zip`입니다. npm 패키지 소스 이름은 `@oh-jinsu/computer-controller`이며, 현재 npm Registry에는 아직 게시하지 않았습니다. 공개 GitHub 저장소에서 직접 설치하는 경로와 npm tarball 설치를 검증합니다. CLI는 macOS/Windows/Linux에서 `setup`·`start`·`status`·`doctor`를 공통으로 사용하고, Linux는 x64/arm64 tunnel-client manifest를 포함합니다. Linux 실제 CI 결과와 플랫폼별 서비스 동작은 해당 커밋의 GitHub Actions 결과와 별도로 구분해 기록합니다.

@@ -84,6 +84,8 @@ python tests/smoke_mcp.py
 python tests/smoke_approval_mcp.py
 python tests/smoke_browser_mcp.py
 python tests/smoke_personal_chrome.py
+npm test
+npm pack --dry-run
 ```
 
 단위 테스트의 모의 SDK·OS 응답과 실제 MCP/FFmpeg/브라우저 검사를 구별하세요. 실제 브라우저 검사는 일회용 프로필과 로컬 테스트 페이지를 사용하며 개인 계정의 메일 발송·게시·파일 업로드를 하지 않습니다. 테스트용 앱의 업데이트 성공도 실제 운영 앱의 공개 피드 기반 업데이트와 구별합니다.

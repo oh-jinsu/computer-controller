@@ -1,8 +1,8 @@
 # Computer Controller
 
-ChatGPT에서 내 **Mac 또는 Windows PC**의 파일·터미널·Chrome·스크린샷·영상 프레임을 다루는 연결 앱입니다.
+ChatGPT에서 내 **Mac·Windows PC 또는 Linux/EC2 서버**의 파일·터미널·브라우저·영상 프레임을 다루는 MCP 연결 도구입니다.
 
-**지원 환경:** Apple Silicon macOS 26+ · Windows 11 x64(Preview) · ChatGPT 개발자 모드/Tunnel 사용 가능 계정.
+**지원 환경:** Apple Silicon macOS 26+ · Windows 11 x64(Preview) · Linux x64/arm64 CLI(Preview) · ChatGPT 개발자 모드/Tunnel 사용 가능 계정.
 
 ## 설치
 
@@ -15,6 +15,18 @@ ChatGPT에서 내 **Mac 또는 Windows PC**의 파일·터미널·Chrome·스크
 7. 새 대화에서 **방금 만든 MCP App을 선택**하고 `status로 연결 상태를 확인해 주세요.`라고 요청하세요.
 
 macOS는 **Computer Controller.app → 응용 프로그램**으로 옮겨 실행하고, Windows는 압축을 푼 폴더의 **Computer Controller.exe**를 실행합니다.
+
+## npm CLI — macOS / Windows / Linux / EC2
+
+npm Registry 게시 전에는 공개 GitHub 저장소에서 바로 설치할 수 있습니다.
+
+```sh
+npm install -g github:oh-jinsu/computer-controller
+computer-controller setup
+computer-controller start
+```
+
+Linux/EC2는 `always` 승인 + 전용 headless 브라우저만 사용합니다. 재부팅 자동 시작은 `computer-controller service install`, Chromium은 필요할 때 `computer-controller browser install`을 사용합니다. 현재 CLI는 Node.js 20+와 Python 3.11+가 필요합니다.
 
 ![macOS 설정 화면](docs/images/mac-bridge-settings.png)
 

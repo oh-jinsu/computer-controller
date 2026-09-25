@@ -1,0 +1,36 @@
+{
+  "name": "@oh-jinsu/computer-controller",
+  "version": "0.5.0-beta.18",
+  "description": "Cross-platform MCP computer controller for ChatGPT and other MCP clients",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "computer-controller": "npm/cli.mjs"
+  },
+  "files": [
+    "npm/cli.mjs",
+    "npm/runtime-manifest.json",
+    "mac_bridge/*.py",
+    "mac_bridge/*.mjs",
+    "scene_bridge/*.py",
+    "run_server.py",
+    "pyproject.toml",
+    "README.md",
+    "THIRD-PARTY.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@playwright/mcp": "0.0.82",
+    "@wonderwhy-er/desktop-commander": "0.2.51"
+  },
+  "scripts": {
+    "test": "node --test npm/tests/*.test.mjs",
+    "check": "node --check npm/cli.mjs && node --test npm/tests/*.test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oh-jinsu/computer-controller.git"
+  }
+}

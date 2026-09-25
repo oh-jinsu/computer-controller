@@ -86,6 +86,10 @@ class WindowsPortabilityTests(unittest.TestCase):
         builder = (root / "packaging/windows/build_windows.py").read_text(encoding="utf-8")
         self.assertIn("--additional-hooks-dir", builder)
         self.assertNotIn('"--collect-all", "mcp"', builder)
+        self.assertIn('"--console"', builder)
+        self.assertNotIn('"--windowed"', builder)
+        app = (root / "mac_bridge/windows_app.py").read_text(encoding="utf-8")
+        self.assertIn("_hide_console_for_gui()", app)
 
 
 if __name__ == "__main__":

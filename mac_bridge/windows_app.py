@@ -56,6 +56,18 @@ def _restore_stdio_if_available() -> None:
             continue
 
 
+def _hide_console_for_gui() -> None:
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+        if hwnd:
+            ctypes.windll.user32.ShowWindow(hwnd, 0)  # SW_HIDE
+    except Exception:
+        pass
+
+
 def _flags() -> int:
     return getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
 
@@ -304,6 +316,7 @@ def main(argv: list[str] | None = None) -> int:
         return int(background)
     if sys.platform != "win32":
         raise SystemExit("Windows launcher must run on Windows.")
+    _hide_console_for_gui()
     WindowsApp().run()
     return 0
 

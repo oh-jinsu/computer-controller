@@ -164,7 +164,7 @@ def build_app() -> Path:
         folder.mkdir(parents=True, exist_ok=True)
     sep = os.pathsep
     cmd = [
-        sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onedir", "--windowed",
+        sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onedir", "--console",
         "--name", "Mac Bridge", "--distpath", str(dist), "--workpath", str(WORK / "pyi-work"),
         "--specpath", str(spec),
         "--additional-hooks-dir", str(ROOT / "packaging/windows/hooks"),

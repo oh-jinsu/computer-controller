@@ -4,9 +4,9 @@
 
 사용자는 **운영체제에 맞는 릴리스 ZIP을 내려받아 앱을 실행**합니다. Python, Node, Git을 따로 설치하거나 소스 코드를 내려받을 필요가 없습니다. 필요한 실행 환경은 앱에 포함되어 있습니다. Google Chrome은 브라우저 기능을 사용할 때만 별도로 필요합니다.
 
-[릴리스 / 다운로드](https://github.com/oh-jinsu/mac-bridge/releases) · [기존 설치에서 이전하기](#기존-설치에서-이전하기) · [문제 해결](#문제-해결) · [개발자 문서](#개발자-문서)
+[릴리스 / 다운로드](https://github.com/oh-jinsu/computer-controller/releases) · [기존 설치에서 이전하기](#기존-설치에서-이전하기) · [문제 해결](#문제-해결) · [개발자 문서](#개발자-문서)
 
-> 설치 파일은 [Releases](https://github.com/oh-jinsu/mac-bridge/releases)에서 받으세요. 공증·검증 결과는 해당 릴리스 설명에 기록합니다. 베타는 최신 안정판 자동 업데이트와 구별됩니다.
+> 설치 파일은 [Releases](https://github.com/oh-jinsu/computer-controller/releases)에서 받으세요. 공증·검증 결과는 해당 릴리스 설명에 기록합니다. 베타는 최신 안정판 자동 업데이트와 구별됩니다.
 
 ## 어떤 일을 할 수 있나요?
 
@@ -22,7 +22,7 @@
 
 ## Windows 11 x64 Preview
 
-1. [Releases](https://github.com/oh-jinsu/mac-bridge/releases)에서 `Computer-Controller-<버전>-windows-x64.zip`을 받고 **전체 압축을 푼 뒤** `Computer Controller.exe`를 실행하세요.
+1. [Releases](https://github.com/oh-jinsu/computer-controller/releases)에서 `Computer-Controller-<버전>-windows-x64.zip`을 받고 **전체 압축을 푼 뒤** `Computer Controller.exe`를 실행하세요.
 2. **터널 ID·Runtime API 키·작업 폴더**를 입력하고 **저장 → 연결 시작**을 누르세요. 새 설치는 **요청된 컴퓨터 작업 항상 허용 + 평소 Chrome 로그인 상태 사용**이 기본입니다.
 3. 평소 Chrome을 쓰려면 앱의 **Chrome 허용 페이지** 버튼을 눌러 `chrome://inspect/#remote-debugging`에서 최초 연결을 허용하세요.
 4. ChatGPT의 [Plugins](https://chatgpt.com/plugins)에서 **Add → Create MCP App → Connection: Tunnel**로 같은 터널을 연결하세요.
@@ -42,7 +42,7 @@ ChatGPT에서 **개발자 모드의 사용자 지정 MCP 연결**과 **Secure MC
 
 ### 2. ZIP을 받고 앱을 옮겨 실행하세요
 
-1. [Releases](https://github.com/oh-jinsu/mac-bridge/releases)에서 사용할 버전의 설명과 지원 환경을 확인하세요.
+1. [Releases](https://github.com/oh-jinsu/computer-controller/releases)에서 사용할 버전의 설명과 지원 환경을 확인하세요.
 2. **Assets**를 펼치고 `Computer-Controller-<버전>-macos26-arm64.zip`을 받으세요. 예를 들어 현재 공개 베타의 파일명은 `Computer-Controller-0.5.0-beta.8-macos26-arm64.zip`입니다. `Source code (zip)`과 `Source code (tar.gz)`는 개발자용 소스이며 설치 파일이 아닙니다.
 3. 받은 ZIP을 두 번 클릭해 압축을 푸세요. 안에 있는 **`Computer Controller.app`**을 Finder의 **응용 프로그램** 폴더로 옮기세요. 처음 실행하기 전에 옮겨 두면 업데이트 때도 같은 설치 위치를 사용할 수 있습니다.
 4. 옮긴 앱을 두 번 클릭하세요. 첫 실행에 인터넷에서 받은 앱인지 묻는 정상 확인창이 나오면 배포자와 파일 출처를 확인한 뒤 **열기**를 선택하세요.

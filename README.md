@@ -8,7 +8,7 @@ ChatGPT에서 내 **Mac 또는 Windows PC**의 파일·터미널·Chrome·스크
 
 1. [OpenAI 터널 설정](https://platform.openai.com/settings/organization/tunnels)에서 **터널을 만들고 ChatGPT 워크스페이스를 연결**한 뒤 `tunnel_...` ID를 복사하세요.
 2. [OpenAI API Keys](https://platform.openai.com/api-keys)에서 **Runtime API 키**를 만드세요. 터널 실행에 **Tunnels Read + Use** 권한이 필요합니다.
-3. [Releases](https://github.com/oh-jinsu/mac-bridge/releases)에서 운영체제에 맞는 ZIP을 받으세요: **macOS `Computer-Controller-...-macos26-arm64.zip` / Windows `Computer-Controller-...-windows-x64.zip`**.
+3. [Releases](https://github.com/oh-jinsu/computer-controller/releases)에서 운영체제에 맞는 ZIP을 받으세요: **macOS `Computer-Controller-...-macos26-arm64.zip` / Windows `Computer-Controller-...-windows-x64.zip`**.
 4. 앱을 실행하고 **터널 ID·Runtime API 키·작업 폴더**를 입력한 뒤 **저장 → 연결 시작**을 누르세요. **승인창 없이 사용 + 평소 Chrome 로그인 상태 사용이 기본값**입니다.
 5. macOS는 처음 나오는 **화면 기록 권한**을 허용하세요. Windows는 별도 화면 기록 권한 단계가 없습니다.
 6. ChatGPT에서 **설정 → 보안 및 로그인 → 개발자 모드**를 켜고, [Plugins](https://chatgpt.com/plugins)에서 **Add → Create MCP App → Connection: Tunnel**을 선택해 같은 터널을 연결하세요. **앱 이름은 원하는 이름으로 정하면 됩니다.**

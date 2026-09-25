@@ -22,7 +22,7 @@ from .platform_support import app_data_dir
 DATA = app_data_dir()
 LOG_DIR = DATA / "logs"
 LOG_FILE = LOG_DIR / "app.log"
-RELEASES_URL = "https://github.com/oh-jinsu/mac-bridge/releases"
+RELEASES_URL = "https://github.com/oh-jinsu/computer-controller/releases"
 
 
 def _restore_stdio_if_available() -> None:

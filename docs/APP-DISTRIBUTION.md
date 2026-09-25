@@ -23,7 +23,7 @@ The app refuses to start a second tunnel client while the imported old launcher'
 The app now uses Sparkle's ordinary public feed directly:
 
 ```text
-https://github.com/oh-jinsu/mac-bridge/releases/latest/download/appcast.xml
+https://github.com/oh-jinsu/computer-controller/releases/latest/download/appcast.xml
 ```
 
 There is no GitHub API release enumeration, OAuth/device login, token retrieval or Authorization header in the application. GitHub CLI is a developer publishing tool only and is no longer bundled. The old private-repository updater is not retained as a fallback.

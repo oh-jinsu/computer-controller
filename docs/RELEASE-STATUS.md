@@ -1,6 +1,6 @@
 # 릴리스 검증·공개 상태
 
-기준: 2026-09-25. 이 문서는 현재 확인된 배포 상태를 구분합니다. 최신 공개 여부는 [Releases](https://github.com/oh-jinsu/mac-bridge/releases)와 릴리스 설명을 확인하세요.
+기준: 2026-09-25. 이 문서는 현재 확인된 배포 상태를 구분합니다. 최신 공개 여부는 [Releases](https://github.com/oh-jinsu/computer-controller/releases)와 릴리스 설명을 확인하세요.
 
 ## 검증된 파일
 
@@ -76,4 +76,4 @@ ChatGPT 플러그인 새로고침이 사용하는 `server/discover`를 지원하
 
 ## 0.5.0-beta.16 — Computer Controller rename
 
-제품 표시 이름을 `Computer Controller`로 변경하고 MCP 도구의 `mac_` 접두사를 제거한 cross-platform Preview입니다. 빌드 번호는 `50016`이며 새 Windows 파일명은 `Computer-Controller-0.5.0-beta.16-windows-x64.zip`, macOS 파일명은 `Computer-Controller-0.5.0-beta.16-macos26-arm64.zip`입니다. 도구 수는 37개로 유지됩니다. 기존 GitHub 저장소 경로와 `com.ohjinsu.mac-bridge` bundle identifier, Python 패키지 이름은 호환성을 위해 유지합니다. 새 설치는 `Computer Controller` 데이터 폴더를 사용하지만 기존 `Mac Bridge` 데이터 폴더가 있으면 자동 이동하지 않고 그대로 재사용합니다.
+제품 표시 이름을 `Computer Controller`로 변경하고 MCP 도구의 `mac_` 접두사를 제거한 cross-platform Preview입니다. 빌드 번호는 `50016`이며 새 Windows 파일명은 `Computer-Controller-0.5.0-beta.16-windows-x64.zip`, macOS 파일명은 `Computer-Controller-0.5.0-beta.16-macos26-arm64.zip`입니다. 도구 수는 37개로 유지됩니다. GitHub 저장소는 `oh-jinsu/computer-controller`로 변경했습니다. `com.ohjinsu.mac-bridge` bundle identifier와 Python 패키지 이름은 호환성을 위해 유지합니다. 새 설치는 `Computer Controller` 데이터 폴더를 사용하지만 기존 `Mac Bridge` 데이터 폴더가 있으면 자동 이동하지 않고 그대로 재사용합니다.

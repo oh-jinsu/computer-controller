@@ -19,8 +19,8 @@
 저장소가 비공개인 동안은 GitHub 접근 권한이 필요합니다. 공개 저장소 다운로드와 설치자의 앱 실행에는 GitHub 인증을 요구하지 않습니다.
 
 ```sh
-git clone https://github.com/oh-jinsu/mac-bridge.git
-cd mac-bridge
+git clone https://github.com/oh-jinsu/computer-controller.git
+cd computer-controller
 ```
 
 먼저 [AGENTS.md](../AGENTS.md)와 현재 브랜치의 변경 사항을 확인하세요. 다른 대화나 사용자가 수정 중인 파일을 강제로 초기화하지 마세요.

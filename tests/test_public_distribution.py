@@ -20,7 +20,7 @@ class PublicDistributionTests(unittest.TestCase):
         self.config = json.loads((ROOT / 'packaging/release.json').read_text())
 
     def test_public_feed_is_latest_stable_without_auth(self):
-        self.assertEqual(self.config['update_feed_url'], 'https://github.com/oh-jinsu/mac-bridge/releases/latest/download/appcast.xml')
+        self.assertEqual(self.config['update_feed_url'], 'https://github.com/oh-jinsu/computer-controller/releases/latest/download/appcast.xml')
 
     def test_native_updater_does_not_retrieve_github_credentials(self):
         for forbidden in ['signInGitHub', 'authProcess', 'api.github.com', 'Bearer ', 'updateAuthorization', 'apiAssets', 'GitHub 연결']:

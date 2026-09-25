@@ -4,7 +4,7 @@
 
 - 제품 표시 이름을 **Computer Controller**로 변경했습니다. macOS 앱은 `Computer Controller.app`, Windows 실행 파일은 `Computer Controller.exe`를 사용합니다.
 - MCP 도구의 플랫폼 접두사 `mac_`를 제거했습니다. 예: `status`, `read_file`, `batch_files`, `start_process`, `list_processes`, `capture_window`, `context_*`. `browser_*` 이름은 그대로 유지합니다.
-- 새 배포 파일명은 `Computer-Controller-<버전>-...zip`을 사용합니다. 기존 GitHub 저장소 경로, bundle identifier, Python 패키지 이름은 업데이트·권한·소스 호환성을 위해 이번 변경에서 유지합니다.
+- 새 배포 파일명은 `Computer-Controller-<버전>-...zip`을 사용하고 GitHub 저장소를 `oh-jinsu/computer-controller`로 변경했습니다. bundle identifier와 Python 패키지 이름은 업데이트·권한·런타임 호환성을 위해 유지합니다.
 - 새 설치는 `Computer Controller` 데이터 폴더를 사용하고, 기존 `Mac Bridge` 데이터 폴더가 있으면 자동 이동하지 않고 그대로 재사용하여 터널 ID·승인 모드·브라우저 프로필·백업·컨텍스트를 보존합니다.
 
 ## 0.5.0-beta.15 — transactional batch file mutations

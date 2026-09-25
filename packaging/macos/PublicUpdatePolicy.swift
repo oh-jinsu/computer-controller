@@ -3,7 +3,7 @@ import Foundation
 /// Public download endpoints only. No GitHub OAuth, API token, custom host or
 /// runtime feed override is accepted. Sparkle verifies feed AND archive signatures.
 enum PublicUpdatePolicy {
-    static let repository = "oh-jinsu/mac-bridge"
+    static let repository = "oh-jinsu/computer-controller"
     static let feedURL = "https://github.com/\(repository)/releases/latest/download/appcast.xml"
 
     static func acceptsArchive(_ url: URL?) -> Bool {
